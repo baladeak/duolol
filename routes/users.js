@@ -6,6 +6,10 @@ const auth   = require('../middleware/auth');
 const RIOT_KEY = () => process.env.RIOT_API_KEY;
 const REGION   = () => process.env.RIOT_REGION || 'br1';
 
+// Converte undefined/null/'' para null (MySQL não aceita undefined)
+const n = v => (v === undefined || v === null || v === '') ? null : v;
+const i = v => parseInt(v) || 0;
+
 router.get('/stats/online', auth, async (req, res) => {
   const [r] = await db.execute(
     `SELECT COUNT(DISTINCT p.user_id) AS count FROM posts p
@@ -80,8 +84,8 @@ router.patch('/me', auth, async (req, res) => {
   if (bio !== undefined) await db.execute('UPDATE users SET bio=? WHERE id=?', [bio, req.user.id]);
   if (Array.isArray(roles)) {
     await db.execute('DELETE FROM user_roles WHERE user_id=?', [req.user.id]);
-    for (let i = 0; i < Math.min(roles.length, 5); i++)
-      await db.execute('INSERT IGNORE INTO user_roles (user_id,role,priority) VALUES (?,?,?)', [req.user.id, roles[i], i+1]);
+    for (let idx = 0; idx < Math.min(roles.length, 5); idx++)
+      await db.execute('INSERT IGNORE INTO user_roles (user_id,role,priority) VALUES (?,?,?)', [req.user.id, roles[idx], idx+1]);
   }
   res.json({ ok: true });
 });
@@ -89,11 +93,12 @@ router.patch('/me', auth, async (req, res) => {
 router.post('/me/sync-elo', auth, async (req, res) => {
   const key = RIOT_KEY();
   if (!key || key.includes('xxxxxxxx'))
-    return res.json({ warning: 'Chave da Riot API não configurada. Acesse developer.riotgames.com para obter.' });
+    return res.json({ warning: 'Chave da Riot API não configurada.' });
   try {
     const [user] = await db.execute('SELECT lol_game_name,lol_tag_line,lol_puuid,lol_summoner_id FROM users WHERE id=?', [req.user.id]);
     const u = user[0];
-    let puuid = u.lol_puuid, sumId = u.lol_summoner_id;
+    let puuid = u.lol_puuid;
+    let sumId = u.lol_summoner_id;
 
     if (!puuid) {
       const { data: acc } = await axios.get(
@@ -101,40 +106,52 @@ router.post('/me/sync-elo', auth, async (req, res) => {
         { headers: { 'X-Riot-Token': key } }
       );
       puuid = acc.puuid;
-      await db.execute('UPDATE users SET lol_puuid=? WHERE id=?', [puuid, req.user.id]);
+      await db.execute('UPDATE users SET lol_puuid=? WHERE id=?', [n(puuid), req.user.id]);
     }
+
     if (!sumId) {
       const { data: s } = await axios.get(
         `https://${REGION()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
         { headers: { 'X-Riot-Token': key } }
       );
       sumId = s.id;
-      await db.execute('UPDATE users SET lol_summoner_id=?,lol_account_id=? WHERE id=?', [s.id, s.accountId, req.user.id]);
+      await db.execute('UPDATE users SET lol_summoner_id=?,lol_account_id=? WHERE id=?',
+        [n(s.id), n(s.accountId), req.user.id]);
     }
+
     const { data: leagues } = await axios.get(
       `https://${REGION()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${sumId}`,
       { headers: { 'X-Riot-Token': key } }
     );
+
     const solo = leagues.find(l => l.queueType === 'RANKED_SOLO_5x5');
     const flex = leagues.find(l => l.queueType === 'RANKED_FLEX_SR');
+
     if (solo) {
       await db.execute(
         'UPDATE users SET solo_tier=?,solo_rank=?,solo_lp=?,solo_wins=?,solo_losses=?,elo_last_updated_at=NOW() WHERE id=?',
-        [solo.tier, solo.rank||null, solo.leaguePoints||0, solo.wins||0, solo.losses||0, req.user.id]
+        [n(solo.tier), n(solo.rank), i(solo.leaguePoints), i(solo.wins), i(solo.losses), req.user.id]
       );
-      await db.execute('INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
-        [req.user.id,'SOLO',solo.tier,solo.rank||null,solo.leaguePoints||0,solo.wins||0,solo.losses||0]);
+      await db.execute(
+        'INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
+        [req.user.id, 'SOLO', n(solo.tier), n(solo.rank), i(solo.leaguePoints), i(solo.wins), i(solo.losses)]
+      );
     }
+
     if (flex) {
       await db.execute(
         'UPDATE users SET flex_tier=?,flex_rank=?,flex_lp=?,flex_wins=?,flex_losses=?,elo_last_updated_at=NOW() WHERE id=?',
-        [flex.tier, flex.rank||null, flex.leaguePoints||0, flex.wins||0, flex.losses||0, req.user.id]
+        [n(flex.tier), n(flex.rank), i(flex.leaguePoints), i(flex.wins), i(flex.losses), req.user.id]
       );
-      await db.execute('INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
-        [req.user.id,'FLEX',flex.tier,flex.rank||null,flex.leaguePoints||0,flex.wins||0,flex.losses||0]);
+      await db.execute(
+        'INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
+        [req.user.id, 'FLEX', n(flex.tier), n(flex.rank), i(flex.leaguePoints), i(flex.wins), i(flex.losses)]
+      );
     }
+
     await db.execute('INSERT INTO notifications (user_id,type,body) VALUES (?,?,?)',
       [req.user.id, 'ELO_UPDATE', 'Seu elo foi atualizado com sucesso!']);
+
     res.json({ solo, flex });
   } catch (err) {
     console.error('Riot API:', err.response?.data || err.message);
