@@ -6,7 +6,6 @@ const auth   = require('../middleware/auth');
 const RIOT_KEY = () => process.env.RIOT_API_KEY;
 const REGION   = () => process.env.RIOT_REGION || 'br1';
 
-// Converte undefined/null/'' para null (MySQL não aceita undefined)
 const n = v => (v === undefined || v === null || v === '') ? null : v;
 const i = v => parseInt(v) || 0;
 
@@ -95,11 +94,14 @@ router.post('/me/sync-elo', auth, async (req, res) => {
   if (!key || key.includes('xxxxxxxx'))
     return res.json({ warning: 'Chave da Riot API não configurada.' });
   try {
-    const [user] = await db.execute('SELECT lol_game_name,lol_tag_line,lol_puuid,lol_summoner_id FROM users WHERE id=?', [req.user.id]);
+    const [user] = await db.execute(
+      'SELECT lol_game_name,lol_tag_line,lol_puuid FROM users WHERE id=?',
+      [req.user.id]
+    );
     const u = user[0];
     let puuid = u.lol_puuid;
-    let sumId = u.lol_summoner_id;
 
+    // Passo 1: buscar PUUID pelo Riot ID (account-v1) — aprovado
     if (!puuid) {
       const { data: acc } = await axios.get(
         `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(u.lol_game_name)}/${encodeURIComponent(u.lol_tag_line)}`,
@@ -109,18 +111,9 @@ router.post('/me/sync-elo', auth, async (req, res) => {
       await db.execute('UPDATE users SET lol_puuid=? WHERE id=?', [n(puuid), req.user.id]);
     }
 
-    if (!sumId) {
-      const { data: s } = await axios.get(
-        `https://${REGION()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-        { headers: { 'X-Riot-Token': key } }
-      );
-      sumId = s.id;
-      await db.execute('UPDATE users SET lol_summoner_id=?,lol_account_id=? WHERE id=?',
-        [n(s.id), n(s.accountId), req.user.id]);
-    }
-
+    // Passo 2: buscar elo direto pelo PUUID (league-v4/entries/by-puuid) — aprovado
     const { data: leagues } = await axios.get(
-      `https://${REGION()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${sumId}`,
+      `https://${REGION()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
       { headers: { 'X-Riot-Token': key } }
     );
 
@@ -152,10 +145,10 @@ router.post('/me/sync-elo', auth, async (req, res) => {
     await db.execute('INSERT INTO notifications (user_id,type,body) VALUES (?,?,?)',
       [req.user.id, 'ELO_UPDATE', 'Seu elo foi atualizado com sucesso!']);
 
-    res.json({ solo, flex });
+    res.json({ solo: solo || null, flex: flex || null });
   } catch (err) {
     console.error('Riot API:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Erro na Riot API', detail: err.response?.data?.status?.message });
+    res.status(500).json({ error: 'Riot API: ' + JSON.stringify(err.response?.data || err.message) });
   }
 });
 
