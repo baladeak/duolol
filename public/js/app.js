@@ -425,15 +425,41 @@ async function publishPost() {
   try {
     const post = await api('/posts', { method:'POST', body:{ content, queue_type: postQueue } });
     ta.value = '';
-    const c   = $('feed-posts');
-    const div = document.createElement('div');
-    div.innerHTML = postHTML({ ...post, username: me.username, lol_game_name: me.lol_game_name,
-      lol_tag_line: me.lol_tag_line, solo_tier: me.solo_tier, solo_rank: me.solo_rank,
-      solo_lp: me.solo_lp, flex_tier: me.flex_tier, flex_rank: me.flex_rank,
-      flex_lp: me.flex_lp, online_status:'online', liked_by_me:0, total_likes:0, total_comments:0 });
-    c.prepend(div.firstChild);
-    toast('📢 Post publicado!');
-  } catch (err) { toast(err.error || 'Erro ao publicar'); }
+
+    const postData = {
+      ...post,
+      username:      me.username      || post.username,
+      lol_game_name: me.lol_game_name || post.lol_game_name,
+      lol_tag_line:  me.lol_tag_line  || post.lol_tag_line,
+      solo_tier:     me.solo_tier     || post.solo_tier,
+      solo_rank:     me.solo_rank     || post.solo_rank,
+      solo_lp:       me.solo_lp       || post.solo_lp,
+      flex_tier:     me.flex_tier     || post.flex_tier,
+      flex_rank:     me.flex_rank     || post.flex_rank,
+      flex_lp:       me.flex_lp       || post.flex_lp,
+      online_status: 'online',
+      liked_by_me:   0,
+      total_likes:   0,
+      total_comments:0
+    };
+
+    const c = $('feed-posts');
+    const empty = c.querySelector('.empty');
+    if (empty) empty.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = postHTML(postData);
+    const newPost = wrapper.firstElementChild;
+    if (newPost) {
+      c.insertBefore(newPost, c.firstChild);
+      const scrollable = c.closest('.scrollable');
+      if (scrollable) scrollable.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    toast('\u{1F4E2} Post publicado!');
+  } catch (err) {
+    toast(err.error || 'Erro ao publicar');
+  }
   btn.disabled = false; btn.textContent = 'POSTAR';
 }
 
