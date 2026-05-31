@@ -120,18 +120,18 @@ router.post('/me/sync-elo', auth, async (req, res) => {
     if (solo) {
       await db.execute(
         'UPDATE users SET solo_tier=?,solo_rank=?,solo_lp=?,solo_wins=?,solo_losses=?,elo_last_updated_at=NOW() WHERE id=?',
-        [solo.tier, solo.rank, solo.leaguePoints, solo.wins, solo.losses, req.user.id]
+        [solo.tier, solo.rank||null, solo.leaguePoints||0, solo.wins||0, solo.losses||0, req.user.id]
       );
       await db.execute('INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
-        [req.user.id,'SOLO',solo.tier,solo.rank,solo.leaguePoints,solo.wins,solo.losses]);
+        [req.user.id,'SOLO',solo.tier,solo.rank||null,solo.leaguePoints||0,solo.wins||0,solo.losses||0]);
     }
     if (flex) {
       await db.execute(
         'UPDATE users SET flex_tier=?,flex_rank=?,flex_lp=?,flex_wins=?,flex_losses=?,elo_last_updated_at=NOW() WHERE id=?',
-        [flex.tier, flex.rank, flex.leaguePoints, flex.wins, flex.losses, req.user.id]
+        [flex.tier, flex.rank||null, flex.leaguePoints||0, flex.wins||0, flex.losses||0, req.user.id]
       );
       await db.execute('INSERT INTO elo_history (user_id,queue_type,tier,`rank`,lp,wins,losses) VALUES (?,?,?,?,?,?,?)',
-        [req.user.id,'FLEX',flex.tier,flex.rank,flex.leaguePoints,flex.wins,flex.losses]);
+        [req.user.id,'FLEX',flex.tier,flex.rank||null,flex.leaguePoints||0,flex.wins||0,flex.losses||0]);
     }
     await db.execute('INSERT INTO notifications (user_id,type,body) VALUES (?,?,?)',
       [req.user.id, 'ELO_UPDATE', 'Seu elo foi atualizado com sucesso!']);
