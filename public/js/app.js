@@ -2537,10 +2537,17 @@ function closeQueuePanel() {
 // Minimizar/expandir
 function toggleQueueMinimize() {
   _queueMinimized = !_queueMinimized;
-  const body = $('queue-body');
-  const icon = $('queue-minimize-btn').querySelector('i');
-  body.style.display    = _queueMinimized ? 'none' : '';
-  icon.className        = _queueMinimized ? 'ti ti-chevron-up' : 'ti ti-minus';
+  const panel = $('queue-panel');
+  const icon  = $('queue-minimize-icon');
+  if (_queueMinimized) {
+    // Minimizar = painel vira barra no canto
+    panel.classList.add('queue-minimized');
+    if (icon) icon.className = 'ti ti-chevron-up';
+  } else {
+    // Expandir de volta
+    panel.classList.remove('queue-minimized');
+    if (icon) icon.className = 'ti ti-minus';
+  }
 }
 
 // Filtro de fila
@@ -2579,9 +2586,6 @@ async function joinQueue() {
     // Iniciar timer
     startQueueTimer();
 
-    // Notificar via socket
-    if (socket) socket.emit('queue_join', { queue_type: queueType });
-
     toast('🟢 Você entrou na fila de ' + queueTypeLabel(queueType) + '!');
     loadQueueList();
   } catch (err) {
@@ -2604,8 +2608,6 @@ async function leaveQueue() {
     clearInterval(_queueTimerInt);
     _queueTimerInt = null;
     _queueJoinedAt = null;
-
-    if (socket) socket.emit('queue_leave');
 
     toast('⬜ Você saiu da fila');
     loadQueueList();
@@ -2703,30 +2705,30 @@ function queuePlayerCardHTML(p) {
 // Receber atualizações da fila via socket
 function onQueueUpdate({ action, user, user_id }) {
   if (action === 'join') {
-    // Remover se já estava (reconexão)
+    // Remover duplicata se já estava
     _allQueuePlayers = _allQueuePlayers.filter(p => p.id !== user.id);
     _allQueuePlayers.push(user);
-    updateQueueCount(_allQueuePlayers.length);
-    renderQueueList();
-    // Som e badge
-    const badge = $('queue-fab-badge');
-    if (badge) { badge.textContent = _allQueuePlayers.length; badge.style.display = ''; }
-    // Tocar som só se não for eu
-    if (user.id !== me?.id) {
-      playQueueSound();
-      // Toast discreto
-      if (!$('queue-panel')?.classList.contains('open')) {
-        toast(`🎮 ${user.display_name || user.username} entrou na fila de ${queueTypeLabel(user.queue_type)}!`);
-      }
-    }
   } else if (action === 'leave') {
     _allQueuePlayers = _allQueuePlayers.filter(p => p.id !== user_id);
-    updateQueueCount(_allQueuePlayers.length);
-    renderQueueList();
-    const badge = $('queue-fab-badge');
-    if (badge) {
-      badge.textContent = _allQueuePlayers.length;
-      badge.style.display = _allQueuePlayers.length > 0 ? '' : 'none';
+  }
+
+  // Sempre atualiza contador e lista (mesmo com painel fechado/minimizado)
+  updateQueueCount(_allQueuePlayers.length);
+  renderQueueList();
+
+  const badge = $('queue-fab-badge');
+  if (badge) {
+    badge.textContent   = _allQueuePlayers.length;
+    badge.style.display = _allQueuePlayers.length > 0 ? '' : 'none';
+  }
+
+  // Som e notificação só quando alguém ENTRA e não sou eu
+  if (action === 'join' && user.id !== me?.id) {
+    playQueueSound();
+    const panelOpen = $('queue-panel')?.classList.contains('open') &&
+                      !$('queue-panel')?.classList.contains('queue-minimized');
+    if (!panelOpen) {
+      toast(`🎮 ${user.display_name || user.username} entrou na fila de ${queueTypeLabel(user.queue_type)}!`);
     }
   }
 }

@@ -106,7 +106,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // Socket.io
-require('./socket')(io);
+const socketModule = require('./socket');
+socketModule(io);
+
+// Tornar io acessível globalmente para as rotas
+global._io = io;
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {

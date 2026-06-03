@@ -35,12 +35,20 @@ router.post('/join', auth, async (req, res) => {
   user.queue_type = queue_type.toUpperCase();
   user.joined_at  = new Date();
 
+  // Emitir em tempo real para todos via socket
+  if (global._io) {
+    global._io.emit('queue_update', { action: 'join', user });
+  }
+
   res.json({ ok: true, user });
 });
 
 // Sair da fila
 router.delete('/leave', auth, async (req, res) => {
   await db.execute('DELETE FROM queue_entries WHERE user_id=?', [req.user.id]);
+  if (global._io) {
+    global._io.emit('queue_update', { action: 'leave', user_id: req.user.id });
+  }
   res.json({ ok: true });
 });
 

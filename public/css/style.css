@@ -3376,3 +3376,24 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   cursor:pointer;transition:.13s;font-family:'Exo 2',sans-serif;
 }
 .queue-leave-btn:hover{background:rgba(239,68,68,.15)}
+
+/* ── Fila minimizada ──────────────────────────── */
+.queue-panel.queue-minimized{
+  /* Vira uma barra compacta no canto inferior direito */
+  top:auto;left:auto;
+  transform:none;
+  bottom:96px;right:32px;
+  width:260px;height:auto;
+  border-radius:12px;
+}
+.queue-panel.queue-minimized #queue-body{
+  display:none;
+}
+/* Header fica visível e clicável para expandir */
+.queue-panel.queue-minimized .queue-header{
+  border-radius:12px;
+  cursor:pointer;
+}
+.queue-panel.queue-minimized .queue-header:hover{
+  background:rgba(200,150,62,.12);
+}

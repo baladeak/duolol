@@ -83,7 +83,6 @@ module.exports = (io) => {
     socket.on('disconnect', async () => {
       online.delete(uid);
       await db.execute('UPDATE users SET online_status=?,last_seen_at=NOW() WHERE id=?', ['offline', uid]);
-      // Remove da fila ao desconectar
       await db.execute('DELETE FROM queue_entries WHERE user_id=?', [uid]);
       io.emit('queue_update', { action: 'leave', user_id: uid });
       friends.forEach(({ fid }) => {
@@ -92,4 +91,7 @@ module.exports = (io) => {
       });
     });
   });
+
+  // Expor io para que as rotas possam emitir eventos
+  module.exports.io = io;
 };

@@ -370,18 +370,15 @@
 <div id="queue-panel" class="queue-panel" onclick="event.stopPropagation()">
 
   <!-- Header -->
-  <div class="queue-header">
+  <div class="queue-header" onclick="if(_queueMinimized) toggleQueueMinimize()">
     <div class="queue-header-left">
       <div class="queue-live-dot"></div>
       <span class="queue-title">FILA AO VIVO</span>
       <span class="queue-count" id="queue-count">0</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="queue-minimize-btn" id="queue-minimize-btn" onclick="toggleQueueMinimize()" title="Minimizar">
-        <i class="ti ti-minus"></i>
-      </button>
-      <button class="queue-close-btn" onclick="closeQueuePanel()" title="Fechar">
-        <i class="ti ti-x"></i>
+      <button class="queue-close-btn" id="queue-minimize-btn" onclick="toggleQueueMinimize()" title="Minimizar painel">
+        <i class="ti ti-minus" id="queue-minimize-icon"></i>
       </button>
     </div>
   </div>
