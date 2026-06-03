@@ -3152,3 +3152,213 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-actions .mic-toggle-btn{
   width:auto;
 }
+
+/* ══════════════════════════════════════════════
+   FILA AO VIVO
+══════════════════════════════════════════════ */
+
+/* Botão flutuante FAB */
+.queue-fab{
+  position:fixed;bottom:24px;left:24px;
+  width:52px;height:52px;border-radius:50%;
+  background:var(--gold);color:var(--navy);
+  border:none;cursor:pointer;font-size:22px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(200,150,62,.5);
+  transition:all .2s;z-index:900;
+}
+.queue-fab:hover{background:var(--gold-l);transform:scale(1.08)}
+.queue-fab.in-queue{
+  background:var(--green);
+  box-shadow:0 4px 20px rgba(34,197,94,.5);
+  animation:fab-pulse 2s infinite;
+}
+@keyframes fab-pulse{
+  0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.4)}
+  50%{box-shadow:0 4px 32px rgba(34,197,94,.8)}
+}
+.queue-fab-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--red);color:#fff;
+  font-size:10px;font-weight:700;border-radius:10px;
+  padding:1px 5px;min-width:16px;text-align:center;
+  border:2px solid var(--navy);
+}
+
+/* Painel principal */
+.queue-panel{
+  position:fixed;bottom:0;left:88px;
+  width:320px;
+  background:var(--navy-m);
+  border:1px solid var(--border-h);
+  border-bottom:none;
+  border-radius:13px 13px 0 0;
+  box-shadow:0 -4px 40px rgba(0,0,0,.7);
+  z-index:950;
+  display:none;
+  flex-direction:column;
+  max-height:520px;
+}
+.queue-panel.open{display:flex}
+.queue-panel.minimized .queue-body-wrap{display:none}
+
+/* Header */
+.queue-header{
+  padding:11px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;border-radius:13px 13px 0 0;
+  background:rgba(200,150,62,.06);
+}
+.queue-header-left{display:flex;align-items:center;gap:8px}
+.queue-live-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+  animation:pulse 2s infinite;
+}
+.queue-title{
+  font-family:'Rajdhani',sans-serif;font-size:14px;
+  font-weight:700;letter-spacing:2px;color:var(--gold-l);
+}
+.queue-count{
+  background:rgba(34,197,94,.15);color:var(--green);
+  border:1px solid rgba(34,197,94,.3);
+  font-size:11px;font-weight:700;border-radius:8px;
+  padding:1px 7px;
+}
+.queue-minimize-btn,.queue-close-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--dim);font-size:14px;padding:3px 5px;
+  border-radius:5px;transition:.12s;
+}
+.queue-minimize-btn:hover,.queue-close-btn:hover{color:var(--text);background:var(--navy-h)}
+
+/* Body */
+#queue-body{
+  display:flex;flex-direction:column;flex:1;overflow:hidden;
+}
+
+/* Filtros */
+.queue-filters{
+  display:flex;gap:4px;padding:10px 12px 8px;
+  flex-wrap:wrap;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.queue-filter-btn{
+  padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;
+  cursor:pointer;transition:.13s;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-family:'Exo 2',sans-serif;
+}
+.queue-filter-btn:hover{border-color:var(--border-h);color:var(--text)}
+.queue-filter-btn.on{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+
+/* Lista de jogadores */
+.queue-list{
+  flex:1;overflow-y:auto;padding:6px 8px;
+  display:flex;flex-direction:column;gap:4px;
+  min-height:0;
+}
+.queue-list::-webkit-scrollbar{width:3px}
+.queue-list::-webkit-scrollbar-thumb{background:var(--navy-c)}
+
+.queue-empty{
+  text-align:center;padding:24px 16px;color:var(--dim);font-size:13px;
+}
+
+/* Card do jogador na fila */
+.queue-player-card{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:10px;
+  background:var(--navy-c);border:1px solid var(--border);
+  transition:border-color .13s;cursor:pointer;
+  animation:queue-enter .25s ease;
+}
+@keyframes queue-enter{
+  from{opacity:0;transform:translateY(-6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.queue-player-card:hover{border-color:var(--border-h)}
+.queue-player-card.is-me{
+  border-color:rgba(200,150,62,.4);
+  background:rgba(200,150,62,.06);
+}
+
+.queue-player-info{flex:1;min-width:0}
+.queue-player-name{
+  font-size:13px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.queue-player-nick{font-size:11px;color:var(--dim)}
+.queue-player-elos{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.queue-player-roles{
+  display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;
+}
+.queue-role-chip{
+  font-size:9.5px;font-weight:700;letter-spacing:.5px;
+  padding:1px 6px;border-radius:4px;
+  background:var(--navy);border:1px solid var(--border);color:var(--muted);
+}
+.queue-player-actions{
+  display:flex;flex-direction:column;gap:4px;flex-shrink:0;
+}
+.queue-add-btn,.queue-dm-btn{
+  width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;border:1px solid var(--border);
+  background:var(--navy);color:var(--muted);transition:.13s;
+}
+.queue-add-btn:hover{border-color:var(--gold-d);color:var(--gold-l);background:rgba(200,150,62,.1)}
+.queue-dm-btn:hover{border-color:rgba(59,130,246,.4);color:#93C5FD;background:rgba(59,130,246,.1)}
+.queue-mic-icon{color:var(--green);font-size:12px;margin-left:2px}
+
+/* Badge de fila no card */
+.queue-type-badge{
+  font-size:9px;font-weight:700;letter-spacing:.5px;
+  padding:1px 6px;border-radius:4px;text-transform:uppercase;
+  background:rgba(200,150,62,.15);color:var(--gold-l);
+  border:1px solid var(--gold-d);
+}
+.queue-type-badge.flex{background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.3)}
+.queue-type-badge.aram{background:rgba(139,92,246,.15);color:#C4B5FD;border-color:rgba(139,92,246,.3)}
+.queue-type-badge.arena{background:rgba(239,68,68,.15);color:#FCA5A5;border-color:rgba(239,68,68,.3)}
+
+/* Barra de ação */
+.queue-action-bar{
+  display:flex;gap:8px;padding:10px 12px;
+  border-top:1px solid var(--border);flex-shrink:0;
+}
+.queue-type-select{
+  flex:1;background:var(--navy);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;color:var(--text);
+  font-family:'Exo 2',sans-serif;font-size:12.5px;outline:none;
+}
+.queue-type-select:focus{border-color:var(--gold-d)}
+.queue-join-btn{
+  padding:7px 14px;background:var(--gold);color:var(--navy);
+  border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;
+  font-weight:700;font-size:13px;letter-spacing:1px;
+  cursor:pointer;transition:.15s;white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.queue-join-btn:hover{background:var(--gold-l)}
+.queue-join-btn.leaving{background:rgba(239,68,68,.2);color:#FCA5A5;border:1px solid rgba(239,68,68,.4)}
+.queue-join-btn.leaving:hover{background:rgba(239,68,68,.35)}
+
+/* Timer */
+.queue-timer-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-top:1px solid var(--border);
+  background:rgba(34,197,94,.05);flex-shrink:0;
+  font-size:12.5px;color:var(--muted);
+}
+.queue-timer-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;
+  animation:pulse 1.5s infinite;
+}
+.queue-timer-bar strong{color:var(--green)}
+.queue-leave-btn{
+  margin-left:auto;background:none;border:1px solid rgba(239,68,68,.35);
+  color:#FCA5A5;border-radius:6px;padding:3px 10px;font-size:11.5px;
+  cursor:pointer;transition:.13s;font-family:'Exo 2',sans-serif;
+}
+.queue-leave-btn:hover{background:rgba(239,68,68,.15)}

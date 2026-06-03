@@ -29,6 +29,15 @@ const migrations = [
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `ALTER TABLE posts MODIFY COLUMN queue_type ENUM('SOLO','FLEX','BOTH','ARAM','ARENA') NOT NULL DEFAULT 'SOLO'`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS has_mic TINYINT(1) NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS queue_entries (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL UNIQUE,
+    queue_type ENUM('SOLO','FLEX','ARAM','ARENA') NOT NULL DEFAULT 'SOLO',
+    joined_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    INDEX idx_queue_type (queue_type),
+    INDEX idx_expires (expires_at)
+  )`,
   `CREATE TABLE IF NOT EXISTS profile_playlists (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -88,6 +97,7 @@ app.use('/api/posts',         require('./routes/posts'));
 app.use('/api/users',         require('./routes/users'));
 app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/queue',         require('./routes/queue'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/profile',       require('./routes/profile'));
 

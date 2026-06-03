@@ -229,6 +229,11 @@ function bootApp() {
   setInterval(pollOnlineCount, 10000);
   setInterval(loadNotifCount,  30000);
   setInterval(loadMsgCount,    15000);
+  setInterval(loadQueueList,   20000); // Atualiza fila a cada 20s
+
+  // Verificar status da fila
+  checkQueueStatus();
+  loadQueueList();
 
   // Socket
   initSocket();
@@ -281,7 +286,8 @@ function connectSocket() {
   socket = io({ auth: { token }, transports: ['websocket', 'polling'] });
   socket.on('connect',      () => console.log('🔌 Socket conectado'));
   socket.on('new_message',  onSocketMessage);
-  socket.on('notification', onSocketNotif);
+  socket.on('notification',   onSocketNotif);
+  socket.on('queue_update',   onQueueUpdate);
   socket.on('friend_online',({ user_id, status }) => updateFriendStatus(user_id, status));
   socket.on('connect_error', err => console.warn('Socket error:', err.message));
 }
@@ -2480,6 +2486,266 @@ function socialFriendHTML(f) {
       <i class="ti ti-message-circle"></i>
     </button>
   </div>`;
+}
+
+
+// ══════════════════════════════════════════════
+//  FILA AO VIVO
+// ══════════════════════════════════════════════
+let _inQueue       = false;
+let _queueType     = 'SOLO';
+let _queueFilter   = 'all';
+let _queuePlayers  = [];   // lista atual visível
+let _allQueuePlayers = []; // todos sem filtro
+let _queueTimerInt = null;
+let _queueJoinedAt = null;
+let _queueMinimized = false;
+
+// Som de notificação (novo jogador na fila)
+function playQueueSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o   = ctx.createOscillator();
+    const g   = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type      = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  } catch {}
+}
+
+// Abrir painel
+function openQueuePanel() {
+  const panel = $('queue-panel');
+  panel.classList.add('open');
+  $('queue-fab').style.display = 'none';
+  loadQueueList();
+}
+
+// Fechar painel
+function closeQueuePanel() {
+  $('queue-panel').classList.remove('open');
+  $('queue-fab').style.display = 'flex';
+}
+
+// Minimizar/expandir
+function toggleQueueMinimize() {
+  _queueMinimized = !_queueMinimized;
+  const body = $('queue-body');
+  const icon = $('queue-minimize-btn').querySelector('i');
+  body.style.display    = _queueMinimized ? 'none' : '';
+  icon.className        = _queueMinimized ? 'ti ti-chevron-up' : 'ti ti-minus';
+}
+
+// Filtro de fila
+function setQueueFilter(q, btn) {
+  _queueFilter = q;
+  document.querySelectorAll('.queue-filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderQueueList();
+}
+
+// Entrar / sair da fila
+async function toggleQueue() {
+  if (_inQueue) {
+    await leaveQueue();
+  } else {
+    await joinQueue();
+  }
+}
+
+async function joinQueue() {
+  const queueType = $('queue-type-select').value;
+  try {
+    const { user } = await api('/queue/join', { method:'POST', body:{ queue_type: queueType } });
+    _inQueue      = true;
+    _queueType    = queueType;
+    _queueJoinedAt = new Date();
+
+    // Atualizar UI
+    const btn = $('queue-join-btn');
+    btn.innerHTML = '<i class="ti ti-x"></i> Sair da Fila';
+    btn.classList.add('leaving');
+    $('queue-timer-bar').style.display = 'flex';
+    $('queue-type-select').disabled = true;
+    $('queue-fab').classList.add('in-queue');
+
+    // Iniciar timer
+    startQueueTimer();
+
+    // Notificar via socket
+    if (socket) socket.emit('queue_join', { queue_type: queueType });
+
+    toast('🟢 Você entrou na fila de ' + queueTypeLabel(queueType) + '!');
+    loadQueueList();
+  } catch (err) {
+    toast('Erro ao entrar na fila');
+  }
+}
+
+async function leaveQueue() {
+  try {
+    await api('/queue/leave', { method:'DELETE' });
+    _inQueue = false;
+
+    const btn = $('queue-join-btn');
+    btn.innerHTML = '<i class="ti ti-search"></i> Entrar na Fila';
+    btn.classList.remove('leaving');
+    $('queue-timer-bar').style.display = 'none';
+    $('queue-type-select').disabled = false;
+    $('queue-fab').classList.remove('in-queue');
+
+    clearInterval(_queueTimerInt);
+    _queueTimerInt = null;
+    _queueJoinedAt = null;
+
+    if (socket) socket.emit('queue_leave');
+
+    toast('⬜ Você saiu da fila');
+    loadQueueList();
+  } catch {}
+}
+
+function startQueueTimer() {
+  clearInterval(_queueTimerInt);
+  _queueTimerInt = setInterval(() => {
+    if (!_queueJoinedAt) return;
+    const secs  = Math.floor((Date.now() - _queueJoinedAt) / 1000);
+    const mm    = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss    = String(secs % 60).padStart(2, '0');
+    const timer = $('queue-timer');
+    if (timer) timer.textContent = mm + ':' + ss;
+
+    // Auto-sair após 30 min
+    if (secs >= 1800) leaveQueue();
+  }, 1000);
+}
+
+function queueTypeLabel(q) {
+  const m = { SOLO:'Solo/Duo', FLEX:'Flex', ARAM:'ARAM', ARENA:'Arena' };
+  return m[q] || q;
+}
+
+// Carregar lista da fila via API
+async function loadQueueList() {
+  try {
+    const players = await api('/queue');
+    _allQueuePlayers = players;
+    // Atualizar badge do FAB
+    const badge = $('queue-fab-badge');
+    if (badge) {
+      badge.textContent = players.length;
+      badge.style.display = players.length > 0 ? '' : 'none';
+    }
+    updateQueueCount(players.length);
+    renderQueueList();
+  } catch {}
+}
+
+function updateQueueCount(n) {
+  const el = $('queue-count');
+  if (el) el.textContent = n;
+}
+
+function renderQueueList() {
+  const list = $('queue-list');
+  if (!list) return;
+
+  const filtered = _queueFilter === 'all'
+    ? _allQueuePlayers
+    : _allQueuePlayers.filter(p => p.queue_type === _queueFilter);
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="queue-empty">Nenhum jogador nesta fila agora<br><span style="font-size:11px;margin-top:4px;display:block">Seja o primeiro! 🎮</span></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(p => queuePlayerCardHTML(p)).join('');
+}
+
+function queuePlayerCardHTML(p) {
+  const isMe    = p.id == me?.id;
+  const name    = escapeHtml(p.display_name || p.username);
+  const nick    = escapeHtml(p.lol_game_name) + '#' + escapeHtml(p.lol_tag_line);
+  const soloLbl = eloLabel(p.solo_tier, p.solo_rank, p.solo_lp);
+  const flexLbl = eloLabel(p.flex_tier, p.flex_rank, p.flex_lp);
+  const roles   = p.roles ? p.roles.split(',').filter(Boolean) : [];
+  const qtBadge = p.queue_type?.toLowerCase();
+
+  return `<div class="queue-player-card ${isMe ? 'is-me' : ''}" onclick="viewProfile(${p.id})">
+    ${avatarHTML(p, 'av-md')}
+    <div class="queue-player-info">
+      <div class="queue-player-name">
+        ${name}
+        ${p.has_mic ? '<i class="ti ti-microphone queue-mic-icon" title="Tem microfone"></i>' : ''}
+      </div>
+      <div class="queue-player-nick">${nick}</div>
+      <div class="queue-player-elos">
+        <span class="elo ${eloClass(p.solo_tier)}">Solo ${soloLbl}</span>
+        <span class="elo ${eloClass(p.flex_tier)}">Flex ${flexLbl}</span>
+        <span class="queue-type-badge ${qtBadge}">${queueTypeLabel(p.queue_type)}</span>
+      </div>
+      ${roles.length ? `<div class="queue-player-roles">${roles.map(r => `<span class="queue-role-chip">${r}</span>`).join('')}</div>` : ''}
+    </div>
+    ${!isMe ? `<div class="queue-player-actions" onclick="event.stopPropagation()">
+      <div class="queue-add-btn" onclick="addFriend(${p.id},this)" title="Adicionar amigo"><i class="ti ti-user-plus"></i></div>
+      <div class="queue-dm-btn"  onclick="openDM(${p.id},'${escapeHtml(p.username)}')" title="Enviar mensagem"><i class="ti ti-message-2"></i></div>
+    </div>` : `<div style="font-size:10px;color:var(--gold-l);font-weight:700;text-align:center;padding:2px 4px">VOCÊ</div>`}
+  </div>`;
+}
+
+// Receber atualizações da fila via socket
+function onQueueUpdate({ action, user, user_id }) {
+  if (action === 'join') {
+    // Remover se já estava (reconexão)
+    _allQueuePlayers = _allQueuePlayers.filter(p => p.id !== user.id);
+    _allQueuePlayers.push(user);
+    updateQueueCount(_allQueuePlayers.length);
+    renderQueueList();
+    // Som e badge
+    const badge = $('queue-fab-badge');
+    if (badge) { badge.textContent = _allQueuePlayers.length; badge.style.display = ''; }
+    // Tocar som só se não for eu
+    if (user.id !== me?.id) {
+      playQueueSound();
+      // Toast discreto
+      if (!$('queue-panel')?.classList.contains('open')) {
+        toast(`🎮 ${user.display_name || user.username} entrou na fila de ${queueTypeLabel(user.queue_type)}!`);
+      }
+    }
+  } else if (action === 'leave') {
+    _allQueuePlayers = _allQueuePlayers.filter(p => p.id !== user_id);
+    updateQueueCount(_allQueuePlayers.length);
+    renderQueueList();
+    const badge = $('queue-fab-badge');
+    if (badge) {
+      badge.textContent = _allQueuePlayers.length;
+      badge.style.display = _allQueuePlayers.length > 0 ? '' : 'none';
+    }
+  }
+}
+
+// Verificar se usuário já está na fila ao carregar
+async function checkQueueStatus() {
+  try {
+    const entry = await api('/queue/me');
+    if (entry) {
+      _inQueue       = true;
+      _queueType     = entry.queue_type;
+      _queueJoinedAt = new Date(entry.joined_at);
+      const btn = $('queue-join-btn');
+      if (btn) { btn.innerHTML = '<i class="ti ti-x"></i> Sair da Fila'; btn.classList.add('leaving'); }
+      const timerBar = $('queue-timer-bar');
+      if (timerBar) timerBar.style.display = 'flex';
+      const sel = $('queue-type-select');
+      if (sel) { sel.value = entry.queue_type; sel.disabled = true; }
+      $('queue-fab')?.classList.add('in-queue');
+      startQueueTimer();
+    }
+  } catch {}
 }
 
 ;
