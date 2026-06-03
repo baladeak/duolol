@@ -1630,9 +1630,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .profile-body{
-  padding:20px 24px;
-  display:flex;
-  flex-direction:column;
+  padding:16px 20px;
+  display:grid;
+  grid-template-columns:1.1fr 1.6fr 0.8fr;
+  gap:12px;
+  align-items:start;
   gap:20px;
   overflow-y:auto;
   flex:1;
