@@ -21,6 +21,16 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
+  `CREATE TABLE IF NOT EXISTS post_reports (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    post_id     INT NOT NULL,
+    reporter_id INT NOT NULL,
+    reason      VARCHAR(100) NOT NULL,
+    details     VARCHAR(500) NULL,
+    status      ENUM('pending','reviewed','dismissed') NOT NULL DEFAULT 'pending',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_report (post_id, reporter_id)
+  )`,
 ];
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
 

@@ -177,13 +177,30 @@
 
       <!-- ADMIN -->
       <div class="page" id="page-admin">
-        <div class="top-bar">
+        <div class="top-bar" style="flex-wrap:wrap;gap:8px">
           <span class="top-bar-title" style="color:#F87171"><i class="ti ti-shield-lock" style="margin-right:8px"></i>PAINEL ADMIN</span>
-          <input class="search-inp" id="admin-search" placeholder="Buscar por nome, nick ou email..." style="max-width:320px"
-            onkeyup="if(event.key==='Enter')adminSearch()">
-          <button onclick="adminSearch()" class="pill p-gold on">Buscar</button>
+          <div class="admin-tabs">
+            <button class="admin-tab active" id="atab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Usuários</button>
+            <button class="admin-tab" id="atab-reports" onclick="switchAdminTab('reports')"><i class="ti ti-flag"></i> Denúncias <span class="s-badge" id="reports-badge" style="display:none">0</span></button>
+          </div>
         </div>
-        <div class="scrollable" id="admin-user-list"></div>
+        <!-- Aba usuários -->
+        <div id="admin-tab-users" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;background:var(--navy-m)">
+            <input class="search-inp" id="admin-search" placeholder="Buscar por nome, nick ou email..." style="flex:1"
+              onkeyup="if(event.key==='Enter')adminSearch()">
+            <button onclick="adminSearch()" class="pill p-gold on">Buscar</button>
+          </div>
+          <div class="scrollable" id="admin-user-list"></div>
+        </div>
+        <!-- Aba denúncias -->
+        <div id="admin-tab-reports" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--navy-m)">
+            <span style="font-size:13px;color:var(--muted)">Posts denunciados aguardando revisão</span>
+            <button onclick="loadAdminReports()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px"><i class="ti ti-refresh"></i></button>
+          </div>
+          <div class="scrollable" id="admin-reports-list"></div>
+        </div>
       </div>
 
       <!-- PERFIL -->
@@ -237,6 +254,25 @@
   <div class="chat-input-row">
     <input class="chat-inp" id="chat-input" placeholder="Mensagem..." onkeydown="if(event.key==='Enter')sendChatMessage()">
     <button class="btn-send" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
+  </div>
+</div>
+
+<!-- Modal de denúncia -->
+<div id="report-modal" style="display:none" onclick="if(event.target===this)closeReportModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span><i class="ti ti-flag"></i> Denunciar post</span>
+      <button class="modal-close" onclick="closeReportModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">Selecione o motivo da denúncia:</p>
+      <div class="report-reasons" id="report-reasons"></div>
+      <textarea id="report-details" class="bio-textarea" maxlength="300" placeholder="Detalhes adicionais (opcional)..." style="min-height:72px;margin-top:12px"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-outline" onclick="closeReportModal()">Cancelar</button>
+      <button class="btn-post" onclick="submitReport()"><i class="ti ti-send"></i> Enviar denúncia</button>
+    </div>
   </div>
 </div>
 

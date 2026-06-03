@@ -324,6 +324,22 @@ function postHTML(p) {
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
           <span class="post-time">${timeAgo(p.created_at)}</span>
+          <!-- Menu 3 pontos -->
+          <div class="post-menu" style="margin-left:auto;position:relative">
+            <button class="post-menu-btn" onclick="togglePostMenu(${p.id},${p.user_id})" title="Opções"><i class="ti ti-dots"></i></button>
+            <div class="post-dropdown" id="pd-${p.id}" style="display:none">
+              ${!isMe ? `<div class="pd-item pd-danger" onclick="openReportModal(${p.id},${p.user_id});togglePostMenu(${p.id})"><i class="ti ti-flag"></i> Denunciar</div>` : ''}
+              ${me?.admin_role === 'admin' ? `
+                <div class="pd-divider"></div>
+                <div class="pd-label">Admin</div>
+                <div class="pd-item pd-danger" onclick="adminDeletePost(${p.id})"><i class="ti ti-trash"></i> Deletar post</div>
+                <div class="pd-item pd-danger" onclick="adminBan(${p.user_id},true);togglePostMenu(${p.id})"><i class="ti ti-ban"></i> Banir usuário</div>
+                <div class="pd-item pd-warn" onclick="adminRestrict(${p.user_id},24);togglePostMenu(${p.id})"><i class="ti ti-clock"></i> Silenciar 24h</div>
+                <div class="pd-item pd-warn" onclick="adminRestrict(${p.user_id},168);togglePostMenu(${p.id})"><i class="ti ti-clock"></i> Silenciar 7 dias</div>
+              ` : ''}
+              ${isMe ? `<div class="pd-item pd-danger" onclick="deletePost(${p.id})"><i class="ti ti-trash"></i> Deletar meu post</div>` : ''}
+            </div>
+          </div>
         </div>
         <div class="post-elos">
           <span class="elo ${eloClass(p.solo_tier)}">Solo ${eloLabel(p.solo_tier, p.solo_rank, p.solo_lp)}</span>
@@ -989,6 +1005,68 @@ async function pollOnlineCount() {
   } catch {}
 }
 
+// ── Report modal ───────────────────────────────
+const REPORT_REASONS = [
+  'Spam ou propaganda',
+  'Conteúdo ofensivo ou hate speech',
+  'Assédio ou bullying',
+  'Informações falsas',
+  'Conteúdo inapropriado',
+  'Outro',
+];
+
+let _reportPostId = null;
+let _reportAuthorId = null;
+
+function openReportModal(postId, authorId) {
+  _reportPostId   = postId;
+  _reportAuthorId = authorId;
+  const modal = $('report-modal');
+  const box   = $('report-reasons');
+  $('report-details').value = '';
+  box.innerHTML = REPORT_REASONS.map((r, i) => `
+    <label class="report-reason-opt">
+      <input type="radio" name="report-reason" value="${r}" ${i===0?'checked':''}>
+      <span>${r}</span>
+    </label>`).join('');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReportModal() {
+  $('report-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  _reportPostId = _reportAuthorId = null;
+}
+
+async function submitReport() {
+  const reason  = document.querySelector('input[name="report-reason"]:checked')?.value;
+  const details = $('report-details').value.trim();
+  if (!reason || !_reportPostId) return;
+  try {
+    await api(`/posts/${_reportPostId}/report`, { method:'POST', body:{ reason, details } });
+    toast('✅ Denúncia enviada para moderação!');
+    closeReportModal();
+  } catch (err) { toast('❌ ' + (err.error || 'Erro ao denunciar')); }
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('.post-menu')) {
+    document.querySelectorAll('.post-dropdown').forEach(d => d.style.display = 'none');
+  }
+});
+
+function togglePostMenu(postId, authorId) {
+  // Fecha todos os outros
+  document.querySelectorAll('.post-dropdown').forEach(d => {
+    if (d.id !== 'pd-' + postId) d.style.display = 'none';
+  });
+  const dd = $('pd-' + postId);
+  if (!dd) return;
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+
 // ── Admin panel ────────────────────────────────
 function bootAdmin() {
   const btn = $('nav-admin');
@@ -1114,6 +1192,82 @@ async function adminRestrict(userId, hours) {
     toast(hours === 0 ? '✅ Restrição removida' : `⏳ Usuário impedido de postar por ${hours}h`);
     adminSearch();
   } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function adminDeletePost(postId) {
+  if (!confirm('Deletar este post?')) return;
+  try {
+    await api('/admin/posts/' + postId, { method: 'DELETE' });
+    const el = $('post-' + postId);
+    if (el) el.remove();
+    toast('🗑️ Post deletado');
+    // Fecha o dropdown
+    const dd = $('pd-' + postId);
+    if (dd) dd.style.display = 'none';
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  $('atab-' + tab)?.classList.add('active');
+  $('admin-tab-users').style.display  = tab === 'users'   ? 'flex' : 'none';
+  $('admin-tab-reports').style.display = tab === 'reports' ? 'flex' : 'none';
+  if (tab === 'reports') loadAdminReports();
+}
+
+async function loadAdminReports() {
+  const list = $('admin-reports-list');
+  list.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando denúncias...</div>';
+  try {
+    const reports = await api('/admin/reports');
+    const badge = $('reports-badge');
+    if (badge) { badge.textContent = reports.length; badge.style.display = reports.length ? '' : 'none'; }
+    if (!reports.length) {
+      list.innerHTML = '<div class="empty"><i class="ti ti-checks"></i><p>Nenhuma denúncia pendente</p></div>';
+      return;
+    }
+    list.innerHTML = reports.map(r => `
+      <div class="admin-report-card" id="report-card-${r.id}">
+        <div class="report-card-head">
+          <span class="report-reason-tag">${escapeHtml(r.reason)}</span>
+          <span style="font-size:11px;color:var(--dim);margin-left:auto">${timeAgo(r.created_at)}</span>
+        </div>
+        <div class="report-post-content">${escapeHtml(r.post_content)}</div>
+        ${r.details ? `<div class="report-details-text"><i class="ti ti-message"></i> "${escapeHtml(r.details)}"</div>` : ''}
+        <div class="report-meta">
+          <span>Autor: <strong>${escapeHtml(r.author_name || r.author_username)}</strong> (${escapeHtml(r.lol_game_name)}#${escapeHtml(r.lol_tag_line)})</span>
+          <span style="color:var(--dim)">Denunciado por: ${escapeHtml(r.reporter_name || r.reporter_username)}</span>
+        </div>
+        <div class="report-actions-row">
+          ${r.is_deleted ? '<span style="color:var(--dim);font-size:12px">Post já deletado</span>' :
+            `<button class="admin-btn admin-btn-red" onclick="reportDeletePost(${r.post_id},${r.id})"><i class="ti ti-trash"></i> Deletar post</button>`}
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${r.author_id},24).then(()=>dismissReport(${r.id}))"><i class="ti ti-clock"></i> Silenciar 24h</button>
+          <button class="admin-btn admin-btn-red" onclick="adminBan(${r.author_id},true).then(()=>dismissReport(${r.id}))"><i class="ti ti-ban"></i> Banir</button>
+          <button class="admin-btn admin-btn-green" onclick="dismissReport(${r.id})"><i class="ti ti-x"></i> Dispensar</button>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i><p>${err.error || 'Erro ao carregar'}</p></div>`;
+  }
+}
+
+async function reportDeletePost(postId, reportId) {
+  try {
+    await api('/admin/posts/' + postId, { method: 'DELETE' });
+    await dismissReport(reportId);
+    toast('🗑️ Post deletado');
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function dismissReport(reportId) {
+  try {
+    await api('/admin/reports/' + reportId + '/dismiss', { method: 'PATCH' });
+    $('report-card-' + reportId)?.remove();
+    const remaining = document.querySelectorAll('[id^="report-card-"]').length;
+    const badge = $('reports-badge');
+    if (badge) { badge.textContent = remaining; badge.style.display = remaining ? '' : 'none'; }
+    if (!remaining) $('admin-reports-list').innerHTML = '<div class="empty"><i class="ti ti-checks"></i><p>Nenhuma denúncia pendente</p></div>';
+  } catch (err) { toast('❌ Erro ao dispensar'); }
 }
 
 async function adminSetRole(userId, role) {

@@ -62,6 +62,39 @@ router.patch('/users/:id/restrict', async (req, res) => {
   res.json({ ok: true, until });
 });
 
+// Deletar post
+router.delete('/posts/:id', async (req, res) => {
+  await db.execute('UPDATE posts SET is_deleted=1 WHERE id=?', [req.params.id]);
+  await db.execute('UPDATE post_reports SET status="reviewed" WHERE post_id=?', [req.params.id]);
+  res.json({ ok: true });
+});
+
+// Listar denúncias pendentes
+router.get('/reports', async (req, res) => {
+  const [rows] = await db.execute(
+    `SELECT r.id, r.post_id, r.reason, r.details, r.status, r.created_at,
+            p.content AS post_content, p.is_deleted,
+            u_rep.username AS reporter_username, u_rep.display_name AS reporter_name,
+            u_aut.id AS author_id, u_aut.username AS author_username,
+            u_aut.display_name AS author_name, u_aut.lol_game_name, u_aut.lol_tag_line,
+            u_aut.is_banned, u_aut.post_restricted_until
+     FROM post_reports r
+     JOIN posts p ON p.id = r.post_id
+     JOIN users u_rep ON u_rep.id = r.reporter_id
+     JOIN users u_aut ON u_aut.id = p.user_id
+     WHERE r.status = 'pending'
+     ORDER BY r.created_at DESC
+     LIMIT 100`
+  );
+  res.json(rows);
+});
+
+// Dispensar denúncia
+router.patch('/reports/:id/dismiss', async (req, res) => {
+  await db.execute('UPDATE post_reports SET status="dismissed" WHERE id=?', [req.params.id]);
+  res.json({ ok: true });
+});
+
 // Promover / rebaixar admin
 router.patch('/users/:id/role', async (req, res) => {
   const { role } = req.body;

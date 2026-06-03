@@ -102,4 +102,20 @@ router.post('/:id/comments', auth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro ao comentar' }); }
 });
 
+// Denunciar post
+router.post('/:id/report', auth, async (req, res) => {
+  const { reason, details } = req.body;
+  if (!reason) return res.status(400).json({ error: 'Motivo obrigatório' });
+  try {
+    await db.execute(
+      'INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE reason=VALUES(reason), details=VALUES(details), status="pending"',
+      [req.params.id, req.user.id, reason, details || null]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao denunciar' });
+  }
+});
+
 module.exports = router;
