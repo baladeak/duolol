@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
     const [posts] = await db.execute(
       `SELECT p.id,p.content,p.queue_type,p.created_at,p.solo_tier_snapshot,p.flex_tier_snapshot,
               u.id AS user_id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
-              u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status,
+              u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status,u.has_mic,
               (SELECT COUNT(*) FROM post_likes l WHERE l.post_id=p.id) AS total_likes,
               (SELECT COUNT(*) FROM post_comments c WHERE c.post_id=p.id AND c.is_deleted=0) AS total_comments,
               (SELECT COUNT(*) FROM post_likes lm WHERE lm.post_id=p.id AND lm.user_id=?) AS liked_by_me

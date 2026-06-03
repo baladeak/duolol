@@ -32,7 +32,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,has_mic,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -124,13 +124,16 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles, display_name, chat_muted, main_champions, profile_banner } = req.body;
+  const { bio, roles, display_name, chat_muted, main_champions, profile_banner, has_mic } = req.body;
   if (display_name !== undefined) {
     const dn = display_name.trim().slice(0, 60) || null;
     await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
   }
   if (bio !== undefined) await db.execute('UPDATE users SET bio=? WHERE id=?', [bio, req.user.id]);
   if (chat_muted !== undefined) await db.execute('UPDATE users SET chat_muted=? WHERE id=?', [chat_muted ? 1 : 0, req.user.id]);
+  if (has_mic !== undefined) {
+    await db.execute('UPDATE users SET has_mic=? WHERE id=?', [has_mic ? 1 : 0, req.user.id]);
+  }
   if (profile_banner !== undefined) {
     // Formato esperado: "ChampionKey_SkinNum" ex: "Xerath_1"
     const safe = typeof profile_banner === 'string' ? profile_banner.replace(/[^a-zA-Z0-9_]/g,'').slice(0,60) : null;
@@ -264,7 +267,7 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:id', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,lol_game_name,lol_tag_line,avatar_url,bio,main_champions,profile_banner,
+    `SELECT id,username,display_name,lol_game_name,lol_tag_line,avatar_url,bio,main_champions,profile_banner,has_mic,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,online_status
      FROM users WHERE id=?`, [req.params.id]

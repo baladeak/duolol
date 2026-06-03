@@ -28,6 +28,7 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(120) NULL`,
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `ALTER TABLE posts MODIFY COLUMN queue_type ENUM('SOLO','FLEX','BOTH','ARAM','ARENA') NOT NULL DEFAULT 'SOLO'`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS has_mic TINYINT(1) NOT NULL DEFAULT 0`,
   `CREATE TABLE IF NOT EXISTS profile_playlists (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,

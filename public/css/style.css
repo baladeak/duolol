@@ -3009,3 +3009,55 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-top:1px solid var(--border);
   margin-top:4px;
 }
+
+/* ── Microfone ──────────────────────────────── */
+.mic-toggle-row{
+  margin-bottom:14px;
+}
+
+.mic-toggle-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 16px;border-radius:9px;cursor:pointer;
+  font-size:13px;font-weight:600;font-family:'Exo 2',sans-serif;
+  background:var(--navy);border:1.5px solid var(--border-h);
+  color:var(--dim);transition:all .2s;
+}
+.mic-toggle-btn i{font-size:17px;transition:all .2s}
+.mic-toggle-btn:hover{border-color:var(--muted);color:var(--muted)}
+
+/* Estado ATIVO — tem microfone */
+.mic-toggle-btn.mic-on{
+  background:rgba(34,197,94,.1);
+  border-color:rgba(34,197,94,.5);
+  color:var(--green);
+}
+.mic-toggle-btn.mic-on i{
+  color:var(--green);
+}
+.mic-toggle-btn.mic-on:hover{
+  background:rgba(34,197,94,.18);
+}
+
+/* Ícone de mic no post do feed */
+.post-mic{
+  display:inline-flex;align-items:center;
+  color:var(--green);font-size:14px;
+  margin-left:2px;
+  animation:mic-glow 2.5s ease-in-out infinite;
+}
+@keyframes mic-glow{
+  0%,100%{opacity:1}
+  50%{opacity:.65}
+}
+.post-mic i{font-size:14px}
+
+/* Mic no header do perfil */
+.profile-mic-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;
+  color:var(--green);
+  background:rgba(34,197,94,.1);
+  border:1px solid rgba(34,197,94,.3);
+  border-radius:6px;padding:3px 9px;
+}
+.profile-mic-badge i{font-size:13px}

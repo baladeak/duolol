@@ -371,6 +371,7 @@ function postHTML(p) {
         <div class="post-top">
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
+          ${p.has_mic ? '<span class="post-mic" title="Tem microfone"><i class="ti ti-microphone"></i></span>' : ''}
           <span class="post-time">${timeAgo(p.created_at)}</span>
           <!-- Menu 3 pontos -->
           <div class="post-menu" style="margin-left:auto;position:relative">
@@ -1131,6 +1132,7 @@ function renderProfile(user, isMe) {
           <div class="profile-elos">
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
             <span class="elo ${eloClass(user.flex_tier)}">Flex ${flexLabel}</span>
+            ${user.has_mic ? '<span class="profile-mic-badge"><i class="ti ti-microphone"></i> Mic</span>' : ''}
           </div>
           ${userRoles.length ? `
           <div class="profile-roles">
@@ -1227,6 +1229,16 @@ function renderProfile(user, isMe) {
           </div>
 
           <textarea id="bio-textarea" class="bio-textarea" maxlength="300" placeholder="Conta quem você é: sua lane principal, estilo de jogo, horários, o que procura num duo...">${escapeHtml(user.bio || '')}</textarea>
+          <div class="mic-toggle-row">
+            <button type="button" id="mic-toggle-btn"
+              class="mic-toggle-btn ${user.has_mic ? 'mic-on' : ''}"
+              onclick="toggleMicEdit(this)"
+              title="Clique para ativar/desativar microfone">
+              <i class="ti ti-microphone${user.has_mic ? '' : '-off'}"></i>
+              <span id="mic-toggle-label">${user.has_mic ? 'Tenho microfone' : 'Sem microfone'}</span>
+            </button>
+          </div>
+
           <div class="bio-edit-foot">
             <span class="bio-char-count" id="bio-chars">${(user.bio||'').length}/300</span>
             <button class="btn-post" onclick="saveBio()">Salvar</button>
@@ -1692,8 +1704,10 @@ async function saveBio() {
     .filter(Boolean);
 
   try {
-    await api('/users/me', { method: 'PATCH', body: { bio, display_name, roles, main_champions } });
+    const has_mic = document.getElementById('mic-toggle-btn')?.classList.contains('mic-on') ? 1 : 0;
+    await api('/users/me', { method: 'PATCH', body: { bio, display_name, roles, main_champions, has_mic } });
     me.bio = bio;
+    me.has_mic = has_mic;
     me.display_name = display_name || null;
     localStorage.setItem('duoq_me', JSON.stringify(me));
     toast('✅ Perfil atualizado!');
@@ -1867,6 +1881,14 @@ function friendSidebarItemHTML(f) {
   </div>`;
 }
 
+
+function toggleMicEdit(btn) {
+  const isOn = btn.classList.toggle('mic-on');
+  const icon  = btn.querySelector('i');
+  const label = btn.querySelector('span');
+  icon.className  = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
+  label.textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
+}
 function toggleFriendsPanel() {
   const panel = $('s-friends-panel');
   if (panel) panel.classList.toggle('s-friends-body-collapsed');
