@@ -722,12 +722,19 @@ async function viewProfile(userId) {
 function renderProfile(user, isMe) {
   const soloLabel = eloLabel(user.solo_tier, user.solo_rank, user.solo_lp);
   const flexLabel = eloLabel(user.flex_tier, user.flex_rank, user.flex_lp);
+
   const avatarEl = isMe
-    ? `<div class="avatar-upload-wrap" onclick="triggerAvatarUpload()" title="Alterar foto">
-        ${avatarHTML(user, 'av-xl')}
+    ? `<div class="avatar-upload-wrap" onclick="triggerAvatarUpload()" title="Alterar foto de perfil">
+        ${avatarHTML(user, 'av-2xl')}
         <div class="avatar-upload-overlay"><i class="ti ti-camera"></i></div>
        </div>`
-    : avatarHTML(user, 'av-xl');
+    : avatarHTML(user, 'av-2xl');
+
+  const bioContent = user.bio
+    ? `<p class="profile-bio-text">${escapeHtml(user.bio)}</p>`
+    : isMe
+      ? `<p class="profile-bio-empty">Clique em editar para contar seu estilo de jogo, lane favorita e horários...</p>`
+      : `<p class="profile-bio-empty">Este jogador ainda não escreveu uma bio.</p>`;
 
   $('profile-content').innerHTML = `
     <div class="profile-banner">
@@ -736,51 +743,117 @@ function renderProfile(user, isMe) {
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(user.username)}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <div class="profile-elos">
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
             <span class="elo ${eloClass(user.flex_tier)}">Flex ${flexLabel}</span>
           </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          ${isMe
-            ? `<button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
-               <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5">Sair</button>`
-            : `<button class="btn-outline" onclick="addFriendById(${user.id},'${escapeHtml(user.username)}',this)">+ Adicionar</button>
-               <button class="btn-outline" onclick="openDM(${user.id},'${escapeHtml(user.username)}')" style="border-color:rgba(59,130,246,.4);color:#93C5FD">DM</button>`}
+          <div class="profile-stats">
+            <div class="pstat"><div class="pstat-num">${user.total_posts || 0}</div><div class="pstat-lbl">Posts</div></div>
+            <div class="pstat"><div class="pstat-num">${user.total_friends || 0}</div><div class="pstat-lbl">Amigos</div></div>
+            <div class="pstat"><div class="pstat-num">${user.total_likes_received || 0}</div><div class="pstat-lbl">Curtidas</div></div>
+          </div>
         </div>
       </div>
-      <div class="profile-stats">
-        <div><div class="pstat-num">${user.total_posts || 0}</div><div class="pstat-lbl">Posts</div></div>
-        <div><div class="pstat-num">${user.total_friends || 0}</div><div class="pstat-lbl">Amigos</div></div>
-        <div><div class="pstat-num">${user.total_likes_received || 0}</div><div class="pstat-lbl">Curtidas</div></div>
+      <div class="profile-actions">
+        ${isMe
+          ? `<button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
+             <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`
+          : `<button class="btn-outline" onclick="addFriendById(${user.id},'${escapeHtml(user.username)}',this)"><i class="ti ti-user-plus"></i> Adicionar</button>
+             <button class="btn-outline" style="border-color:rgba(64,128,255,.4);color:#93C5FD" onclick="openDM(${user.id},'${escapeHtml(user.username)}')"><i class="ti ti-message-2"></i> DM</button>`}
       </div>
     </div>
-    <div style="padding:16px 20px">
-      <div class="rp-title">Ranks</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-        <div class="rank-card">
-          <div class="rank-row"><span class="rank-label">Solo/Duo</span><span class="rank-val">${soloLabel}</span></div>
-          <div class="rank-row"><span class="rank-lp">${user.solo_wins||0}V ${user.solo_losses||0}D</span></div>
-          <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(user.solo_lp||0,100)}%;background:var(--gold)"></div></div>
+
+    <div class="profile-body">
+
+      <!-- Bio -->
+      <div class="profile-section">
+        <div class="profile-section-head">
+          <span class="profile-section-title"><i class="ti ti-user"></i> Sobre</span>
+          ${isMe ? `<button class="profile-edit-btn" onclick="toggleBioEdit(this)" data-editing="false"><i class="ti ti-pencil"></i> Editar</button>` : ''}
         </div>
-        <div class="rank-card">
-          <div class="rank-row"><span class="rank-label">Flex</span><span class="rank-val" style="color:#93C5FD">${flexLabel}</span></div>
-          <div class="rank-row"><span class="rank-lp">${user.flex_wins||0}V ${user.flex_losses||0}D</span></div>
-          <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(user.flex_lp||0,100)}%;background:var(--blue)"></div></div>
+        <div id="bio-display">${bioContent}</div>
+        ${isMe ? `
+        <div id="bio-edit" style="display:none">
+          <textarea id="bio-textarea" class="bio-textarea" maxlength="300" placeholder="Conta quem você é: sua lane principal, estilo de jogo, horários, o que procura num duo...">${escapeHtml(user.bio || '')}</textarea>
+          <div class="bio-edit-foot">
+            <span class="bio-char-count" id="bio-chars">${(user.bio||'').length}/300</span>
+            <button class="btn-post" onclick="saveBio()">Salvar</button>
+            <button class="btn-outline" onclick="cancelBioEdit()" style="padding:8px 14px;font-size:12px">Cancelar</button>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Ranks -->
+      <div class="profile-section">
+        <div class="profile-section-head">
+          <span class="profile-section-title"><i class="ti ti-trophy"></i> Ranked</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="rank-card">
+            <div class="rank-row"><span class="rank-label">Solo/Duo</span><span class="rank-val">${soloLabel}</span></div>
+            <div class="rank-row"><span class="rank-lp">${user.solo_wins||0}V ${user.solo_losses||0}D</span></div>
+            <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(user.solo_lp||0,100)}%;background:var(--gold)"></div></div>
+          </div>
+          <div class="rank-card">
+            <div class="rank-row"><span class="rank-label">Flex</span><span class="rank-val" style="color:#93C5FD">${flexLabel}</span></div>
+            <div class="rank-row"><span class="rank-lp">${user.flex_wins||0}V ${user.flex_losses||0}D</span></div>
+            <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(user.flex_lp||0,100)}%;background:var(--blue)"></div></div>
+          </div>
         </div>
       </div>
+
       ${user.roles?.length ? `
-        <div class="rp-title">Lanes</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div class="profile-section">
+        <div class="profile-section-head">
+          <span class="profile-section-title"><i class="ti ti-sword"></i> Lanes</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${user.roles.map(r => `<span class="tag tag-solo on" style="cursor:default">${r.role}</span>`).join('')}
-        </div>` : ''}
-      ${user.bio ? `
-        <div style="margin-top:16px">
-          <div class="rp-title">Bio</div>
-          <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-top:6px">${escapeHtml(user.bio)}</p>
-        </div>` : ''}
+        </div>
+      </div>` : ''}
+
     </div>`;
   renderSidebarRanks();
+}
+
+function toggleBioEdit(btn) {
+  const editing = btn.dataset.editing === 'true';
+  if (editing) {
+    cancelBioEdit();
+  } else {
+    btn.dataset.editing = 'true';
+    btn.innerHTML = '<i class="ti ti-x"></i> Cancelar';
+    document.getElementById('bio-display').style.display = 'none';
+    document.getElementById('bio-edit').style.display = 'block';
+    const ta = document.getElementById('bio-textarea');
+    ta.oninput = () => {
+      const c = document.getElementById('bio-chars');
+      if (c) c.textContent = ta.value.length + '/300';
+    };
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = ta.value.length;
+  }
+}
+
+function cancelBioEdit() {
+  const btn = document.querySelector('.profile-edit-btn');
+  if (btn) { btn.dataset.editing = 'false'; btn.innerHTML = '<i class="ti ti-pencil"></i> Editar'; }
+  const d = document.getElementById('bio-display');
+  const e = document.getElementById('bio-edit');
+  if (d) d.style.display = '';
+  if (e) e.style.display = 'none';
+}
+
+async function saveBio() {
+  const ta  = document.getElementById('bio-textarea');
+  const bio = ta?.value.trim() ?? '';
+  try {
+    await api('/users/me', { method: 'PATCH', body: { bio } });
+    me.bio = bio;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    toast('✅ Bio atualizada!');
+    loadMyProfile();
+  } catch { toast('❌ Erro ao salvar bio'); }
 }
 
 // ── Friends sidebar ────────────────────────────
