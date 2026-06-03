@@ -1168,7 +1168,13 @@ function renderProfile(user, isMe) {
       </div>
       <div class="profile-actions">
         ${isMe
-          ? `<button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
+          ? `<button id="mic-toggle-btn" type="button"
+               class="mic-toggle-btn ${user.has_mic ? 'mic-on' : ''}"
+               onclick="toggleMicSave(this)">
+               <i class="ti ti-microphone${user.has_mic ? '' : '-off'}"></i>
+               <span>${user.has_mic ? 'Tenho microfone' : 'Sem microfone'}</span>
+             </button>
+             <button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
              <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`
           : `<button class="btn-outline" style="border-color:rgba(64,128,255,.4);color:#93C5FD" onclick="openDM(${user.id},'${escapeHtml(dName(user))}')"><i class="ti ti-message-2"></i> Mensagem</button>
              ${user.is_friend
@@ -1229,16 +1235,6 @@ function renderProfile(user, isMe) {
           </div>
 
           <textarea id="bio-textarea" class="bio-textarea" maxlength="300" placeholder="Conta quem você é: sua lane principal, estilo de jogo, horários, o que procura num duo...">${escapeHtml(user.bio || '')}</textarea>
-          <div class="mic-toggle-row">
-            <button type="button" id="mic-toggle-btn"
-              class="mic-toggle-btn ${user.has_mic ? 'mic-on' : ''}"
-              onclick="toggleMicEdit(this)"
-              title="Clique para ativar/desativar microfone">
-              <i class="ti ti-microphone${user.has_mic ? '' : '-off'}"></i>
-              <span id="mic-toggle-label">${user.has_mic ? 'Tenho microfone' : 'Sem microfone'}</span>
-            </button>
-          </div>
-
           <div class="bio-edit-foot">
             <span class="bio-char-count" id="bio-chars">${(user.bio||'').length}/300</span>
             <button class="btn-post" onclick="saveBio()">Salvar</button>
@@ -1886,8 +1882,22 @@ function toggleMicEdit(btn) {
   const isOn = btn.classList.toggle('mic-on');
   const icon  = btn.querySelector('i');
   const label = btn.querySelector('span');
-  icon.className  = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
+  icon.className    = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
   label.textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
+}
+
+async function toggleMicSave(btn) {
+  const isOn = btn.classList.toggle('mic-on');
+  const icon  = btn.querySelector('i');
+  const label = btn.querySelector('span');
+  icon.className    = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
+  label.textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
+  try {
+    await api('/users/me', { method: 'PATCH', body: { has_mic: isOn ? 1 : 0 } });
+    me.has_mic = isOn ? 1 : 0;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    toast(isOn ? '🎙️ Microfone ativado!' : '🔇 Microfone desativado');
+  } catch { toast('Erro ao salvar'); }
 }
 function toggleFriendsPanel() {
   const panel = $('s-friends-panel');
@@ -2410,65 +2420,72 @@ async function loadFriendsInMessages() {
   if (!panel) return;
   try {
     const friends = await api('/users/me/friends');
-    if (!friends.length) {
-      panel.innerHTML = '';
-      panel.style.display = 'none';
-      return;
-    }
     panel.style.display = '';
+
     const online  = friends.filter(f => f.online_status === 'online' || f.online_status === 'away');
-    const offline = friends.filter(f => f.online_status === 'offline' || !f.online_status);
+    const offline = friends.filter(f => f.online_status !== 'online' && f.online_status !== 'away');
 
     panel.innerHTML = `
-      <div class="friends-msg-panel">
-        <div class="friends-msg-section">
-          <div class="friends-msg-label">
-            <span class="s-online-dot"></span> Online (${online.length})
-          </div>
-          <div class="friends-msg-list">
-            ${online.length
-              ? online.map(f => friendMsgItemHTML(f)).join('')
-              : '<div style="font-size:11.5px;color:var(--dim);padding:4px 8px">Nenhum amigo online agora</div>'}
-          </div>
+      <div class="social-panel">
+        <div class="social-panel-title">
+          <i class="ti ti-users"></i> Amigos
+          <span class="social-online-count">${online.length} online</span>
         </div>
-        <div class="friends-msg-section">
-          <div class="friends-msg-label">
-            <span class="s-offline-dot"></span> Offline (${offline.length})
-          </div>
-          <div class="friends-msg-list">
-            ${offline.length
-              ? offline.map(f => friendMsgItemHTML(f)).join('')
-              : ''}
-          </div>
+
+        ${online.length ? `
+        <div class="social-section-label">
+          <span class="social-dot online"></span> Online
         </div>
+        <div class="social-friends-list">
+          ${online.map(f => socialFriendHTML(f)).join('')}
+        </div>` : ''}
+
+        <div class="social-section-label" style="margin-top:${online.length ? 12 : 0}px">
+          <span class="social-dot offline"></span> Offline
+        </div>
+        <div class="social-friends-list">
+          ${offline.length
+            ? offline.map(f => socialFriendHTML(f)).join('')
+            : '<div class="social-empty">Nenhum amigo offline</div>'}
+        </div>
+
+        ${!friends.length ? '<div class="social-empty" style="margin-top:16px">Você ainda não tem amigos. Explore e adicione jogadores!</div>' : ''}
       </div>
-      <div class="friends-msg-divider">
-        <span>Conversas</span>
+
+      <div class="social-divider">
+        <i class="ti ti-message-2"></i> Conversas
       </div>`;
-  } catch {}
+  } catch {
+    const panel = $('friends-in-messages');
+    if (panel) panel.innerHTML = '';
+  }
 }
 
-function friendMsgItemHTML(f) {
-  const name = escapeHtml(f.display_name || f.username);
-  const nick = escapeHtml(f.lol_game_name) + '#' + escapeHtml(f.lol_tag_line);
-  return `<div class="friend-msg-item" onclick="viewProfile(${f.id})" title="Ver perfil">
-    <div style="position:relative;flex-shrink:0">
+function socialFriendHTML(f) {
+  const name    = escapeHtml(f.display_name || f.username);
+  const nick    = escapeHtml(f.lol_game_name) + '#' + escapeHtml(f.lol_tag_line);
+  const isAway  = f.online_status === 'away';
+  const isOnline= f.online_status === 'online';
+  const dotCls  = isOnline ? 'dot-online' : isAway ? 'dot-away' : 'dot-offline';
+  const statusText = isOnline ? 'Online' : isAway ? 'Ausente' : 'Offline';
+
+  return `<div class="social-friend-item" onclick="viewProfile(${f.id})" title="Ver perfil de ${name}">
+    <div class="social-friend-av" style="position:relative;flex-shrink:0">
       ${avatarHTML(f, 'av-md')}
     </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
-      <div style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nick}</div>
+    <div class="social-friend-info">
+      <div class="social-friend-name">${name}</div>
+      <div class="social-friend-status">
+        <span class="social-dot-sm ${dotCls}"></span>
+        ${statusText}
+      </div>
     </div>
-    <button onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')"
-            style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:15px;padding:4px 6px;border-radius:6px;flex-shrink:0;transition:.12s"
-            title="Abrir chat" onmouseover="this.style.color='var(--gold-l)'" onmouseout="this.style.color='var(--dim)'">
-      <i class="ti ti-message-2"></i>
+    <button class="social-chat-btn"
+            onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')"
+            title="Abrir conversa">
+      <i class="ti ti-message-circle"></i>
     </button>
   </div>`;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (token && me) {
-    bootApp();
-  }
-});
+;
