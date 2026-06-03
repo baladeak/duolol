@@ -1311,9 +1311,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   background:linear-gradient(135deg,var(--navy-h),var(--navy-c));
   background-size:cover;
   background-position:center 20%;
-  border-bottom:1px solid var(--border);
   flex-shrink:0;
-  overflow:hidden;
+  overflow:hidden; /* evita sangramento da imagem */
+  /* sem border-bottom aqui — ela fica no profile-body */
 }
 
 /* Gradiente para legibilidade: transparente no topo, escurece na metade inferior */
@@ -1487,35 +1487,68 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .profile-role-badge i{font-size:13px}
 
-/* Badges de campeões tier */
+/* Badges de campeões tier — com foto e contorno por posição */
 .profile-champs{
-  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;
 }
 
 .champ-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 12px;
-  background:var(--navy-c);
-  border:1px solid var(--border);
-  border-radius:8px;
-  font-size:12.5px;
-  transition:.15s;
+  position:relative;
+  width:62px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
 }
 
-.champ-badge:hover{border-color:var(--border-h)}
+/* Contorno dourado — 1º campeão */
+.champ-tier-1 .champ-portrait-wrap{
+  border-color:#f0ae07;
+  box-shadow:0 0 10px rgba(240,174,7,.55),0 0 20px rgba(240,174,7,.25);
+}
 
-.champ-tier{
-  width:20px;height:20px;
-  border-radius:50%;
-  background:var(--grad-gold);
-  color:var(--navy);
-  font-size:10px;
-  font-weight:900;
-  display:flex;align-items:center;justify-content:center;
+/* Contorno prateado — 2º campeão */
+.champ-tier-2 .champ-portrait-wrap{
+  border-color:#C0C0C0;
+  box-shadow:0 0 10px rgba(192,192,192,.5),0 0 20px rgba(192,192,192,.2);
+}
+
+/* Contorno bronzeado — 3º campeão */
+.champ-tier-3 .champ-portrait-wrap{
+  border-color:#CD7F32;
+  box-shadow:0 0 8px rgba(205,127,50,.45),0 0 16px rgba(205,127,50,.18);
+}
+
+.champ-portrait-wrap{
+  width:58px;height:58px;
+  border-radius:10px;
+  border:2px solid transparent;
+  overflow:hidden;
   flex-shrink:0;
+  background:var(--navy-c);
+  transition:.18s;
 }
 
-.champ-name{font-weight:600;color:var(--text)}
+.champ-portrait{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.champ-tier-label{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.5px;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:62px;
+}
+
+.champ-tier-1 .champ-tier-label{color:#f0ae07}
+.champ-tier-2 .champ-tier-label{color:#C8C8C8}
+.champ-tier-3 .champ-tier-label{color:#CD7F32}
 
 /* Seletor de rotas */
 .role-picker{

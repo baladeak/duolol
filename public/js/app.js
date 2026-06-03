@@ -1112,11 +1112,21 @@ function renderProfile(user, isMe) {
           </div>` : ''}
           ${champions.length ? `
           <div class="profile-champs">
-            ${champions.map((c, i) => `
-              <div class="champ-badge">
-                <span class="champ-tier">${i+1}</span>
-                <span class="champ-name">${escapeHtml(c)}</span>
-              </div>`).join('')}
+            ${champions.map((c, i) => {
+              const key = champKey(c);
+              const tierClass = ['champ-tier-1','champ-tier-2','champ-tier-3'][i];
+              const tierLabel = ['🥇 1º','🥈 2º','🥉 3º'][i];
+              return `
+              <div class="champ-badge ${tierClass}" title="${escapeHtml(c)}">
+                <div class="champ-portrait-wrap">
+                  <img class="champ-portrait"
+                    src="${portraitUrl(key)}"
+                    onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${key}.png'"
+                    alt="${escapeHtml(c)}" loading="lazy">
+                </div>
+                <span class="champ-tier-label">${tierLabel} ${escapeHtml(c)}</span>
+              </div>`;
+            }).join('')}
           </div>` : ''}
           <div class="profile-stats">
             <div class="pstat"><div class="pstat-num">${user.total_posts || 0}</div><div class="pstat-lbl">Posts</div></div>
