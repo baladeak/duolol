@@ -2976,3 +2976,36 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .friend-dm-btn{opacity:0;transition:opacity .15s}
 .friend-row:hover .friend-dm-btn{opacity:1}
 .friend-row:hover{background:var(--navy-h)}
+
+/* ── Amigos na página de Mensagens ──────────── */
+.friends-msg-panel{
+  padding:14px 16px 0;
+}
+.friends-msg-section{
+  margin-bottom:12px;
+}
+.friends-msg-label{
+  font-size:9px;font-weight:700;letter-spacing:1.5px;
+  color:var(--dim);text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;
+  padding:0 0 8px;
+}
+.friends-msg-list{
+  display:flex;flex-direction:column;gap:2px;
+}
+.friend-msg-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:9px;
+  cursor:pointer;transition:.12s;
+}
+.friend-msg-item:hover{
+  background:var(--navy-h);
+}
+.friends-msg-divider{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px 6px;
+  font-size:9px;font-weight:700;letter-spacing:1.5px;
+  color:var(--dim);text-transform:uppercase;
+  border-top:1px solid var(--border);
+  margin-top:4px;
+}

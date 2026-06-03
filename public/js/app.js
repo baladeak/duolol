@@ -366,7 +366,7 @@ function postHTML(p) {
   return `
   <div class="post-card" id="post-${p.id}">
     <div class="post-head">
-      ${avatarHTML(p, 'av-lg')}
+      <div onclick="viewProfile(${p.user_id})" style="cursor:pointer;flex-shrink:0" title="Ver perfil de ${escapeHtml(p.lol_game_name)}">${avatarHTML(p, 'av-lg')}</div>
       <div class="post-meta">
         <div class="post-top">
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
@@ -635,6 +635,10 @@ async function loadConversations() {
   const list = $('conv-list');
   list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   msgCount = 0; updateMsgBadge();
+
+  // Carregar amigos junto com as conversas
+  loadFriendsInMessages();
+
   try {
     const convs = await api('/messages');
     if (!convs.length) {
@@ -2376,6 +2380,70 @@ document.addEventListener('click', e => {
     closeGlobalSearch();
   }
 });
+
+
+// ── Amigos na aba de Mensagens ─────────────────
+async function loadFriendsInMessages() {
+  const panel = $('friends-in-messages');
+  if (!panel) return;
+  try {
+    const friends = await api('/users/me/friends');
+    if (!friends.length) {
+      panel.innerHTML = '';
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = '';
+    const online  = friends.filter(f => f.online_status === 'online' || f.online_status === 'away');
+    const offline = friends.filter(f => f.online_status === 'offline' || !f.online_status);
+
+    panel.innerHTML = `
+      <div class="friends-msg-panel">
+        <div class="friends-msg-section">
+          <div class="friends-msg-label">
+            <span class="s-online-dot"></span> Online (${online.length})
+          </div>
+          <div class="friends-msg-list">
+            ${online.length
+              ? online.map(f => friendMsgItemHTML(f)).join('')
+              : '<div style="font-size:11.5px;color:var(--dim);padding:4px 8px">Nenhum amigo online agora</div>'}
+          </div>
+        </div>
+        <div class="friends-msg-section">
+          <div class="friends-msg-label">
+            <span class="s-offline-dot"></span> Offline (${offline.length})
+          </div>
+          <div class="friends-msg-list">
+            ${offline.length
+              ? offline.map(f => friendMsgItemHTML(f)).join('')
+              : ''}
+          </div>
+        </div>
+      </div>
+      <div class="friends-msg-divider">
+        <span>Conversas</span>
+      </div>`;
+  } catch {}
+}
+
+function friendMsgItemHTML(f) {
+  const name = escapeHtml(f.display_name || f.username);
+  const nick = escapeHtml(f.lol_game_name) + '#' + escapeHtml(f.lol_tag_line);
+  return `<div class="friend-msg-item" onclick="viewProfile(${f.id})" title="Ver perfil">
+    <div style="position:relative;flex-shrink:0">
+      ${avatarHTML(f, 'av-md')}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+      <div style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nick}</div>
+    </div>
+    <button onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')"
+            style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:15px;padding:4px 6px;border-radius:6px;flex-shrink:0;transition:.12s"
+            title="Abrir chat" onmouseover="this.style.color='var(--gold-l)'" onmouseout="this.style.color='var(--dim)'">
+      <i class="ti ti-message-2"></i>
+    </button>
+  </div>`;
+}
 
 window.addEventListener('DOMContentLoaded', () => {
   if (token && me) {
