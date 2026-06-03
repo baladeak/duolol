@@ -25,6 +25,7 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_muted TINYINT(1) NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS main_champions JSON NULL`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(120) NULL`,
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `CREATE TABLE IF NOT EXISTS profile_playlists (
     id INT AUTO_INCREMENT PRIMARY KEY,

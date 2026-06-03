@@ -43,7 +43,8 @@ router.post('/login', async (req, res) => {
       lol_game_name: u.lol_game_name, lol_tag_line: u.lol_tag_line,
       solo_tier: u.solo_tier, solo_rank: u.solo_rank, solo_lp: u.solo_lp,
       flex_tier: u.flex_tier, flex_rank: u.flex_rank, flex_lp: u.flex_lp,
-      avatar_url: u.avatar_url, bio: u.bio, admin_role: u.admin_role, chat_muted: u.chat_muted
+      avatar_url: u.avatar_url, bio: u.bio, admin_role: u.admin_role,
+      chat_muted: u.chat_muted, profile_banner: u.profile_banner
     }});
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro interno' }); }
 });

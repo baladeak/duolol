@@ -850,6 +850,146 @@ function updateMsgBadge() {
   b.style.display = msgCount > 0 ? '' : 'none';
 }
 
+// ── Data Dragon — capa do perfil ──────────────
+let _ddragonVersion = '14.24.1';
+let _bannerSelection = null; // ex: { key:'Xerath', num:1, name:'Scorched Earth Xerath' }
+
+// Mapeia nomes de exibição → chave interna do DDragon
+const CHAMP_KEY_MAP = {
+  'Aurelion Sol':'AurelionSol','Bel\'Veth':'Belveth','Cho\'Gath':'Chogath',
+  'Dr. Mundo':'DrMundo','Jarvan IV':'JarvanIV','K\'Sante':'KSante',
+  'Kai\'Sa':'Kaisa','Kha\'Zix':'Khazix','Kog\'Maw':'KogMaw',
+  'LeBlanc':'Leblanc','Lee Sin':'LeeSin','Master Yi':'MasterYi',
+  'Miss Fortune':'MissFortune','Nunu & Willump':'Nunu','Rek\'Sai':'RekSai',
+  'Renata Glasc':'Renata','Tahm Kench':'TahmKench','Twisted Fate':'TwistedFate',
+  'Vel\'Koz':'Velkoz','Wukong':'MonkeyKing','Xin Zhao':'XinZhao',
+  'Aurelion Sol':'AurelionSol','Nunu & Willump':'Nunu',
+};
+
+function champKey(displayName) {
+  if (CHAMP_KEY_MAP[displayName]) return CHAMP_KEY_MAP[displayName];
+  return displayName.replace(/[\s'&.]/g,'').replace(/[^a-zA-Z0-9]/g,'');
+}
+
+function splashUrl(key, num) {
+  return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${key}_${num}.jpg`;
+}
+
+function tileUrl(key, num) {
+  return `https://ddragon.leagueoflegends.com/cdn/img/champion/tiles/${key}_${num}.jpg`;
+}
+
+function portraitUrl(key) {
+  return `https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${key}.png`;
+}
+
+async function fetchDDragonVersion() {
+  try {
+    const r = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+    const v = await r.json();
+    _ddragonVersion = v[0];
+  } catch {}
+}
+
+async function fetchChampSkins(key) {
+  try {
+    const r = await fetch(`https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/data/pt_BR/champion/${key}.json`);
+    const d = await r.json();
+    return d.data[Object.keys(d.data)[0]].skins;
+  } catch {
+    try {
+      const r = await fetch(`https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/data/en_US/champion/${key}.json`);
+      const d = await r.json();
+      return d.data[Object.keys(d.data)[0]].skins;
+    } catch { return []; }
+  }
+}
+
+// Abre o seletor de capa
+async function openBannerPicker() {
+  const modal = document.getElementById('banner-modal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _bannerSelection = null;
+  document.getElementById('banner-confirm-btn').disabled = true;
+  document.getElementById('banner-confirm-btn').style.opacity = '.5';
+  await fetchDDragonVersion();
+  renderBannerChampList(LOL_CHAMPIONS);
+}
+
+function closeBannerModal() {
+  document.getElementById('banner-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function filterBannerChamps(q) {
+  const filtered = q.trim()
+    ? LOL_CHAMPIONS.filter(c => c.toLowerCase().includes(q.toLowerCase()))
+    : LOL_CHAMPIONS;
+  renderBannerChampList(filtered);
+}
+
+function renderBannerChampList(champs) {
+  const list = document.getElementById('banner-champ-list');
+  list.innerHTML = champs.map(c => {
+    const key = champKey(c);
+    return `<div class="banner-champ-item" onclick="selectBannerChamp('${key}','${escapeHtml(c)}',this)">
+      <img src="${portraitUrl(key)}" class="banner-champ-portrait" onerror="this.style.display='none'" loading="lazy">
+      <span>${escapeHtml(c)}</span>
+    </div>`;
+  }).join('');
+}
+
+let _lastBannerChampEl = null;
+async function selectBannerChamp(key, displayName, el) {
+  if (_lastBannerChampEl) _lastBannerChampEl.classList.remove('active');
+  el.classList.add('active');
+  _lastBannerChampEl = el;
+
+  const panel = document.getElementById('banner-skin-panel');
+  panel.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando skins...</div>';
+
+  const skins = await fetchChampSkins(key);
+  if (!skins.length) {
+    panel.innerHTML = '<div class="empty"><p>Erro ao carregar skins</p></div>';
+    return;
+  }
+
+  panel.innerHTML = `
+    <div style="margin-bottom:12px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;color:var(--gold-l)">${escapeHtml(displayName)}</div>
+    <div class="banner-skin-grid">
+      ${skins.map(s => `
+        <div class="banner-skin-card" data-key="${key}" data-num="${s.num}" data-name="${escapeHtml(s.name==='default'?displayName:s.name)}"
+             onclick="selectBannerSkin(this)">
+          <img src="${tileUrl(key, s.num)}" class="banner-skin-thumb" loading="lazy"
+               onerror="this.style.display='none'">
+          <div class="banner-skin-label">${s.name==='default'?'Padrão':escapeHtml(s.name)}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function selectBannerSkin(el) {
+  document.querySelectorAll('.banner-skin-card.selected').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _bannerSelection = { key: el.dataset.key, num: parseInt(el.dataset.num), name: el.dataset.name };
+  const btn = document.getElementById('banner-confirm-btn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+}
+
+async function confirmBannerSelection() {
+  if (!_bannerSelection) return;
+  const banner = `${_bannerSelection.key}_${_bannerSelection.num}`;
+  try {
+    await api('/users/me', { method:'PATCH', body:{ profile_banner: banner } });
+    me.profile_banner = banner;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    closeBannerModal();
+    toast('✅ Capa atualizada!');
+    loadMyProfile();
+  } catch (err) { toast('❌ ' + (err?.error||'Erro ao salvar')); }
+}
+
 // ── Lista de campeões do LoL ───────────────────
 const LOL_CHAMPIONS = [
   'Aatrox','Ahri','Akali','Akshan','Alistar','Ambessa','Amumu','Anivia','Annie','Aphelios',
@@ -940,7 +1080,20 @@ function renderProfile(user, isMe) {
   // Carrega conteúdo do perfil em paralelo
   api('/profile/' + user.id).then(content => renderProfileContent(user.id, content, isMe)).catch(() => {});
 
+  // Monta URL da capa
+  const bannerVal = user.profile_banner || me?.profile_banner;
+  const bannerUrl = bannerVal
+    ? `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${bannerVal}.jpg`
+    : '';
+
   $('profile-content').innerHTML = `
+    <!-- Cover / Capa -->
+    <div class="profile-cover" id="profile-cover"
+         style="${bannerUrl ? `background-image:url('${bannerUrl}')` : ''}">
+      <div class="cover-gradient"></div>
+      ${isMe ? `<button class="cover-edit-btn" onclick="openBannerPicker()"><i class="ti ti-camera"></i> ${bannerUrl ? 'Alterar capa' : 'Adicionar capa'}</button>` : ''}
+    </div>
+
     <div class="profile-banner">
       <div class="profile-top">
         ${avatarEl}
