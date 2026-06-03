@@ -105,6 +105,20 @@
           <i class="ti ti-shield-lock"></i><span>Admin</span>
         </button>
       </nav>
+      <!-- Rank compacto + ações rápidas -->
+      <div class="s-rank-block">
+        <div class="s-section-title">Sua Rank</div>
+        <div id="s-rank-display">
+          <div class="s-rank-row"><span class="s-rank-label">Solo</span><span class="s-rank-val" id="s-solo-val">—</span></div>
+          <div class="s-rank-row"><span class="s-rank-label">Flex</span><span class="s-rank-val" id="s-flex-val" style="color:#93C5FD">—</span></div>
+        </div>
+        <div class="s-quick-btns">
+          <button class="s-quick-btn" onclick="syncElo()" title="Sincronizar Elo"><i class="ti ti-refresh"></i><span>Sync Elo</span></button>
+          <button class="s-quick-btn" onclick="loadPage('explore')" title="Encontrar Duo"><i class="ti ti-users"></i><span>Duo</span></button>
+          <button class="s-quick-btn s-quick-btn-red" onclick="logout()" title="Sair"><i class="ti ti-logout"></i><span>Sair</span></button>
+        </div>
+      </div>
+
       <div class="s-friends">
         <div class="s-section-title">Amigos Online</div>
         <div id="friends-online"></div>
@@ -213,30 +227,17 @@
 
     </div><!-- /main -->
 
-    <!-- Right Panel -->
-    <aside class="right-panel">
-      <div class="rp-section">
-        <div class="rp-title">Sua Rank</div>
-        <div id="rp-ranks">
-          <div class="rank-card">
-            <div class="rank-row"><span class="rank-label">Solo/Duo</span><span class="rank-val">—</span></div>
-          </div>
-          <div class="rank-card" style="margin-top:6px">
-            <div class="rank-row"><span class="rank-label">Flex</span><span class="rank-val" style="color:#93C5FD">—</span></div>
-          </div>
-        </div>
+    <!-- Right Panel — Chat ao vivo -->
+    <aside class="right-panel rp-chat">
+      <div class="rp-chat-head">
+        <span class="rp-chat-title"><i class="ti ti-messages"></i> Mensagens</span>
+        <span class="rp-chat-badge" id="rp-unread-total" style="display:none">0</span>
+        <button class="rp-chat-all" onclick="loadPage('messages')" title="Ver todas">
+          <i class="ti ti-external-link"></i>
+        </button>
       </div>
-      <div class="rp-section">
-        <div class="rp-title">Ações Rápidas</div>
-        <button onclick="syncElo()" class="btn-outline" style="width:100%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="ti ti-refresh"></i> Sincronizar Elo
-        </button>
-        <button onclick="loadPage('explore')" class="btn-outline" style="width:100%;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="ti ti-users"></i> Encontrar Duo
-        </button>
-        <button onclick="logout()" class="btn-outline" style="width:100%;border-color:rgba(239,68,68,.35);color:#FCA5A5;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="ti ti-logout"></i> Sair
-        </button>
+      <div class="rp-conv-list" id="rp-conv-list">
+        <div class="loading" style="padding:24px"><div class="spinner"></div></div>
       </div>
     </aside>
 

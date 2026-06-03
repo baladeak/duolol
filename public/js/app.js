@@ -197,6 +197,7 @@ function bootApp() {
   refreshMe();
   loadPage('feed');
   loadFriends();
+  loadRightPanelChats();
   loadNotifCount();
   loadMsgCount();
   pollOnlineCount();
@@ -262,15 +263,26 @@ function connectSocket() {
 }
 
 function onSocketMessage(msg) {
-  if (currentConvId && msg.conversation_id == currentConvId) {
-    appendBubble(msg, msg.sender_id == me?.id ? 'me' : 'them');
-    if (msg.sender_id != me?.id) playMsnSound(); // toca ao receber (não ao enviar)
-  } else {
-    msgCount++;
-    updateMsgBadge();
-    playMsnSound();
-    toast('💬 Nova mensagem recebida');
+  const isFromMe = msg.sender_id == me?.id;
+  const isCurrentConv = currentConvId && msg.conversation_id == currentConvId;
+
+  // Adiciona bolha se a conversa estiver aberta
+  if (isCurrentConv) {
+    appendBubble(msg, isFromMe ? 'me' : 'them');
   }
+
+  // Som e badge para mensagens de outros
+  if (!isFromMe) {
+    if (!isCurrentConv) {
+      msgCount++;
+      updateMsgBadge();
+      toast('💬 Nova mensagem de ' + (msg.sender_display_name || msg.sender_username || 'alguém'));
+    }
+    playMsnSound();
+  }
+
+  // Atualiza o painel de chat lateral em tempo real (sempre)
+  rpUpdateConv(msg);
 }
 
 function onSocketNotif(notif) {
@@ -625,6 +637,9 @@ function openConv(convId, partnerId, partnerName) {
 function openChatWindow(convId, partnerId, partnerName) {
   currentConvId      = convId;
   currentChatPartner = { id: partnerId, name: partnerName };
+  // Zera o unread no cache local e redesenha o painel
+  const c = rpConvCache.find(c => c.id == convId);
+  if (c) { c.unread_count = 0; renderRightPanelChats(rpConvCache); }
   $('chat-partner-name').textContent = partnerName;
   const av  = $('chat-av-header');
   const col = avatarColor(partnerName);
@@ -686,26 +701,99 @@ async function loadNotifications() {
       list.innerHTML = '<div class="empty"><i class="ti ti-bell-off"></i><p>Sem notificações</p></div>';
       return;
     }
-    const icons = {
-      POST_LIKE:'ti-heart', POST_COMMENT:'ti-message-2', COMMENT_REPLY:'ti-message-reply',
-      FRIEND_REQUEST:'ti-user-plus', FRIEND_ACCEPTED:'ti-user-check',
-      NEW_MESSAGE:'ti-send', DUO_INVITE:'ti-sword', ELO_UPDATE:'ti-trophy', SYSTEM:'ti-info-circle'
-    };
-    const texts = {
-      POST_LIKE:'curtiu seu post', POST_COMMENT:'comentou no seu post',
-      COMMENT_REPLY:'respondeu seu comentário', FRIEND_REQUEST:'enviou solicitação de amizade',
-      FRIEND_ACCEPTED:'aceitou sua solicitação', NEW_MESSAGE:'enviou uma mensagem',
-      DUO_INVITE:'te convidou para duo', ELO_UPDATE:'seu elo foi atualizado', SYSTEM:'mensagem do sistema'
-    };
-    list.innerHTML = notifs.map(n => `
-      <div class="notif-item ${n.is_read ? '' : 'unread'}">
-        <div class="notif-icon"><i class="ti ${icons[n.type] || 'ti-bell'}"></i></div>
-        <div>
-          <div class="notif-text">${n.actor_username ? `<strong>${escapeHtml(n.actor_username)}</strong> ` : ''}${texts[n.type] || n.type}</div>
-          <div class="notif-time">${timeAgo(n.created_at)}</div>
-        </div>
-      </div>`).join('');
+    list.innerHTML = notifs.map(n => notifItemHTML(n)).join('');
   } catch { list.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+function notifItemHTML(n) {
+  const icons = {
+    POST_LIKE:'ti-heart', POST_COMMENT:'ti-message-2', COMMENT_REPLY:'ti-message-reply',
+    FRIEND_REQUEST:'ti-user-plus', FRIEND_ACCEPTED:'ti-user-check',
+    NEW_MESSAGE:'ti-message', DUO_INVITE:'ti-sword', ELO_UPDATE:'ti-trophy', SYSTEM:'ti-info-circle'
+  };
+  const texts = {
+    POST_LIKE:'curtiu seu post', POST_COMMENT:'comentou no seu post',
+    COMMENT_REPLY:'respondeu seu comentário', FRIEND_REQUEST:'te enviou uma solicitação de amizade',
+    FRIEND_ACCEPTED:'aceitou sua solicitação de amizade', NEW_MESSAGE:'te enviou uma mensagem',
+    DUO_INVITE:'te convidou para duo', ELO_UPDATE:'Seu elo foi atualizado!', SYSTEM:'Mensagem do sistema'
+  };
+
+  const actorName = escapeHtml(n.actor_display_name || n.actor_username || '');
+  const icon = icons[n.type] || 'ti-bell';
+
+  // Ação ao clicar no item principal
+  let clickAction = '';
+  if (n.type === 'FRIEND_ACCEPTED' && n.actor_id)
+    clickAction = `onclick="viewProfile(${n.actor_id})"`;
+  else if ((n.type === 'POST_LIKE' || n.type === 'POST_COMMENT') && n.reference_id)
+    clickAction = `onclick="goToPost(${n.reference_id})"`;
+  else if (n.type === 'NEW_MESSAGE' && n.actor_id)
+    clickAction = `onclick="openDM(${n.actor_id},'${actorName}')"`;
+  else if (n.type === 'ELO_UPDATE')
+    clickAction = `onclick="loadPage('profile')"`;
+
+  const clickable = clickAction ? 'notif-clickable' : '';
+
+  // Botões de aceitar/recusar para solicitação pendente
+  const friendButtons = n.type === 'FRIEND_REQUEST' && n.actor_id ? `
+    <div class="notif-friend-btns" id="nfb-${n.id}">
+      <button class="notif-btn-accept" onclick="respondFriendRequest(${n.actor_id},'accept','${n.id}')">
+        <i class="ti ti-check"></i> Aceitar
+      </button>
+      <button class="notif-btn-decline" onclick="respondFriendRequest(${n.actor_id},'reject','${n.id}')">
+        <i class="ti ti-x"></i> Recusar
+      </button>
+    </div>` : '';
+
+  return `
+    <div class="notif-item ${n.is_read ? '' : 'unread'} ${clickable}" ${clickAction} id="notif-${n.id}">
+      <div class="notif-icon notif-icon-${n.type.toLowerCase()}">
+        <i class="ti ${icon}"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="notif-text">
+          ${actorName ? `<strong>${actorName}</strong> ` : ''}${texts[n.type] || n.type}
+        </div>
+        <div class="notif-time">${timeAgo(n.created_at)}</div>
+        ${friendButtons}
+      </div>
+      ${clickAction ? `<i class="ti ti-chevron-right" style="color:var(--dim);font-size:14px;flex-shrink:0"></i>` : ''}
+    </div>`;
+}
+
+async function respondFriendRequest(senderId, action, notifId) {
+  const btns = $('nfb-' + notifId);
+  if (btns) btns.innerHTML = '<span style="font-size:12px;color:var(--dim)">Processando...</span>';
+  try {
+    await api('/users/me/friend-request/respond', { method:'POST', body:{ sender_id: senderId, action } });
+    const notifEl = $('notif-' + notifId);
+    if (action === 'accept') {
+      if (btns) btns.innerHTML = '<span class="notif-status-ok"><i class="ti ti-user-check"></i> Amizade aceita!</span>';
+      toast('✅ Solicitação aceita!');
+      loadFriends(); // atualiza lista de amigos na sidebar
+    } else {
+      if (notifEl) notifEl.style.opacity = '0.4';
+      if (btns) btns.innerHTML = '<span style="font-size:12px;color:var(--dim)">Solicitação recusada</span>';
+      toast('Solicitação recusada');
+    }
+  } catch (err) {
+    if (btns) btns.innerHTML = '<span style="font-size:12px;color:var(--red)">' + (err.error || 'Erro') + '</span>';
+    toast('❌ ' + (err.error || 'Erro'));
+  }
+}
+
+function goToPost(postId) {
+  loadPage('feed');
+  // Aguarda o feed carregar e tenta rolar até o post
+  setTimeout(() => {
+    const el = $('post-' + postId);
+    if (el) {
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      el.style.outline = '2px solid var(--gold)';
+      el.style.outlineOffset = '3px';
+      setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 2500);
+    }
+  }, 800);
 }
 
 async function loadNotifCount() {
@@ -921,6 +1009,70 @@ async function loadFriends() {
   } catch {}
 }
 
+// ── Right panel — Chat ao vivo ──────────────────
+let rpConvCache = []; // cache local para updates em tempo real
+
+async function loadRightPanelChats() {
+  try {
+    const convs = await api('/messages');
+    rpConvCache = convs;
+    renderRightPanelChats(convs);
+  } catch {}
+}
+
+function renderRightPanelChats(convs) {
+  const list = $('rp-conv-list');
+  if (!list) return;
+
+  const totalUnread = convs.reduce((sum, c) => sum + (parseInt(c.unread_count) || 0), 0);
+  const badge = $('rp-unread-total');
+  if (badge) { badge.textContent = totalUnread; badge.style.display = totalUnread > 0 ? '' : 'none'; }
+
+  if (!convs.length) {
+    list.innerHTML = '<div style="padding:20px 14px;text-align:center;color:var(--dim);font-size:13px">Nenhuma conversa ainda</div>';
+    return;
+  }
+
+  list.innerHTML = convs.map(c => {
+    const col = avatarColor(c.username || 'U');
+    const letter = (c.display_name || c.username || 'U')[0].toUpperCase();
+    const unread = parseInt(c.unread_count) || 0;
+    const isOpen = currentConvId && currentConvId == c.id;
+    return `
+    <div class="rp-conv-item ${unread > 0 ? 'rp-conv-unread' : ''} ${isOpen ? 'rp-conv-active' : ''}"
+         id="rp-conv-${c.id}"
+         onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.display_name || c.username)}')">
+      <div class="rp-conv-av-wrap">
+        <div class="av av-sm" style="width:36px;height:36px;font-size:14px;background:${col};color:#0E0E12">${letter}
+          <div class="status-dot ${c.online_status === 'online' ? 'dot-online' : 'dot-offline'}"></div>
+        </div>
+        ${unread > 0 && !isOpen ? `<span class="rp-conv-badge">${unread}</span>` : ''}
+      </div>
+      <div class="rp-conv-info">
+        <div class="rp-conv-name">${escapeHtml(c.display_name || c.username)}</div>
+        <div class="rp-conv-last">${escapeHtml(c.last_message || '...')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Atualiza um item do painel sem recarregar tudo
+function rpUpdateConv(msg) {
+  const idx = rpConvCache.findIndex(c => c.id == msg.conversation_id);
+  const isFromMe = msg.sender_id == me?.id;
+
+  if (idx >= 0) {
+    rpConvCache[idx].last_message = msg.content;
+    if (!isFromMe && currentConvId != msg.conversation_id) {
+      rpConvCache[idx].unread_count = (parseInt(rpConvCache[idx].unread_count) || 0) + 1;
+    }
+    // Move para o topo
+    const [conv] = rpConvCache.splice(idx, 1);
+    rpConvCache.unshift(conv);
+  }
+  renderRightPanelChats(rpConvCache);
+}
+
 function updateFriendStatus(userId, status) {
   const el = $('friend-' + userId);
   if (!el) return;
@@ -937,21 +1089,15 @@ async function addFriend(userId, btn) {
   } catch (err) { toast(err.error || 'Erro ao adicionar'); }
 }
 
-// ── Sidebar ranks ──────────────────────────────
+// ── Sidebar ranks (agora no sidebar esquerdo) ──
 function renderSidebarRanks() {
-  const el = $('rp-ranks');
-  if (!el || !me) return;
+  if (!me) return;
   const soloLabel = eloLabel(me.solo_tier, me.solo_rank, me.solo_lp);
   const flexLabel = eloLabel(me.flex_tier, me.flex_rank, me.flex_lp);
-  el.innerHTML = `
-    <div class="rank-card">
-      <div class="rank-row"><span class="rank-label">Solo/Duo</span><span class="rank-val">${soloLabel}</span></div>
-      <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(me.solo_lp||0,100)}%;background:var(--gold)"></div></div>
-    </div>
-    <div class="rank-card" style="margin-top:6px">
-      <div class="rank-row"><span class="rank-label">Flex</span><span class="rank-val" style="color:#93C5FD">${flexLabel}</span></div>
-      <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(me.flex_lp||0,100)}%;background:var(--blue)"></div></div>
-    </div>`;
+  const sv = $('s-solo-val');
+  const fv = $('s-flex-val');
+  if (sv) sv.textContent = soloLabel;
+  if (fv) fv.textContent = flexLabel;
 }
 
 // ── Avatar upload ──────────────────────────────

@@ -67,10 +67,32 @@ router.post('/me/friend-request', auth, async (req, res) => {
   const { receiver_id } = req.body;
   if (receiver_id == req.user.id) return res.status(400).json({ error: 'Não pode adicionar a si mesmo' });
   try {
-    await db.execute('INSERT IGNORE INTO friend_requests (sender_id,receiver_id) VALUES (?,?)', [req.user.id, receiver_id]);
-    await db.execute('INSERT INTO notifications (user_id,actor_id,type) VALUES (?,?,?)', [receiver_id, req.user.id, 'FRIEND_REQUEST']);
+    const [fr] = await db.execute('INSERT IGNORE INTO friend_requests (sender_id,receiver_id) VALUES (?,?)', [req.user.id, receiver_id]);
+    const frId = fr.insertId || null;
+    await db.execute('INSERT INTO notifications (user_id,actor_id,type,reference_id) VALUES (?,?,?,?)', [receiver_id, req.user.id, 'FRIEND_REQUEST', frId]);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: 'Erro' }); }
+});
+
+// Responder por sender_id (usado pelas notificações)
+router.post('/me/friend-request/respond', auth, async (req, res) => {
+  const { sender_id, action } = req.body;
+  const [fr] = await db.execute(
+    'SELECT * FROM friend_requests WHERE sender_id=? AND receiver_id=? AND status="PENDING" LIMIT 1',
+    [sender_id, req.user.id]
+  );
+  if (!fr.length) return res.status(404).json({ error: 'Solicitação não encontrada' });
+  const req_ = fr[0];
+  if (action === 'accept') {
+    await db.execute('UPDATE friend_requests SET status="ACCEPTED" WHERE id=?', [req_.id]);
+    const a = Math.min(req_.sender_id, req_.receiver_id);
+    const b = Math.max(req_.sender_id, req_.receiver_id);
+    await db.execute('INSERT IGNORE INTO friendships (user_a_id,user_b_id) VALUES (?,?)', [a, b]);
+    await db.execute('INSERT INTO notifications (user_id,actor_id,type) VALUES (?,?,?)', [req_.sender_id, req.user.id, 'FRIEND_ACCEPTED']);
+  } else {
+    await db.execute('UPDATE friend_requests SET status="REJECTED" WHERE id=?', [req_.id]);
+  }
+  res.json({ ok: true });
 });
 
 router.patch('/me/friend-request/:id', auth, async (req, res) => {

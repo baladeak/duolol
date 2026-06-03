@@ -5,7 +5,7 @@ const auth   = require('../middleware/auth');
 router.get('/', auth, async (req, res) => {
   const [rows] = await db.execute(
     `SELECT n.id,n.type,n.reference_id,n.body,n.is_read,n.created_at,
-            u.id AS actor_id,u.username AS actor_username,u.avatar_url AS actor_avatar
+            u.id AS actor_id,u.username AS actor_username,u.display_name AS actor_display_name,u.avatar_url AS actor_avatar
      FROM notifications n LEFT JOIN users u ON u.id=n.actor_id
      WHERE n.user_id=? ORDER BY n.created_at DESC LIMIT 50`,
     [req.user.id]

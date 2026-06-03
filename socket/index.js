@@ -38,7 +38,13 @@ module.exports = (io) => {
           [conversation_id, uid, content.trim()]);
         await db.execute('UPDATE conversations SET last_msg_at=NOW() WHERE id=?', [conversation_id]);
         const receiverId = conv[0].user_a_id === uid ? conv[0].user_b_id : conv[0].user_a_id;
-        const msg = { id: r.insertId, conversation_id, sender_id: uid, content: content.trim(), created_at: new Date() };
+        // Inclui display_name do sender para o painel lateral atualizar o nome corretamente
+        const [senderRows] = await db.execute('SELECT username, display_name FROM users WHERE id=?', [uid]);
+        const sender = senderRows[0] || {};
+        const msg = {
+          id: r.insertId, conversation_id, sender_id: uid, content: content.trim(), created_at: new Date(),
+          sender_username: sender.username, sender_display_name: sender.display_name
+        };
         // Emite para os dois lados — o frontend NÃO adiciona otimisticamente
         socket.emit('new_message', msg);
         const rs = online.get(receiverId);
