@@ -18,6 +18,7 @@ app.use(express.json());
 // Migração automática — adiciona colunas novas sem quebrar o banco existente
 const db = require('./db/connection');
 const migrations = [
+  `ALTER TABLE users MODIFY COLUMN avatar_url MEDIUMTEXT NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,

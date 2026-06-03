@@ -13,6 +13,15 @@ let msgCount   = 0;
 // ── Helpers ────────────────────────────────────
 const $ = id => document.getElementById(id);
 
+// Som de notificação MSN
+function playMsnSound() {
+  try {
+    const audio = new Audio('/sounds/msn.wav');
+    audio.volume = 0.6;
+    audio.play().catch(() => {}); // ignora bloqueio de autoplay
+  } catch {}
+}
+
 function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -255,9 +264,11 @@ function connectSocket() {
 function onSocketMessage(msg) {
   if (currentConvId && msg.conversation_id == currentConvId) {
     appendBubble(msg, msg.sender_id == me?.id ? 'me' : 'them');
+    if (msg.sender_id != me?.id) playMsnSound(); // toca ao receber (não ao enviar)
   } else {
     msgCount++;
     updateMsgBadge();
+    playMsnSound();
     toast('💬 Nova mensagem recebida');
   }
 }
@@ -959,22 +970,37 @@ function triggerAvatarUpload() {
   inp.click();
 }
 
+// Comprime e redimensiona a imagem no cliente (max 300x300, jpeg 0.82)
+// Resultado: base64 ~30-60KB — persiste no banco, nunca some em redeploy
+function compressImage(file, maxPx = 300, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function uploadAvatar() {
   const inp = document.getElementById('avatar-file-input');
   if (!inp?.files?.length) return;
   const file = inp.files[0];
-  if (file.size > 3 * 1024 * 1024) { toast('Imagem muito grande. Máximo 3MB.'); return; }
+  if (file.size > 10 * 1024 * 1024) { toast('Imagem muito grande. Máximo 10MB.'); return; }
 
-  toast('⏳ Enviando foto...');
-  const form = new FormData();
-  form.append('avatar', file);
-
+  toast('⏳ Processando foto...');
   try {
-    const headers = {};
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-    const r = await fetch('/api/users/me/avatar', { method: 'POST', headers, body: form });
-    const data = await r.json();
-    if (!r.ok) throw data;
+    const image = await compressImage(file);
+    const data  = await api('/users/me/avatar', { method: 'POST', body: { image } });
 
     me.avatar_url = data.avatar_url;
     localStorage.setItem('duoq_me', JSON.stringify(me));
