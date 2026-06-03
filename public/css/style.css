@@ -1463,8 +1463,10 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .profile-nick{
   font-size:13px;
-  color:var(--dim);
+  color:#ffffff;
   margin-bottom:10px;
+  text-shadow:0 0 10px rgba(64,128,255,.8),0 0 22px rgba(64,128,255,.4);
+  font-weight:600;
 }
 
 .profile-elos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
