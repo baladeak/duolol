@@ -190,10 +190,22 @@ function updateMyAvatar() {
   if (!me) return;
   const el = $('my-avatar-feed');
   if (!el) return;
-  const col    = avatarColor(me.username || 'U');
-  const letter = (me.username || 'U')[0].toUpperCase();
-  el.style.background = col;
-  el.textContent      = letter;
+  if (me.avatar_url) {
+    el.innerHTML = '';
+    el.style.background = 'transparent';
+    el.style.padding = '0';
+    el.style.overflow = 'hidden';
+    const img = document.createElement('img');
+    img.src = me.avatar_url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+    el.appendChild(img);
+  } else {
+    el.innerHTML = '';
+    const col    = avatarColor(me.username || 'U');
+    const letter = (me.username || 'U')[0].toUpperCase();
+    el.style.background = col;
+    el.textContent      = letter;
+  }
 }
 
 async function refreshMe() {
@@ -710,10 +722,17 @@ async function viewProfile(userId) {
 function renderProfile(user, isMe) {
   const soloLabel = eloLabel(user.solo_tier, user.solo_rank, user.solo_lp);
   const flexLabel = eloLabel(user.flex_tier, user.flex_rank, user.flex_lp);
+  const avatarEl = isMe
+    ? `<div class="avatar-upload-wrap" onclick="triggerAvatarUpload()" title="Alterar foto">
+        ${avatarHTML(user, 'av-xl')}
+        <div class="avatar-upload-overlay"><i class="ti ti-camera"></i></div>
+       </div>`
+    : avatarHTML(user, 'av-xl');
+
   $('profile-content').innerHTML = `
     <div class="profile-banner">
       <div class="profile-top">
-        ${avatarHTML(user, 'av-xl')}
+        ${avatarEl}
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(user.username)}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
@@ -817,6 +836,48 @@ function renderSidebarRanks() {
       <div class="rank-row"><span class="rank-label">Flex</span><span class="rank-val" style="color:#93C5FD">${flexLabel}</span></div>
       <div class="rank-bar"><div class="rank-fill" style="width:${Math.min(me.flex_lp||0,100)}%;background:var(--blue)"></div></div>
     </div>`;
+}
+
+// ── Avatar upload ──────────────────────────────
+function triggerAvatarUpload() {
+  let inp = document.getElementById('avatar-file-input');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file';
+    inp.id = 'avatar-file-input';
+    inp.accept = 'image/jpeg,image/png,image/webp,image/gif';
+    inp.style.display = 'none';
+    inp.onchange = uploadAvatar;
+    document.body.appendChild(inp);
+  }
+  inp.value = '';
+  inp.click();
+}
+
+async function uploadAvatar() {
+  const inp = document.getElementById('avatar-file-input');
+  if (!inp?.files?.length) return;
+  const file = inp.files[0];
+  if (file.size > 3 * 1024 * 1024) { toast('Imagem muito grande. Máximo 3MB.'); return; }
+
+  toast('⏳ Enviando foto...');
+  const form = new FormData();
+  form.append('avatar', file);
+
+  try {
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const r = await fetch('/api/users/me/avatar', { method: 'POST', headers, body: form });
+    const data = await r.json();
+    if (!r.ok) throw data;
+
+    me.avatar_url = data.avatar_url;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    toast('✅ Foto atualizada!');
+    loadMyProfile();
+  } catch (err) {
+    toast('❌ ' + (err.error || 'Erro ao enviar foto'));
+  }
 }
 
 // ── Sync Elo ───────────────────────────────────

@@ -1,13 +1,52 @@
 const router = require('express').Router();
 const axios  = require('axios');
+const path   = require('path');
+const fs     = require('fs');
+const multer = require('multer');
 const db     = require('../db/connection');
 const auth   = require('../middleware/auth');
+
+const AVATARS_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
+if (!fs.existsSync(AVATARS_DIR)) fs.mkdirSync(AVATARS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, AVATARS_DIR),
+  filename:    (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `${req.user.id}_${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg','image/jpg','image/png','image/webp','image/gif'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
 
 const RIOT_KEY = () => process.env.RIOT_API_KEY;
 const REGION   = () => process.env.RIOT_REGION || 'br1';
 
 const n = v => (v === undefined || v === null || v === '') ? null : v;
 const i = v => parseInt(v) || 0;
+
+router.post('/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Arquivo inválido. Use JPG, PNG ou WebP (máx 3MB).' });
+
+  // Remove avatar anterior se for local
+  const [rows] = await db.execute('SELECT avatar_url FROM users WHERE id=?', [req.user.id]);
+  const old = rows[0]?.avatar_url;
+  if (old && old.startsWith('/uploads/')) {
+    const oldPath = path.join(__dirname, '..', 'public', old);
+    fs.unlink(oldPath, () => {});
+  }
+
+  const url = '/uploads/avatars/' + req.file.filename;
+  await db.execute('UPDATE users SET avatar_url=? WHERE id=?', [url, req.user.id]);
+  res.json({ avatar_url: url });
+});
 
 router.get('/stats/online', auth, async (req, res) => {
   const [r] = await db.execute(

@@ -1099,6 +1099,39 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .btn-outline.added{border-color:var(--green);color:var(--green)}
 
 
+/* ── Avatar upload ────────────────────────────── */
+.avatar-upload-wrap{
+  position:relative;
+  cursor:pointer;
+  flex-shrink:0;
+}
+
+.avatar-upload-wrap .av-xl{
+  transition:.2s;
+}
+
+.avatar-upload-wrap:hover .av-xl{
+  filter:brightness(.6);
+}
+
+.avatar-upload-overlay{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transition:.2s;
+  font-size:20px;
+  color:#fff;
+  pointer-events:none;
+}
+
+.avatar-upload-wrap:hover .avatar-upload-overlay{
+  opacity:1;
+}
+
 /* ── Explore ──────────────────────────────────── */
 
 .explore-grid{
