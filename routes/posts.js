@@ -8,8 +8,14 @@ router.get('/', auth, async (req, res) => {
   try {
     let where = 'p.is_deleted=0', params = [req.user.id];
     if (queue && queue !== 'all') {
-      where += ' AND (p.queue_type=? OR p.queue_type="BOTH")';
-      params.push(queue.toUpperCase());
+      const q = queue.toUpperCase();
+      // ARAM e ARENA são exclusivos — não entram no BOTH (Solo+Flex)
+      if (q === 'ARAM' || q === 'ARENA') {
+        where += ' AND p.queue_type=?';
+      } else {
+        where += ' AND (p.queue_type=? OR p.queue_type="BOTH")';
+      }
+      params.push(q);
     }
     const [posts] = await db.execute(
       `SELECT p.id,p.content,p.queue_type,p.created_at,p.solo_tier_snapshot,p.flex_tier_snapshot,

@@ -397,8 +397,13 @@ function postHTML(p) {
     </div>
     <div class="post-body">${escapeHtml(p.content)}</div>
     <div style="margin-bottom:8px">
-      <span class="tag ${p.queue_type==='FLEX' ? 'tag-flex on' : 'tag-solo on'}" style="cursor:default;pointer-events:none">
-        ${p.queue_type==='FLEX' ? 'Flex' : p.queue_type==='BOTH' ? 'Solo + Flex' : 'Solo/Duo'}
+      <span class="tag ${
+        p.queue_type==='FLEX'  ? 'tag-flex on'  :
+        p.queue_type==='ARAM'  ? 'tag-aram on'  :
+        p.queue_type==='ARENA' ? 'tag-arena on' :
+        'tag-solo on'
+      }" style="cursor:default;pointer-events:none">
+        ${ p.queue_type==='FLEX' ? 'Flex' : p.queue_type==='ARAM' ? 'ARAM' : p.queue_type==='ARENA' ? 'Arena' : p.queue_type==='BOTH' ? 'Solo + Flex' : 'Solo/Duo' }
       </span>
     </div>
     <div class="post-actions">
@@ -1100,7 +1105,8 @@ function renderProfile(user, isMe) {
   api('/profile/' + user.id).then(content => renderProfileContent(user.id, content, isMe)).catch(() => {});
 
   // Monta URL da capa
-  const bannerVal = user.profile_banner || me?.profile_banner;
+  // Cada perfil tem sua própria capa — não usar fallback do usuário logado
+  const bannerVal = user.profile_banner || null;
   const bannerUrl = bannerVal
     ? `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${bannerVal}.jpg`
     : '';
@@ -2248,6 +2254,69 @@ async function adminSetRole(userId, role) {
 }
 
 // ── Init ───────────────────────────────────────
+
+// ── Pesquisa global de invocadores ────────────────────
+let _searchTimer = null;
+
+function openGlobalSearch() {
+  const bar = $('global-search-bar');
+  bar.classList.add('open');
+  setTimeout(() => $('global-search-input').focus(), 50);
+  $('global-search-clear').style.display = '';
+}
+
+function closeGlobalSearch() {
+  const bar = $('global-search-bar');
+  bar.classList.remove('open');
+  $('global-search-input').value = '';
+  $('global-search-results').innerHTML = '';
+  $('global-search-clear').style.display = 'none';
+}
+
+function onGlobalSearch(q) {
+  clearTimeout(_searchTimer);
+  const results = $('global-search-results');
+  if (!q.trim()) { results.innerHTML = ''; return; }
+  results.innerHTML = '<div class="gs-empty"><div class="spinner" style="margin:0 auto"></div></div>';
+  _searchTimer = setTimeout(() => runGlobalSearch(q), 350);
+}
+
+async function runGlobalSearch(q) {
+  const results = $('global-search-results');
+  try {
+    const users = await api('/users?q=' + encodeURIComponent(q) + '&limit=8');
+    if (!users.length) {
+      results.innerHTML = '<div class="gs-empty">Nenhum invocador encontrado</div>';
+      return;
+    }
+    results.innerHTML = users.map(u => `
+      <div class="gs-result" onclick="closeGlobalSearch();viewProfile(${u.id})">
+        ${avatarHTML(u, 'av-md')}
+        <div class="gs-result-info">
+          <div class="gs-result-name">${escapeHtml(u.display_name || u.username)}</div>
+          <div class="gs-result-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
+          <div class="gs-result-elos">
+            <span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier, u.solo_rank, u.solo_lp)}</span>
+            <span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier, u.flex_rank, u.flex_lp)}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center">
+          <div class="status-dot ${u.online_status==='online'?'dot-online':u.online_status==='away'?'dot-away':'dot-offline'}" style="position:static;border:none;width:9px;height:9px"></div>
+        </div>
+      </div>`).join('');
+  } catch {
+    results.innerHTML = '<div class="gs-empty">Erro ao buscar</div>';
+  }
+}
+
+// Fechar ao clicar fora
+document.addEventListener('click', e => {
+  const bar = $('global-search-bar');
+  if (bar?.classList.contains('open') && !bar.contains(e.target) && e.target.id !== 'btn-open-search') {
+    closeGlobalSearch();
+  }
+});
+
 window.addEventListener('DOMContentLoaded', () => {
   if (token && me) {
     bootApp();
