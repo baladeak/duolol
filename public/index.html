@@ -386,18 +386,47 @@
   <!-- Corpo (colapsa ao minimizar) -->
   <div id="queue-body">
 
-    <!-- Filtro de fila -->
-    <div class="queue-filters">
-      <button class="queue-filter-btn on" data-q="all"   onclick="setQueueFilter('all',this)">Todos</button>
-      <button class="queue-filter-btn"    data-q="SOLO"  onclick="setQueueFilter('SOLO',this)">Solo/Duo</button>
-      <button class="queue-filter-btn"    data-q="FLEX"  onclick="setQueueFilter('FLEX',this)">Flex</button>
-      <button class="queue-filter-btn"    data-q="ARAM"  onclick="setQueueFilter('ARAM',this)">ARAM</button>
-      <button class="queue-filter-btn"    data-q="ARENA" onclick="setQueueFilter('ARENA',this)">Arena</button>
+    <!-- Abas: Jogadores / Chat -->
+    <div class="queue-tabs">
+      <button class="queue-tab on" id="qtab-players" onclick="switchQueueTab('players')">
+        <i class="ti ti-users"></i> Jogadores
+      </button>
+      <button class="queue-tab" id="qtab-chat" onclick="switchQueueTab('chat')">
+        <i class="ti ti-message-2"></i> Chat da Fila
+        <span class="queue-chat-badge" id="queue-chat-badge" style="display:none">!</span>
+      </button>
     </div>
 
-    <!-- Lista de jogadores na fila -->
-    <div class="queue-list" id="queue-list">
-      <div class="queue-empty">Nenhum jogador na fila agora</div>
+    <!-- Painel: Jogadores -->
+    <div id="queue-tab-players" class="queue-tab-panel">
+      <!-- Filtros -->
+      <div class="queue-filters">
+        <button class="queue-filter-btn on" data-q="all"   onclick="setQueueFilter('all',this)">Todos</button>
+        <button class="queue-filter-btn"    data-q="SOLO"  onclick="setQueueFilter('SOLO',this)">Solo/Duo</button>
+        <button class="queue-filter-btn"    data-q="FLEX"  onclick="setQueueFilter('FLEX',this)">Flex</button>
+        <button class="queue-filter-btn"    data-q="ARAM"  onclick="setQueueFilter('ARAM',this)">ARAM</button>
+        <button class="queue-filter-btn"    data-q="ARENA" onclick="setQueueFilter('ARENA',this)">Arena</button>
+      </div>
+      <!-- Lista -->
+      <div class="queue-list" id="queue-list">
+        <div class="queue-empty">Nenhum jogador na fila agora</div>
+      </div>
+    </div>
+
+    <!-- Painel: Chat -->
+    <div id="queue-tab-chat" class="queue-tab-panel" style="display:none;flex-direction:column;flex:1;min-height:0">
+      <div class="queue-chat-msgs" id="queue-chat-msgs">
+        <div class="queue-chat-info">💬 Chat da fila — só quem está na fila pode enviar mensagens</div>
+      </div>
+      <div class="queue-chat-input-row">
+        <input id="queue-chat-input" class="queue-chat-input"
+               placeholder="Mensagem para a fila..."
+               maxlength="300"
+               onkeydown="if(event.key==='Enter')sendQueueChat()">
+        <button class="queue-chat-send" onclick="sendQueueChat()">
+          <i class="ti ti-send"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Botão entrar/sair da fila -->

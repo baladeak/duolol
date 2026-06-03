@@ -289,8 +289,10 @@ function connectSocket() {
   socket = io({ auth: { token }, transports: ['websocket', 'polling'] });
   socket.on('connect',      () => console.log('🔌 Socket conectado'));
   socket.on('new_message',  onSocketMessage);
-  socket.on('notification',   onSocketNotif);
-  socket.on('queue_update',   onQueueUpdate);
+  socket.on('notification',      onSocketNotif);
+  socket.on('queue_update',      onQueueUpdate);
+  socket.on('queue_chat_msg',    onQueueChatMsg);
+  socket.on('queue_chat_history',onQueueChatHistory);
   socket.on('friend_online',({ user_id, status }) => updateFriendStatus(user_id, status));
   socket.on('connect_error', err => console.warn('Socket error:', err.message));
 }
@@ -2526,6 +2528,9 @@ function openQueuePanel() {
   $('queue-overlay').classList.add('open');
   $('queue-fab').style.display = 'none';
   loadQueueList();
+  updateQueueChatInput();
+  // Pedir histórico do chat
+  if (socket) socket.emit('queue_chat_history');
 }
 
 function closeQueuePanel() {
@@ -2587,6 +2592,8 @@ async function joinQueue() {
     startQueueTimer();
 
     toast('🟢 Você entrou na fila de ' + queueTypeLabel(queueType) + '!');
+    updateQueueChatInput();
+    if (socket) socket.emit('queue_chat_history');
     loadQueueList();
   } catch (err) {
     toast('Erro ao entrar na fila');
@@ -2610,6 +2617,7 @@ async function leaveQueue() {
     _queueJoinedAt = null;
 
     toast('⬜ Você saiu da fila');
+    updateQueueChatInput();
     loadQueueList();
   } catch {}
 }
@@ -2753,6 +2761,106 @@ async function checkQueueStatus() {
   } catch {}
 }
 
+
+
+// ── Chat da Fila ──────────────────────────────────
+let _currentQueueTab = 'players';
+let _queueChatUnread  = 0;
+
+function switchQueueTab(tab) {
+  _currentQueueTab = tab;
+  // Abas
+  document.querySelectorAll('.queue-tab').forEach(t => t.classList.remove('on'));
+  const activeTab = $('qtab-' + tab);
+  if (activeTab) activeTab.classList.add('on');
+  // Painéis
+  const players = $('queue-tab-players');
+  const chat    = $('queue-tab-chat');
+  if (players) players.style.display = tab === 'players' ? '' : 'none';
+  if (chat)    chat.style.display    = tab === 'chat'    ? 'flex' : 'none';
+
+  if (tab === 'chat') {
+    _queueChatUnread = 0;
+    const badge = $('queue-chat-badge');
+    if (badge) badge.style.display = 'none';
+    // Pedir histórico
+    if (socket) socket.emit('queue_chat_history');
+    // Focar no input
+    setTimeout(() => $('queue-chat-input')?.focus(), 50);
+  }
+}
+
+function sendQueueChat() {
+  const input = $('queue-chat-input');
+  if (!input || !input.value.trim()) return;
+  if (!_inQueue) { toast('⚠️ Entre na fila para enviar mensagens'); return; }
+  const content = input.value.trim();
+  input.value = '';
+  if (socket) socket.emit('queue_chat', { content });
+}
+
+function appendQueueChatMsg(msg) {
+  const container = $('queue-chat-msgs');
+  if (!container) return;
+  const isMe = msg.sender_id == me?.id;
+
+  const div = document.createElement('div');
+  div.className = 'queue-chat-bubble' + (isMe ? ' me' : '');
+
+  const avColor = avatarColor ? avatarColor(msg.sender_name || 'U') : '#C8963E';
+  const letter  = (msg.sender_name || 'U')[0].toUpperCase();
+  const avHTML  = msg.avatar_url
+    ? `<img src="${msg.avatar_url}" class="av av-sm" style="object-fit:cover">`
+    : `<div class="av av-sm" style="background:${avColor};color:#0A0E1A">${letter}</div>`;
+
+  div.innerHTML = `
+    <div class="queue-chat-av">${avHTML}</div>
+    <div class="queue-chat-body">
+      ${!isMe ? `<div class="queue-chat-name">${escapeHtml(msg.sender_name || '')}</div>` : ''}
+      <div class="queue-chat-text">${escapeHtml(msg.content)}</div>
+    </div>`;
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function onQueueChatMsg(msg) {
+  // Se aba de chat não está aberta, mostrar badge
+  if (_currentQueueTab !== 'chat' || !$('queue-panel')?.classList.contains('open')) {
+    _queueChatUnread++;
+    const badge = $('queue-chat-badge');
+    if (badge) { badge.textContent = _queueChatUnread; badge.style.display = ''; }
+  }
+  appendQueueChatMsg(msg);
+  // Tocar som suave
+  if (msg.sender_id !== me?.id) playQueueSound();
+}
+
+function onQueueChatHistory(msgs) {
+  const container = $('queue-chat-msgs');
+  if (!container) return;
+  // Manter só o aviso inicial
+  const info = container.querySelector('.queue-chat-info');
+  container.innerHTML = '';
+  if (info) container.appendChild(info);
+  msgs.forEach(m => appendQueueChatMsg(m));
+}
+
+// Atualizar estado do input do chat baseado se está na fila
+function updateQueueChatInput() {
+  const input  = $('queue-chat-input');
+  const sendBtn = $('queue-chat-send') || document.querySelector('.queue-chat-send');
+  if (!input) return;
+  if (_inQueue) {
+    input.disabled = false;
+    input.placeholder = 'Mensagem para a fila...';
+    if (sendBtn) sendBtn.disabled = false;
+  } else {
+    input.disabled = true;
+    input.placeholder = 'Entre na fila para enviar mensagens';
+    if (sendBtn) sendBtn.disabled = true;
+  }
+}
 
 // ── Inicialização ─────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
