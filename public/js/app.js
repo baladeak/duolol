@@ -1293,7 +1293,7 @@ async function uploadScreenshot() {
   }
   const file = inp.files[0];
   toast('⏳ Comprimindo imagem...');
-  const image = await compressImage(file, 1200, 0.85);
+  const image = await compressImage(file, 900, 0.80);
   const caption = $('ss-caption')?.value.trim() || '';
   const item = await api('/profile/me/screenshot', { method:'POST', body:{image, caption} });
   if (_profileContentCache) _profileContentCache.screenshots.unshift(item);

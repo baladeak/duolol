@@ -48,7 +48,7 @@ router.delete('/me/gameplay/:id', auth, async (req, res) => {
 router.post('/me/screenshot', auth, async (req, res) => {
   const { image, caption } = req.body;
   if (!image || !image.startsWith('data:image/')) return res.status(400).json({ error: 'Imagem inválida' });
-  if (image.length > 3 * 1024 * 1024) return res.status(400).json({ error: 'Imagem muito grande' });
+  if (image.length > 10 * 1024 * 1024) return res.status(400).json({ error: 'Imagem muito grande. Máximo 10MB.' });
   // Máximo 12 screenshots por usuário
   const [count] = await db.execute('SELECT COUNT(*) AS n FROM profile_screenshots WHERE user_id=?', [req.user.id]);
   if (count[0].n >= 12) return res.status(400).json({ error: 'Máximo 12 screenshots por perfil' });
