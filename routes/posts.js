@@ -13,7 +13,7 @@ router.get('/', auth, async (req, res) => {
     }
     const [posts] = await db.execute(
       `SELECT p.id,p.content,p.queue_type,p.created_at,p.solo_tier_snapshot,p.flex_tier_snapshot,
-              u.id AS user_id,u.username,u.lol_game_name,u.lol_tag_line,u.avatar_url,
+              u.id AS user_id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
               u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status,
               (SELECT COUNT(*) FROM post_likes l WHERE l.post_id=p.id) AS total_likes,
               (SELECT COUNT(*) FROM post_comments c WHERE c.post_id=p.id AND c.is_deleted=0) AS total_comments,
@@ -40,7 +40,7 @@ router.post('/', auth, async (req, res) => {
       [req.user.id, content.trim(), (queue_type||'SOLO').toUpperCase(), soloSnap, flexSnap]
     );
     const [post] = await db.execute(
-      `SELECT p.*,u.username,u.lol_game_name,u.lol_tag_line,u.avatar_url,u.online_status,
+      `SELECT p.*,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,u.online_status,
               u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp
        FROM posts p JOIN users u ON u.id=p.user_id WHERE p.id=?`,
       [r.insertId]

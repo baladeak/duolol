@@ -65,6 +65,11 @@ function avatarHTML(user, size = 'av-md') {
   return `<div class="av ${size}" style="background:${col};color:#0A0E1A">${letter}<div class="status-dot ${dotCls}"></div></div>`;
 }
 
+// Nome público: display_name se existir, fallback para username
+function dName(user) {
+  return (user.display_name || user.username || '').trim();
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -101,6 +106,7 @@ async function register(e) {
       method: 'POST',
       body: {
         username:      $('reg-username').value.trim(),
+        display_name:  $('reg-display-name').value.trim(),
         email:         $('reg-email').value.trim(),
         password:      $('reg-password').value,
         lol_game_name: $('reg-lol-name').value.trim(),
@@ -313,7 +319,7 @@ function postHTML(p) {
       <div class="post-meta">
         <div class="post-top">
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
-          <span class="post-nick">${escapeHtml(p.username)}</span>
+          <span class="post-nick">${escapeHtml(dName(p))}</span>
           <span class="post-time">${timeAgo(p.created_at)}</span>
         </div>
         <div class="post-elos">
@@ -527,7 +533,7 @@ function renderPlayerGrid(users) {
       </div>
       <div class="pc-body">
         <div class="pc-top">
-          <div class="pc-name">${escapeHtml(u.username)}</div>
+          <div class="pc-name">${escapeHtml(dName(u))}</div>
           <div class="pc-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
         </div>
         <div class="pc-elos">
@@ -741,7 +747,7 @@ function renderProfile(user, isMe) {
       <div class="profile-top">
         ${avatarEl}
         <div class="profile-info">
-          <div class="profile-name">${escapeHtml(user.username)}</div>
+          <div class="profile-name">${escapeHtml(dName(user))}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
           <div class="profile-elos">
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
@@ -774,6 +780,12 @@ function renderProfile(user, isMe) {
         <div id="bio-display">${bioContent}</div>
         ${isMe ? `
         <div id="bio-edit" style="display:none">
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label" style="font-size:10px">Nome de exibição</label>
+            <input id="displayname-input" class="form-input" type="text" maxlength="60"
+              placeholder="Como você quer ser chamado no feed"
+              value="${escapeHtml(user.display_name || '')}">
+          </div>
           <textarea id="bio-textarea" class="bio-textarea" maxlength="300" placeholder="Conta quem você é: sua lane principal, estilo de jogo, horários, o que procura num duo...">${escapeHtml(user.bio || '')}</textarea>
           <div class="bio-edit-foot">
             <span class="bio-char-count" id="bio-chars">${(user.bio||'').length}/300</span>
@@ -845,15 +857,16 @@ function cancelBioEdit() {
 }
 
 async function saveBio() {
-  const ta  = document.getElementById('bio-textarea');
-  const bio = ta?.value.trim() ?? '';
+  const bio = document.getElementById('bio-textarea')?.value.trim() ?? '';
+  const display_name = document.getElementById('displayname-input')?.value.trim() ?? '';
   try {
-    await api('/users/me', { method: 'PATCH', body: { bio } });
+    await api('/users/me', { method: 'PATCH', body: { bio, display_name } });
     me.bio = bio;
+    me.display_name = display_name || null;
     localStorage.setItem('duoq_me', JSON.stringify(me));
-    toast('✅ Bio atualizada!');
+    toast('✅ Perfil atualizado!');
     loadMyProfile();
-  } catch { toast('❌ Erro ao salvar bio'); }
+  } catch { toast('❌ Erro ao salvar'); }
 }
 
 // ── Friends sidebar ────────────────────────────

@@ -43,7 +43,13 @@
     <form id="register-form" onsubmit="register(event)" style="display:none">
       <div class="form-group">
         <label class="form-label">Nome de usuário</label>
-        <input id="reg-username" class="form-input" type="text" placeholder="SeuNickAqui" required maxlength="30">
+        <input id="reg-username" class="form-input" type="text" placeholder="SeuLoginAqui" required maxlength="30">
+        <div class="form-hint">Usado para login — não aparece no feed</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome de exibição</label>
+        <input id="reg-display-name" class="form-input" type="text" placeholder="Como você quer ser chamado" maxlength="60">
+        <div class="form-hint">Nome público que aparece no feed e no perfil</div>
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>

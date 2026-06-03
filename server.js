@@ -15,6 +15,10 @@ const io     = new Server(server, { cors: { origin: '*' } });
 app.use(cors());
 app.use(express.json());
 
+// Migração automática — adiciona colunas novas sem quebrar o banco existente
+const db = require('./db/connection');
+db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`).catch(()=>{});
+
 // Health check ANTES de tudo — EasyPanel usa isso para saber se o app está vivo
 app.get('/health', (_, res) => res.json({ status: 'ok', ts: new Date() }));
 

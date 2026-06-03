@@ -4,17 +4,18 @@ const jwt     = require('jsonwebtoken');
 const db      = require('../db/connection');
 
 router.post('/register', async (req, res) => {
-  const { username, email, password, lol_game_name, lol_tag_line } = req.body;
+  const { username, email, password, lol_game_name, lol_tag_line, display_name } = req.body;
   if (!username || !email || !password || !lol_game_name || !lol_tag_line)
     return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
   try {
     const hash = await bcrypt.hash(password, 12);
+    const dn = (display_name || '').trim() || null;
     const [r] = await db.execute(
-      'INSERT INTO users (username,email,password_hash,lol_game_name,lol_tag_line) VALUES (?,?,?,?,?)',
-      [username.trim(), email.trim().toLowerCase(), hash, lol_game_name.trim(), lol_tag_line.trim()]
+      'INSERT INTO users (username,display_name,email,password_hash,lol_game_name,lol_tag_line) VALUES (?,?,?,?,?,?)',
+      [username.trim(), dn, email.trim().toLowerCase(), hash, lol_game_name.trim(), lol_tag_line.trim()]
     );
     const token = jwt.sign({ id: r.insertId, username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: r.insertId, username, lol_game_name, lol_tag_line } });
+    res.status(201).json({ token, user: { id: r.insertId, username, display_name: dn, lol_game_name, lol_tag_line } });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Usuário ou email já cadastrado' });
     console.error(err);
@@ -37,10 +38,11 @@ router.post('/login', async (req, res) => {
     await db.execute('UPDATE users SET online_status=?,last_seen_at=NOW() WHERE id=?', ['online', u.id]);
     const token = jwt.sign({ id: u.id, username: u.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: {
-      id: u.id, username: u.username, lol_game_name: u.lol_game_name,
-      lol_tag_line: u.lol_tag_line, solo_tier: u.solo_tier, solo_rank: u.solo_rank,
-      solo_lp: u.solo_lp, flex_tier: u.flex_tier, flex_rank: u.flex_rank,
-      flex_lp: u.flex_lp, avatar_url: u.avatar_url, bio: u.bio
+      id: u.id, username: u.username, display_name: u.display_name,
+      lol_game_name: u.lol_game_name, lol_tag_line: u.lol_tag_line,
+      solo_tier: u.solo_tier, solo_rank: u.solo_rank, solo_lp: u.solo_lp,
+      flex_tier: u.flex_tier, flex_rank: u.flex_rank, flex_lp: u.flex_lp,
+      avatar_url: u.avatar_url, bio: u.bio
     }});
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro interno' }); }
 });

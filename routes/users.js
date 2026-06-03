@@ -59,7 +59,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,email,lol_game_name,lol_tag_line,avatar_url,bio,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -79,7 +79,7 @@ router.get('/me', auth, async (req, res) => {
 
 router.get('/me/friends', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT u.id,u.username,u.lol_game_name,u.lol_tag_line,u.avatar_url,
+    `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
             u.solo_tier,u.solo_rank,u.flex_tier,u.flex_rank,u.online_status,u.last_seen_at
      FROM friendships f
      JOIN users u ON u.id=IF(f.user_a_id=?,f.user_b_id,f.user_a_id)
@@ -118,7 +118,11 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles } = req.body;
+  const { bio, roles, display_name } = req.body;
+  if (display_name !== undefined) {
+    const dn = display_name.trim().slice(0, 60) || null;
+    await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
+  }
   if (bio !== undefined) await db.execute('UPDATE users SET bio=? WHERE id=?', [bio, req.user.id]);
   if (Array.isArray(roles)) {
     await db.execute('DELETE FROM user_roles WHERE user_id=?', [req.user.id]);
@@ -198,7 +202,7 @@ router.get('/', auth, async (req, res) => {
   if (q) { where += ' AND (u.username LIKE ? OR u.lol_game_name LIKE ?)'; params.push(`%${q}%`,`%${q}%`); }
   if (tier) { where += ` AND u.${queue==='FLEX'?'flex_tier':'solo_tier'}=?`; params.push(tier.toUpperCase()); }
   const [users] = await db.execute(
-    `SELECT u.id,u.username,u.lol_game_name,u.lol_tag_line,u.avatar_url,
+    `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
             u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status
      FROM users u WHERE ${where}
      ORDER BY u.online_status='online' DESC,u.updated_at DESC LIMIT 20 OFFSET ${offset}`,
@@ -209,7 +213,7 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:id', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,lol_game_name,lol_tag_line,avatar_url,bio,
+    `SELECT id,username,display_name,lol_game_name,lol_tag_line,avatar_url,bio,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,online_status
      FROM users WHERE id=?`, [req.params.id]
