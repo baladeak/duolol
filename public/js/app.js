@@ -1045,31 +1045,76 @@ function switchProfileTab(tab, scroll = true) {
   if (scroll) box.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
+// ── Modal de adicionar ─────────────────────────
+let _addModalAction = null;
+
+function openAddModal(title, icon, bodyHTML, onConfirm) {
+  $('add-modal-title').innerHTML = `<i class="ti ti-${icon}"></i> ${title}`;
+  $('add-modal-body').innerHTML = bodyHTML;
+  _addModalAction = onConfirm;
+  const modal = $('add-modal');
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Foca no primeiro input
+  setTimeout(() => modal.querySelector('input, textarea, select')?.focus(), 80);
+}
+
+function closeAddModal() {
+  $('add-modal').classList.remove('open');
+  document.body.style.overflow = '';
+  _addModalAction = null;
+}
+
+async function confirmAddModal() {
+  if (!_addModalAction) return;
+  const btn = $('add-modal-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try {
+    await _addModalAction();
+    closeAddModal();
+  } catch {}
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-check"></i> Adicionar';
+}
+
+// Fecha com ESC
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAddModal(); });
+
 // ── Playlists ──────────────────────────────────
 function renderPlaylists(items, isMe) {
-  const addBtn = isMe ? `
-    <div class="ptab-add-form" id="playlist-form" style="display:none">
-      <div class="ptab-form-grid">
-        <input class="form-input" id="pl-title" placeholder="Título da playlist" maxlength="120">
-        <input class="form-input" id="pl-genre" placeholder="Gênero (ex: Lo-fi, Rock)" maxlength="60">
-        <select class="form-input" id="pl-platform">
-          <option value="youtube">YouTube</option>
-          <option value="spotify">Spotify</option>
-        </select>
-        <input class="form-input" id="pl-url" placeholder="Link do YouTube ou Spotify" maxlength="500">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-post" onclick="addPlaylist()"><i class="ti ti-plus"></i> Adicionar</button>
-        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('playlist-form').style.display='none'">Cancelar</button>
-      </div>
-    </div>
-    <button class="ptab-add-btn" onclick="$('playlist-form').style.display=$('playlist-form').style.display==='none'?'block':'none'">
-      <i class="ti ti-plus"></i> Adicionar Playlist
-    </button>` : '';
+  const addBtn = isMe
+    ? `<div class="ptab-header"><button class="ptab-add-btn" onclick="openAddPlaylistModal()"><i class="ti ti-plus"></i> Adicionar Playlist</button></div>`
+    : '';
 
-  if (!items.length) return `<div class="ptab-empty"><i class="ti ti-playlist"></i><p>${isMe ? 'Adicione suas playlists favoritas para jogar!' : 'Nenhuma playlist ainda.'}</p></div>${addBtn}`;
+  if (!items.length) return `${addBtn}<div class="ptab-empty"><i class="ti ti-playlist"></i><p>${isMe ? 'Adicione suas playlists favoritas para jogar!' : 'Nenhuma playlist ainda.'}</p></div>`;
 
   return `${addBtn}<div class="ptab-playlist-list">${items.map(p => playlistCard(p, isMe)).join('')}</div>`;
+}
+
+function openAddPlaylistModal() {
+  openAddModal('Adicionar Playlist', 'playlist', `
+    <div class="ptab-form-grid">
+      <div class="form-group">
+        <label class="form-label">Título</label>
+        <input class="form-input" id="pl-title" placeholder="Ex: Lo-fi para rankeada" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gênero <span style="color:var(--dim)">(opcional)</span></label>
+        <input class="form-input" id="pl-genre" placeholder="Ex: Lo-fi, Rock, Eletrônico" maxlength="60">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plataforma</label>
+        <select class="form-input" id="pl-platform">
+          <option value="youtube">🎬 YouTube</option>
+          <option value="spotify">🎵 Spotify</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link</label>
+        <input class="form-input" id="pl-url" placeholder="Cole o link do YouTube ou Spotify" maxlength="500">
+      </div>
+    </div>`, addPlaylist);
 }
 
 function playlistCard(p, isMe) {
@@ -1132,24 +1177,27 @@ async function deletePlaylist(id) {
 
 // ── Gameplays ──────────────────────────────────
 function renderGameplays(items, isMe) {
-  const addBtn = isMe ? `
-    <div class="ptab-add-form" id="gameplay-form" style="display:none">
-      <div class="ptab-form-grid">
-        <input class="form-input" id="gp-title" placeholder="Título do vídeo" maxlength="120">
-        <input class="form-input" id="gp-url" placeholder="Link do YouTube" maxlength="500">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-post" onclick="addGameplay()"><i class="ti ti-plus"></i> Adicionar</button>
-        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('gameplay-form').style.display='none'">Cancelar</button>
-      </div>
-    </div>
-    <button class="ptab-add-btn" onclick="$('gameplay-form').style.display=$('gameplay-form').style.display==='none'?'block':'none'">
-      <i class="ti ti-plus"></i> Adicionar Gameplay
-    </button>` : '';
+  const addBtn = isMe
+    ? `<div class="ptab-header"><button class="ptab-add-btn" onclick="openAddGameplayModal()"><i class="ti ti-plus"></i> Adicionar Gameplay</button></div>`
+    : '';
 
-  if (!items.length) return `<div class="ptab-empty"><i class="ti ti-device-gamepad-2"></i><p>${isMe ? 'Adicione seus melhores vídeos de gameplay!' : 'Nenhuma gameplay ainda.'}</p></div>${addBtn}`;
+  if (!items.length) return `${addBtn}<div class="ptab-empty"><i class="ti ti-device-gamepad-2"></i><p>${isMe ? 'Adicione seus melhores vídeos de gameplay!' : 'Nenhuma gameplay ainda.'}</p></div>`;
 
   return `${addBtn}<div class="ptab-video-grid">${items.map(g => gameplayCard(g, isMe)).join('')}</div>`;
+}
+
+function openAddGameplayModal() {
+  openAddModal('Adicionar Gameplay', 'device-gamepad-2', `
+    <div class="ptab-form-grid">
+      <div class="form-group">
+        <label class="form-label">Título do vídeo</label>
+        <input class="form-input" id="gp-title" placeholder="Ex: Pentakill no Diamond - Mid Lane" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link do YouTube</label>
+        <input class="form-input" id="gp-url" placeholder="https://youtube.com/watch?v=..." maxlength="500">
+      </div>
+    </div>`, addGameplay);
 }
 
 function gameplayCard(g, isMe) {
@@ -1191,11 +1239,9 @@ async function deleteGameplay(id) {
 
 // ── Screenshots ────────────────────────────────
 function renderScreenshots(items, isMe) {
-  const addBtn = isMe ? `
-    <label class="ptab-add-btn" style="cursor:pointer">
-      <i class="ti ti-upload"></i> Upload Screenshot
-      <input type="file" accept="image/*" style="display:none" onchange="uploadScreenshot(event)">
-    </label>` : '';
+  const addBtn = isMe
+    ? `<div class="ptab-header"><button class="ptab-add-btn" onclick="openAddScreenshotModal()"><i class="ti ti-upload"></i> Upload Screenshot</button></div>`
+    : '';
 
   if (!items.length) return `<div class="ptab-empty"><i class="ti ti-camera"></i><p>${isMe ? 'Adicione suas melhores screenshots de partidas!' : 'Nenhum screenshot ainda.'}</p></div>${addBtn}`;
 
@@ -1211,18 +1257,46 @@ function screenshotCard(s, isMe) {
   </div>`;
 }
 
-async function uploadScreenshot(e) {
+function openAddScreenshotModal() {
+  openAddModal('Adicionar Screenshot', 'camera', `
+    <div class="ptab-form-grid">
+      <div class="form-group">
+        <label class="form-label">Imagem <span style="color:var(--muted)">(JPG, PNG, WebP)</span></label>
+        <label class="ss-upload-area" id="ss-upload-label">
+          <i class="ti ti-cloud-upload" style="font-size:32px;color:var(--dim)"></i>
+          <span style="font-size:13px;color:var(--muted);margin-top:6px">Clique para selecionar</span>
+          <input type="file" id="ss-file-input" accept="image/*" style="display:none" onchange="previewScreenshot(event)">
+        </label>
+        <img id="ss-preview" style="display:none;width:100%;border-radius:9px;margin-top:10px;max-height:200px;object-fit:cover" alt="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Legenda <span style="color:var(--dim)">(opcional)</span></label>
+        <input class="form-input" id="ss-caption" placeholder="Ex: Pentakill no Diamond!" maxlength="200">
+      </div>
+    </div>`, uploadScreenshot);
+}
+
+function previewScreenshot(e) {
   const file = e.target.files[0];
   if (!file) return;
-  toast('⏳ Processando imagem...');
-  try {
-    const image = await compressImage(file, 1200, 0.85);
-    const caption = prompt('Legenda (opcional):') || '';
-    const item = await api('/profile/me/screenshot', { method:'POST', body:{image, caption} });
-    _profileContentCache.screenshots.unshift(item);
-    switchProfileTab('screenshots', false);
-    toast('✅ Screenshot adicionada!');
-  } catch (err) { toast('❌ ' + (err.error||'Erro ao enviar')); }
+  const prev = $('ss-preview');
+  const label = $('ss-upload-label');
+  prev.src = URL.createObjectURL(file);
+  prev.style.display = 'block';
+  label.style.display = 'none';
+}
+
+async function uploadScreenshot() {
+  const inp = $('ss-file-input');
+  if (!inp?.files?.length) { toast('Selecione uma imagem'); throw new Error('no file'); }
+  const file = inp.files[0];
+  toast('⏳ Processando...');
+  const image = await compressImage(file, 1200, 0.85);
+  const caption = $('ss-caption')?.value.trim() || '';
+  const item = await api('/profile/me/screenshot', { method:'POST', body:{image, caption} });
+  _profileContentCache.screenshots.unshift(item);
+  switchProfileTab('screenshots', false);
+  toast('✅ Screenshot adicionada!');
 }
 
 async function deleteScreenshot(id) {
@@ -1257,38 +1331,42 @@ function renderSocialsTab(socials, isMe) {
       ${!ig && !tt && !yt ? `<div class="ptab-empty"><i class="ti ti-at"></i><p>${isMe ? 'Adicione suas redes sociais!' : 'Nenhuma rede social.'}</p></div>` : ''}
     </div>`;
 
-  const editForm = isMe ? `
-    <div class="ptab-add-form" id="socials-form" style="display:none">
-      <div class="ptab-form-grid">
-        <div class="social-input-wrap"><i class="ti ti-brand-instagram social-input-icon" style="color:#E1306C"></i>
-          <input class="form-input" id="soc-ig" placeholder="@seu_instagram" value="${escapeHtml(ig)}" maxlength="120"></div>
-        <div class="social-input-wrap"><i class="ti ti-brand-tiktok social-input-icon" style="color:#fff"></i>
-          <input class="form-input" id="soc-tt" placeholder="@seu_tiktok" value="${escapeHtml(tt)}" maxlength="120"></div>
-        <div class="social-input-wrap"><i class="ti ti-brand-youtube social-input-icon" style="color:#FF0000"></i>
-          <input class="form-input" id="soc-yt" placeholder="@seu_youtube ou link" value="${escapeHtml(yt)}" maxlength="200"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-post" onclick="saveSocials()"><i class="ti ti-check"></i> Salvar</button>
-        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('socials-form').style.display='none'">Cancelar</button>
-      </div>
-    </div>
-    <button class="ptab-add-btn" onclick="$('socials-form').style.display=$('socials-form').style.display==='none'?'block':'none'">
-      <i class="ti ti-pencil"></i> Editar Redes Sociais
-    </button>` : '';
+  const editBtn = isMe
+    ? `<div class="ptab-header"><button class="ptab-add-btn" onclick="openEditSocialsModal()"><i class="ti ti-pencil"></i> Editar Redes Sociais</button></div>`
+    : '';
 
-  return editForm + viewLinks;
+  return editBtn + viewLinks;
+}
+
+function openEditSocialsModal() {
+  const s = _profileContentCache?.socials || {};
+  openAddModal('Editar Redes Sociais', 'at', `
+    <div class="ptab-form-grid">
+      <div class="form-group">
+        <label class="form-label"><i class="ti ti-brand-instagram" style="color:#E1306C"></i> Instagram</label>
+        <input class="form-input" id="soc-ig" placeholder="@seu_instagram" value="${escapeHtml(s.instagram||'')}" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="ti ti-brand-tiktok" style="color:#aaa"></i> TikTok</label>
+        <input class="form-input" id="soc-tt" placeholder="@seu_tiktok" value="${escapeHtml(s.tiktok||'')}" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="ti ti-brand-youtube" style="color:#FF0000"></i> YouTube</label>
+        <input class="form-input" id="soc-yt" placeholder="@canal ou link completo" value="${escapeHtml(s.youtube||'')}" maxlength="200">
+      </div>
+    </div>`, saveSocials);
+  // Muda botão do footer para "Salvar"
+  setTimeout(() => { const btn = $('add-modal-confirm'); if(btn){ btn.innerHTML='<i class="ti ti-check"></i> Salvar'; } }, 10);
 }
 
 async function saveSocials() {
   const instagram = $('soc-ig')?.value.trim();
   const tiktok    = $('soc-tt')?.value.trim();
   const youtube   = $('soc-yt')?.value.trim();
-  try {
-    await api('/profile/me/socials', { method:'PUT', body:{instagram,tiktok,youtube} });
-    _profileContentCache.socials = { instagram, tiktok, youtube };
-    switchProfileTab('socials', false);
-    toast('✅ Redes sociais salvas!');
-  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
+  await api('/profile/me/socials', { method:'PUT', body:{instagram,tiktok,youtube} });
+  _profileContentCache.socials = { instagram, tiktok, youtube };
+  switchProfileTab('socials', false);
+  toast('✅ Redes sociais salvas!');
 }
 
 function toggleBioEdit(btn) {

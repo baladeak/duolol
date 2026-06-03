@@ -1564,6 +1564,14 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .ptab-empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.4}
 .ptab-empty p{font-size:13.5px}
 
+/* Área de cabeçalho da aba com botão à esquerda */
+.ptab-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:18px;
+}
+
 .ptab-add-btn{
   display:inline-flex;
   align-items:center;
@@ -1577,27 +1585,107 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   font-weight:700;
   cursor:pointer;
   font-family:'Exo 2',sans-serif;
-  margin-bottom:16px;
   transition:.18s;
+  flex-shrink:0;
 }
 
 .ptab-add-btn:hover{background:var(--grad-gold);color:var(--navy)}
 
-.ptab-add-form{
-  background:var(--navy-c);
-  border:1px solid var(--border);
-  border-radius:13px;
+/* Modal de adicionar */
+#add-modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.78);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2500;
   padding:16px;
-  margin-bottom:16px;
+  backdrop-filter:blur(4px);
+}
+
+#add-modal.open{display:flex}
+
+.add-modal-box{
+  background:var(--navy-m);
+  border:1px solid var(--border-h);
+  border-radius:18px;
+  width:100%;
+  max-width:480px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(200,150,62,.06);
+  overflow:hidden;
+  animation:modal-in .18s ease;
+}
+
+@keyframes modal-in{
+  from{transform:scale(.94) translateY(10px);opacity:0}
+  to{transform:scale(1) translateY(0);opacity:1}
+}
+
+.add-modal-head{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.add-modal-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:1px;
+  color:var(--gold-l);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.add-modal-close{
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:19px;padding:3px;
+  border-radius:6px;transition:.15s;
+}
+.add-modal-close:hover{color:var(--text);background:var(--navy-c)}
+
+.add-modal-body{padding:20px}
+
+.add-modal-foot{
+  padding:14px 20px;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  background:var(--navy-c);
 }
 
 .ptab-form-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+  grid-template-columns:1fr;
+  gap:12px;
 }
 
-@media(max-width:600px){.ptab-form-grid{grid-template-columns:1fr}}
+.ptab-form-grid .form-group{margin-bottom:0}
+
+/* Upload area no modal de screenshot */
+.ss-upload-area{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:28px 20px;
+  background:var(--navy-c);
+  border:2px dashed var(--border);
+  border-radius:11px;
+  cursor:pointer;
+  transition:.18s;
+  width:100%;
+}
+
+.ss-upload-area:hover{
+  border-color:var(--gold-d);
+  background:var(--navy-h);
+}
 
 .ptab-del-btn{
   position:absolute;
