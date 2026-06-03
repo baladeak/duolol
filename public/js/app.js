@@ -1087,12 +1087,11 @@ function renderProfile(user, isMe) {
     : '';
 
   $('profile-content').innerHTML = `
-    <!-- Cover / Capa -->
-    <div class="profile-cover" id="profile-cover"
+    <!-- Header com capa cobrindo tudo -->
+    <div class="profile-header-wrap" id="profile-cover"
          style="${bannerUrl ? `background-image:url('${bannerUrl}')` : ''}">
-      <div class="cover-gradient"></div>
+      <div class="cover-gradient-full"></div>
       ${isMe ? `<button class="cover-edit-btn" onclick="openBannerPicker()"><i class="ti ti-camera"></i> ${bannerUrl ? 'Alterar capa' : 'Adicionar capa'}</button>` : ''}
-    </div>
 
     <div class="profile-banner">
       <div class="profile-top">
@@ -1142,7 +1141,8 @@ function renderProfile(user, isMe) {
              <button class="btn-outline" style="border-color:rgba(251,191,36,.35);color:#FDE68A"
                onclick="openReportModal(null,${user.id})"><i class="ti ti-flag"></i> Denunciar</button>`}
       </div>
-    </div>
+    </div><!-- /profile-banner -->
+    </div><!-- /profile-header-wrap -->
 
     <div class="profile-body">
 
