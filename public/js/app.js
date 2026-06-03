@@ -309,11 +309,11 @@ function postHTML(p) {
   return `
   <div class="post-card" id="post-${p.id}">
     <div class="post-head">
-      ${avatarHTML(p, 'av-md')}
+      ${avatarHTML(p, 'av-lg')}
       <div class="post-meta">
         <div class="post-top">
-          <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.username)}</span>
-          <span class="post-nick">${escapeHtml(p.lol_game_name)}#${escapeHtml(p.lol_tag_line)}</span>
+          <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
+          <span class="post-nick">${escapeHtml(p.username)}</span>
           <span class="post-time">${timeAgo(p.created_at)}</span>
         </div>
         <div class="post-elos">
