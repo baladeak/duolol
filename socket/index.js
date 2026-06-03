@@ -39,7 +39,8 @@ module.exports = (io) => {
         await db.execute('UPDATE conversations SET last_msg_at=NOW() WHERE id=?', [conversation_id]);
         const receiverId = conv[0].user_a_id === uid ? conv[0].user_b_id : conv[0].user_a_id;
         const msg = { id: r.insertId, conversation_id, sender_id: uid, content: content.trim(), created_at: new Date() };
-        // Só emite para o destinatário — o remetente já adicionou a bolha otimisticamente
+        // Emite para os dois lados — o frontend NÃO adiciona otimisticamente
+        socket.emit('new_message', msg);
         const rs = online.get(receiverId);
         if (rs) io.to(rs).emit('new_message', msg);
         io.to(`user_${receiverId}`).emit('notification', { type: 'NEW_MESSAGE' });

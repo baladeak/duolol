@@ -601,12 +601,15 @@ async function sendChatMessage() {
   const content = inp.value.trim();
   if (!content) return;
   inp.value = '';
-  appendBubble({ content, sender_id: me?.id }, 'me');
   if (socket?.connected) {
+    // Socket cuida de adicionar a bolha via evento new_message (sem duplicar)
     socket.emit('send_message', { conversation_id: currentConvId, content });
   } else {
-    try { await api('/messages/' + currentConvId, { method:'POST', body:{ content } }); }
-    catch { toast('Erro ao enviar'); }
+    // Fallback HTTP: adiciona manualmente pois não há socket para retornar
+    try {
+      const msg = await api('/messages/' + currentConvId, { method:'POST', body:{ content } });
+      appendBubble({ content, sender_id: me?.id }, 'me');
+    } catch { toast('Erro ao enviar'); inp.value = content; }
   }
 }
 
