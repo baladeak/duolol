@@ -75,7 +75,7 @@
     <aside class="sidebar">
       <div class="s-logo">
         <div class="s-logo-icon">D</div>
-        <span>DUOQ.GG</span>
+        <span class="s-logo-text">DUOQ.GG</span>
       </div>
       <nav class="s-nav">
         <button class="s-item active" id="nav-feed" onclick="loadPage('feed')">
@@ -140,8 +140,8 @@
       <!-- EXPLORAR -->
       <div class="page" id="page-explore">
         <div class="top-bar">
-          <span class="top-bar-title">EXPLORAR</span>
-          <input class="search-inp" id="explore-search" placeholder="Buscar jogador..." onkeyup="if(event.key==='Enter')searchPlayers()">
+          <span class="top-bar-title">ENCONTRAR DUO</span>
+          <input class="search-inp" id="explore-search" placeholder="Buscar jogador..." onkeyup="if(event.key==='Enter')searchPlayers()" style="max-width:260px">
           <button onclick="searchPlayers()" class="pill p-gold on">Buscar</button>
         </div>
         <div class="scrollable">

@@ -498,24 +498,37 @@ function renderPlayerGrid(users) {
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="ti ti-users-off"></i><p>Nenhum jogador encontrado</p></div>';
     return;
   }
-  grid.innerHTML = users.map(u => `
+  grid.innerHTML = users.map(u => {
+    const col = avatarColor(u.username || 'U');
+    const letter = (u.username || 'U')[0].toUpperCase();
+    const status = u.online_status || 'offline';
+    const dotCls = status === 'online' ? 'dot-online' : 'dot-offline';
+    return `
     <div class="player-card">
-      <div class="pc-top">
-        ${avatarHTML(u, 'av-md')}
-        <div>
+      <div class="pc-banner">
+        <div class="pc-avatar-wrap">
+          <div class="av av-md" style="background:${col};color:#0E0E12;width:44px;height:44px;font-size:16px;box-shadow:0 0 0 2px var(--navy-c),0 0 0 3px ${col}60">
+            ${letter}
+            <div class="status-dot ${dotCls}"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-top">
           <div class="pc-name">${escapeHtml(u.username)}</div>
           <div class="pc-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
         </div>
+        <div class="pc-elos">
+          <span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier,u.solo_rank,u.solo_lp)}</span>
+          <span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier,u.flex_rank,u.flex_lp)}</span>
+        </div>
+        <div class="pc-actions">
+          <div class="btn-invite" onclick="addFriendById(${u.id},'${escapeHtml(u.username)}',this)">+ Adicionar</div>
+          <div class="btn-dm" onclick="openDM(${u.id},'${escapeHtml(u.username)}')">DM</div>
+        </div>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
-        <span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier,u.solo_rank,u.solo_lp)}</span>
-        <span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier,u.flex_rank,u.flex_lp)}</span>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <div class="btn-invite" style="flex:1" onclick="addFriendById(${u.id},'${escapeHtml(u.username)}',this)">+ Adicionar</div>
-        <div class="btn-invite" style="flex:1;background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3);color:#93C5FD" onclick="openDM(${u.id},'${escapeHtml(u.username)}')">DM</div>
-      </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function addFriendById(userId, username, el) {
