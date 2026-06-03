@@ -32,7 +32,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -124,17 +124,24 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles, display_name, chat_muted } = req.body;
+  const { bio, roles, display_name, chat_muted, main_champions } = req.body;
   if (display_name !== undefined) {
     const dn = display_name.trim().slice(0, 60) || null;
     await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
   }
   if (bio !== undefined) await db.execute('UPDATE users SET bio=? WHERE id=?', [bio, req.user.id]);
   if (chat_muted !== undefined) await db.execute('UPDATE users SET chat_muted=? WHERE id=?', [chat_muted ? 1 : 0, req.user.id]);
+  if (Array.isArray(main_champions)) {
+    const VALID_ROLES = ['TOP','JUNGLE','MID','ADC','SUPPORT'];
+    const champs = main_champions.slice(0, 3).filter(c => typeof c === 'string' && c.length <= 50);
+    await db.execute('UPDATE users SET main_champions=? WHERE id=?', [JSON.stringify(champs), req.user.id]);
+  }
   if (Array.isArray(roles)) {
+    const VALID_ROLES = ['TOP','JUNGLE','MID','ADC','SUPPORT'];
+    const validRoles = roles.filter(r => VALID_ROLES.includes(r)).slice(0, 2);
     await db.execute('DELETE FROM user_roles WHERE user_id=?', [req.user.id]);
-    for (let idx = 0; idx < Math.min(roles.length, 5); idx++)
-      await db.execute('INSERT IGNORE INTO user_roles (user_id,role,priority) VALUES (?,?,?)', [req.user.id, roles[idx], idx+1]);
+    for (let idx = 0; idx < validRoles.length; idx++)
+      await db.execute('INSERT IGNORE INTO user_roles (user_id,role,priority) VALUES (?,?,?)', [req.user.id, validRoles[idx], idx+1]);
   }
   res.json({ ok: true });
 });
@@ -252,7 +259,7 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:id', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,lol_game_name,lol_tag_line,avatar_url,bio,
+    `SELECT id,username,display_name,lol_game_name,lol_tag_line,avatar_url,bio,main_champions,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,online_status
      FROM users WHERE id=?`, [req.params.id]

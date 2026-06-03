@@ -850,6 +850,36 @@ function updateMsgBadge() {
   b.style.display = msgCount > 0 ? '' : 'none';
 }
 
+// ── Lista de campeões do LoL ───────────────────
+const LOL_CHAMPIONS = [
+  'Aatrox','Ahri','Akali','Akshan','Alistar','Ambessa','Amumu','Anivia','Annie','Aphelios',
+  'Ashe','Aurelion Sol','Aurora','Azir','Bard','Bel\'Veth','Blitzcrank','Brand','Braum','Briar',
+  'Caitlyn','Camille','Cassiopeia','Cho\'Gath','Corki','Darius','Diana','Dr. Mundo','Draven',
+  'Ekko','Elise','Evelynn','Ezreal','Fiddlesticks','Fiora','Fizz','Galio','Gangplank','Garen',
+  'Gnar','Gragas','Graves','Gwen','Hecarim','Heimerdinger','Hwei','Illaoi','Irelia','Ivern',
+  'Janna','Jarvan IV','Jax','Jayce','Jhin','Jinx','K\'Sante','Kai\'Sa','Kalista','Karma',
+  'Karthus','Kassadin','Katarina','Kayle','Kayn','Kennen','Kha\'Zix','Kindred','Kled',
+  'Kog\'Maw','LeBlanc','Lee Sin','Leona','Lillia','Lissandra','Lucian','Lulu','Lux',
+  'Malphite','Malzahar','Maokai','Master Yi','Milio','Miss Fortune','Mordekaiser','Morgana',
+  'Naafiri','Nami','Nasus','Nautilus','Neeko','Nidalee','Nilah','Nocturne','Nunu & Willump',
+  'Olaf','Orianna','Ornn','Pantheon','Poppy','Pyke','Qiyana','Quinn','Rakan','Rammus',
+  'Rek\'Sai','Rell','Renata Glasc','Renekton','Rengar','Riven','Rumble','Ryze','Samira',
+  'Sejuani','Senna','Seraphine','Sett','Shaco','Shen','Shyvana','Singed','Sion','Sivir',
+  'Skarner','Smolder','Sona','Soraka','Swain','Sylas','Syndra','Tahm Kench','Taliyah',
+  'Talon','Taric','Teemo','Thresh','Tristana','Trundle','Tryndamere','Twisted Fate','Twitch',
+  'Udyr','Urgot','Varus','Vayne','Veigar','Vel\'Koz','Vex','Vi','Viego','Viktor','Vladimir',
+  'Volibear','Warwick','Wukong','Xayah','Xerath','Xin Zhao','Yasuo','Yone','Yorick','Yuumi',
+  'Zac','Zed','Zeri','Ziggs','Zilean','Zoe','Zyra'
+].sort();
+
+const LOL_ROLES = [
+  { id:'TOP',     label:'Top',     icon:'ti-shield' },
+  { id:'JUNGLE',  label:'Jungle',  icon:'ti-trees' },
+  { id:'MID',     label:'Mid',     icon:'ti-flame' },
+  { id:'ADC',     label:'ADC',     icon:'ti-bow' },
+  { id:'SUPPORT', label:'Support', icon:'ti-heart' },
+];
+
 // ── YouTube helpers ────────────────────────────
 function ytId(url) {
   if (!url) return null;
@@ -895,6 +925,12 @@ function renderProfile(user, isMe) {
        </div>`
     : avatarHTML(user, 'av-2xl');
 
+  // Parse main_champions — MySQL retorna string JSON
+  const champions = (() => {
+    try { return JSON.parse(user.main_champions || '[]'); } catch { return []; }
+  })();
+  const userRoles = (user.roles || []).map(r => r.role || r);
+
   const bioContent = user.bio
     ? `<p class="profile-bio-text">${escapeHtml(user.bio)}</p>`
     : isMe
@@ -915,6 +951,21 @@ function renderProfile(user, isMe) {
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
             <span class="elo ${eloClass(user.flex_tier)}">Flex ${flexLabel}</span>
           </div>
+          ${userRoles.length ? `
+          <div class="profile-roles">
+            ${userRoles.map(r => {
+              const rd = LOL_ROLES.find(x => x.id === r);
+              return `<span class="profile-role-badge"><i class="ti ${rd?.icon||'ti-sword'}"></i>${rd?.label||r}</span>`;
+            }).join('')}
+          </div>` : ''}
+          ${champions.length ? `
+          <div class="profile-champs">
+            ${champions.map((c, i) => `
+              <div class="champ-badge">
+                <span class="champ-tier">${i+1}</span>
+                <span class="champ-name">${escapeHtml(c)}</span>
+              </div>`).join('')}
+          </div>` : ''}
           <div class="profile-stats">
             <div class="pstat"><div class="pstat-num">${user.total_posts || 0}</div><div class="pstat-lbl">Posts</div></div>
             <div class="pstat"><div class="pstat-num">${user.total_friends || 0}</div><div class="pstat-lbl">Amigos</div></div>
@@ -951,12 +1002,38 @@ function renderProfile(user, isMe) {
         <div id="bio-display">${bioContent}</div>
         ${isMe ? `
         <div id="bio-edit" style="display:none">
-          <div class="form-group" style="margin-bottom:12px">
+          <div class="form-group" style="margin-bottom:14px">
             <label class="form-label" style="font-size:10px">Nome de exibição</label>
             <input id="displayname-input" class="form-input" type="text" maxlength="60"
               placeholder="Como você quer ser chamado no feed"
               value="${escapeHtml(user.display_name || '')}">
           </div>
+
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label" style="font-size:10px">Rotas favoritas <span style="color:var(--dim)">(máx. 2)</span></label>
+            <div class="role-picker" id="role-picker">
+              ${LOL_ROLES.map(r => `
+                <button type="button" class="role-pick-btn ${userRoles.includes(r.id)?'selected':''}"
+                  data-role="${r.id}" onclick="toggleRolePick(this)">
+                  <i class="ti ${r.icon}"></i>${r.label}
+                </button>`).join('')}
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label" style="font-size:10px">Campeões Main <span style="color:var(--dim)">(máx. 3, em ordem)</span></label>
+            <div class="champ-tier-editor" id="champ-tier-editor">
+              ${[0,1,2].map(i => `
+                <div class="champ-tier-slot">
+                  <span class="champ-slot-num">${i+1}º</span>
+                  <select class="form-input champ-select" id="champ-slot-${i}">
+                    <option value="">— Selecionar campeão —</option>
+                    ${LOL_CHAMPIONS.map(c => `<option value="${escapeHtml(c)}" ${champions[i]===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+                  </select>
+                </div>`).join('')}
+            </div>
+          </div>
+
           <textarea id="bio-textarea" class="bio-textarea" maxlength="300" placeholder="Conta quem você é: sua lane principal, estilo de jogo, horários, o que procura num duo...">${escapeHtml(user.bio || '')}</textarea>
           <div class="bio-edit-foot">
             <span class="bio-char-count" id="bio-chars">${(user.bio||'').length}/300</span>
@@ -1399,11 +1476,31 @@ function cancelBioEdit() {
   if (e) e.style.display = 'none';
 }
 
+function toggleRolePick(btn) {
+  const picker = document.getElementById('role-picker');
+  const selected = picker.querySelectorAll('.role-pick-btn.selected');
+  if (btn.classList.contains('selected')) {
+    btn.classList.remove('selected');
+  } else {
+    if (selected.length >= 2) { toast('⚠️ Máximo 2 rotas'); return; }
+    btn.classList.add('selected');
+  }
+}
+
 async function saveBio() {
-  const bio = document.getElementById('bio-textarea')?.value.trim() ?? '';
+  const bio          = document.getElementById('bio-textarea')?.value.trim() ?? '';
   const display_name = document.getElementById('displayname-input')?.value.trim() ?? '';
+
+  // Coleta rotas selecionadas
+  const roles = [...document.querySelectorAll('.role-pick-btn.selected')].map(b => b.dataset.role);
+
+  // Coleta campeões selecionados (ignora slots vazios)
+  const main_champions = [0,1,2]
+    .map(i => document.getElementById('champ-slot-'+i)?.value || '')
+    .filter(Boolean);
+
   try {
-    await api('/users/me', { method: 'PATCH', body: { bio, display_name } });
+    await api('/users/me', { method: 'PATCH', body: { bio, display_name, roles, main_champions } });
     me.bio = bio;
     me.display_name = display_name || null;
     localStorage.setItem('duoq_me', JSON.stringify(me));

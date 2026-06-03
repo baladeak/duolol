@@ -9,13 +9,13 @@
   --navy-h:#21222E;
 
   /* Gold */
-  --gold:#C8963E;
-  --gold-l:#F0B429;
-  --gold-b:#FFD666;
-  --gold-d:#7A5820;
-  --gold-dim:rgba(200,150,62,.14);
-  --gold-glow:rgba(200,150,62,.28);
-  --grad-gold:linear-gradient(135deg,#C8963E 0%,#F0B42A 100%);
+  --gold:#f0ae07;
+  --gold-l:#f5c238;
+  --gold-b:#ffd44a;
+  --gold-d:#a07a05;
+  --gold-dim:rgba(240,174,7,.14);
+  --gold-glow:rgba(240,174,7,.28);
+  --grad-gold:linear-gradient(135deg,#f0ae07 0%,#f5c238 100%);
 
   /* Text */
   --text:#EAE0CC;
@@ -23,8 +23,8 @@
   --dim:#484858;
 
   /* Borders */
-  --border:rgba(200,150,62,.11);
-  --border-h:rgba(200,150,62,.38);
+  --border:rgba(240,174,7,.11);
+  --border-h:rgba(240,174,7,.38);
 
   /* Misc */
   --red:#E84444;
@@ -60,8 +60,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   align-items:center;
   justify-content:center;
   background:
-    radial-gradient(ellipse 80% 60% at 50% -10%,rgba(200,150,62,.13) 0%,transparent 70%),
-    radial-gradient(ellipse 40% 40% at 80% 80%,rgba(200,150,62,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% -10%,rgba(240,174,7,.13) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 80%,rgba(240,174,7,.05) 0%,transparent 60%),
     var(--navy);
   position:relative;
   overflow:hidden;
@@ -73,8 +73,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   position:absolute;
   inset:0;
   background-image:
-    linear-gradient(rgba(200,150,62,.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(200,150,62,.04) 1px,transparent 1px);
+    linear-gradient(rgba(240,174,7,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(240,174,7,.04) 1px,transparent 1px);
   background-size:60px 60px;
   mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 30%,transparent 100%);
   pointer-events:none;
@@ -87,7 +87,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   top:50%;left:50%;
   transform:translate(-50%,-50%) rotate(45deg);
   width:600px;height:600px;
-  border:1px solid rgba(200,150,62,.06);
+  border:1px solid rgba(240,174,7,.06);
   border-radius:4px;
   pointer-events:none;
 }
@@ -102,9 +102,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   width:100%;
   max-width:430px;
   box-shadow:
-    0 0 0 1px rgba(200,150,62,.06),
+    0 0 0 1px rgba(240,174,7,.06),
     0 24px 80px rgba(0,0,0,.7),
-    0 0 60px rgba(200,150,62,.07);
+    0 0 60px rgba(240,174,7,.07);
 }
 
 .auth-logo{
@@ -118,7 +118,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
   background-clip:text;
-  filter:drop-shadow(0 0 20px rgba(200,150,62,.4));
+  filter:drop-shadow(0 0 20px rgba(240,174,7,.4));
 }
 
 .auth-sub{
@@ -172,7 +172,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .form-input{
   width:100%;
   background:var(--navy);
-  border:1px solid rgba(200,150,62,.15);
+  border:1px solid rgba(240,174,7,.15);
   border-radius:9px;
   padding:11px 15px;
   font-size:14px;
@@ -183,7 +183,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .form-input:focus{
   border-color:var(--gold);
-  box-shadow:0 0 0 3px rgba(200,150,62,.12);
+  box-shadow:0 0 0 3px rgba(240,174,7,.12);
 }
 
 .form-input::placeholder{color:var(--dim)}
@@ -206,11 +206,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   cursor:pointer;
   transition:.2s;
   margin-top:6px;
-  box-shadow:0 4px 20px rgba(200,150,62,.25);
+  box-shadow:0 4px 20px rgba(240,174,7,.25);
 }
 
 .btn-primary:hover{
-  box-shadow:0 6px 28px rgba(200,150,62,.4);
+  box-shadow:0 6px 28px rgba(240,174,7,.4);
   transform:translateY(-1px);
 }
 
@@ -252,7 +252,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   position:absolute;
   top:0;right:0;
   width:1px;height:100%;
-  background:linear-gradient(180deg,transparent,rgba(200,150,62,.25) 30%,rgba(200,150,62,.25) 70%,transparent);
+  background:linear-gradient(180deg,transparent,rgba(240,174,7,.25) 30%,rgba(240,174,7,.25) 70%,transparent);
   pointer-events:none;
 }
 
@@ -328,7 +328,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   width:3px;height:65%;
   background:var(--grad-gold);
   border-radius:0 3px 3px 0;
-  box-shadow:0 0 8px rgba(200,150,62,.5);
+  box-shadow:0 0 8px rgba(240,174,7,.5);
 }
 
 .s-item i{font-size:18px;width:22px;text-align:center}
@@ -402,7 +402,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 /* Anel gold nos avatares grandes */
 .av-xl,.av-2xl{
-  box-shadow:0 0 0 2px var(--gold-d),0 0 14px rgba(200,150,62,.22);
+  box-shadow:0 0 0 2px var(--gold-d),0 0 14px rgba(240,174,7,.22);
 }
 
 .status-dot{
@@ -554,11 +554,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .rp-conv-item:hover{background:var(--navy-h)}
 
 .rp-conv-unread{
-  background:rgba(200,150,62,.05);
+  background:rgba(240,174,7,.05);
 }
 
 .rp-conv-active{
-  background:rgba(200,150,62,.08);
+  background:rgba(240,174,7,.08);
   border-left:2px solid var(--gold);
 }
 
@@ -645,7 +645,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .search-inp:focus{
   border-color:var(--gold);
-  box-shadow:0 0 0 3px rgba(200,150,62,.1);
+  box-shadow:0 0 0 3px rgba(240,174,7,.1);
 }
 
 .search-inp::placeholder{color:var(--dim)}
@@ -687,7 +687,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .elo-iron{background:rgba(90,90,100,.2);color:#94A3B8;border:1px solid rgba(90,90,100,.35)}
 .elo-bronze{background:rgba(160,90,40,.2);color:#CD7F32;border:1px solid rgba(160,90,40,.35)}
 .elo-silver{background:rgba(148,163,184,.15);color:#C0CCD8;border:1px solid rgba(148,163,184,.3)}
-.elo-gold{background:rgba(200,150,62,.2);color:var(--gold-b);border:1px solid var(--gold-d)}
+.elo-gold{background:rgba(240,174,7,.2);color:var(--gold-b);border:1px solid var(--gold-d)}
 .elo-platinum{background:rgba(20,200,160,.15);color:#5EEAD4;border:1px solid rgba(20,200,160,.3)}
 .elo-emerald{background:rgba(34,197,94,.15);color:#86EFAC;border:1px solid rgba(34,197,94,.3)}
 .elo-diamond{background:rgba(107,70,193,.2);color:#C4B5FD;border:1px solid rgba(107,70,193,.4)}
@@ -701,8 +701,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .live-alert{
   margin:14px 16px 0;
   padding:12px 16px;
-  background:linear-gradient(135deg,rgba(200,150,62,.06),rgba(200,150,62,.03));
-  border:1px solid rgba(200,150,62,.18);
+  background:linear-gradient(135deg,rgba(240,174,7,.06),rgba(240,174,7,.03));
+  border:1px solid rgba(240,174,7,.18);
   border-radius:11px;
   display:flex;
   align-items:center;
@@ -754,8 +754,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .composer:focus-within{
-  border-color:rgba(200,150,62,.3);
-  box-shadow:0 0 0 3px rgba(200,150,62,.07);
+  border-color:rgba(240,174,7,.3);
+  box-shadow:0 0 0 3px rgba(240,174,7,.07);
 }
 
 .composer-body{display:flex;gap:12px;align-items:flex-start}
@@ -814,11 +814,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   transition:.2s;
   margin-left:auto;
   white-space:nowrap;
-  box-shadow:0 2px 12px rgba(200,150,62,.2);
+  box-shadow:0 2px 12px rgba(240,174,7,.2);
 }
 
 .btn-post:hover{
-  box-shadow:0 4px 18px rgba(200,150,62,.35);
+  box-shadow:0 4px 18px rgba(240,174,7,.35);
   transform:translateY(-1px);
 }
 
@@ -845,7 +845,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .post-card:hover{
-  border-color:rgba(200,150,62,.25);
+  border-color:rgba(240,174,7,.25);
   background:var(--navy-h);
 }
 
@@ -871,12 +871,12 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   cursor:pointer;
   transition:.15s;
   color:var(--gold-l);
-  text-shadow:0 0 12px rgba(200,150,62,.45);
+  text-shadow:0 0 12px rgba(240,174,7,.45);
 }
 
 .post-name:hover{
   color:var(--gold-b);
-  text-shadow:0 0 18px rgba(200,150,62,.7);
+  text-shadow:0 0 18px rgba(240,174,7,.7);
 }
 
 .post-tag{
@@ -1063,8 +1063,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .notif-item:hover{background:var(--navy-h)}
 
 .notif-item.unread{
-  background:rgba(200,150,62,.06);
-  border-color:rgba(200,150,62,.12);
+  background:rgba(240,174,7,.06);
+  border-color:rgba(240,174,7,.12);
 }
 
 .notif-icon{
@@ -1166,7 +1166,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .conv-item:hover{background:var(--navy-h)}
-.conv-item.unread{background:rgba(200,150,62,.04)}
+.conv-item.unread{background:rgba(240,174,7,.04)}
 
 .conv-meta{flex:1;min-width:0}
 
@@ -1196,7 +1196,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border:1px solid var(--border-h);
   border-bottom:none;
   border-radius:13px 13px 0 0;
-  box-shadow:0 -4px 40px rgba(0,0,0,.7),0 0 0 1px rgba(200,150,62,.06);
+  box-shadow:0 -4px 40px rgba(0,0,0,.7),0 0 0 1px rgba(240,174,7,.06);
   z-index:1000;
   display:none;
   flex-direction:column;
@@ -1214,7 +1214,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   cursor:pointer;
   border-radius:13px 13px 0 0;
   flex-shrink:0;
-  background:linear-gradient(90deg,rgba(200,150,62,.06),transparent);
+  background:linear-gradient(90deg,rgba(240,174,7,.06),transparent);
 }
 
 .chat-win-name{font-weight:700;font-size:13px;flex:1;color:var(--text)}
@@ -1259,11 +1259,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .bubble.me{
-  background:linear-gradient(135deg,rgba(200,150,62,.22),rgba(200,150,62,.15));
+  background:linear-gradient(135deg,rgba(240,174,7,.22),rgba(240,174,7,.15));
   color:var(--text);
   border-radius:11px 4px 11px 11px;
   align-self:flex-end;
-  border:1px solid rgba(200,150,62,.2);
+  border:1px solid rgba(240,174,7,.2);
 }
 
 .chat-input-row{
@@ -1300,7 +1300,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .btn-send:hover{
-  box-shadow:0 2px 12px rgba(200,150,62,.3);
+  box-shadow:0 2px 12px rgba(240,174,7,.3);
   transform:translateY(-1px);
 }
 
@@ -1309,7 +1309,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-banner{
   padding:28px 24px 22px;
   border-bottom:1px solid var(--border);
-  background:linear-gradient(160deg,rgba(200,150,62,.08) 0%,rgba(200,150,62,.02) 50%,transparent 100%);
+  background:linear-gradient(160deg,rgba(240,174,7,.08) 0%,rgba(240,174,7,.02) 50%,transparent 100%);
   position:relative;
   overflow:hidden;
   flex-shrink:0;
@@ -1320,7 +1320,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   position:absolute;
   top:-60px;right:-60px;
   width:260px;height:260px;
-  border:1px solid rgba(200,150,62,.05);
+  border:1px solid rgba(240,174,7,.05);
   border-radius:50%;
   pointer-events:none;
 }
@@ -1349,7 +1349,103 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   margin-bottom:10px;
 }
 
-.profile-elos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.profile-elos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+
+/* Badges de rota no perfil */
+.profile-roles{
+  display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;
+}
+
+.profile-role-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;
+  background:rgba(240,174,7,.12);
+  border:1px solid var(--gold-d);
+  border-radius:20px;
+  font-size:12px;font-weight:700;
+  color:var(--gold-l);
+  letter-spacing:.3px;
+}
+
+.profile-role-badge i{font-size:13px}
+
+/* Badges de campeões tier */
+.profile-champs{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+}
+
+.champ-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;
+  background:var(--navy-c);
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:12.5px;
+  transition:.15s;
+}
+
+.champ-badge:hover{border-color:var(--border-h)}
+
+.champ-tier{
+  width:20px;height:20px;
+  border-radius:50%;
+  background:var(--grad-gold);
+  color:var(--navy);
+  font-size:10px;
+  font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+
+.champ-name{font-weight:600;color:var(--text)}
+
+/* Seletor de rotas */
+.role-picker{
+  display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;
+}
+
+.role-pick-btn{
+  padding:7px 14px;
+  border-radius:9px;
+  font-size:12.5px;font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--navy-c);
+  color:var(--muted);
+  font-family:'Exo 2',sans-serif;
+  transition:.18s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+
+.role-pick-btn:hover{border-color:var(--border-h);color:var(--text)}
+.role-pick-btn.selected{
+  background:var(--gold-dim);
+  border-color:var(--gold);
+  color:var(--gold-l);
+}
+
+.role-pick-btn i{font-size:15px}
+
+/* Editor de tier de campeões */
+.champ-tier-editor{
+  display:flex;flex-direction:column;gap:8px;margin-top:6px;
+}
+
+.champ-tier-slot{
+  display:flex;align-items:center;gap:10px;
+}
+
+.champ-slot-num{
+  width:26px;height:26px;
+  border-radius:50%;
+  background:var(--grad-gold);
+  color:var(--navy);
+  font-size:11px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+
+.champ-select{flex:1;cursor:pointer}
 
 .profile-stats{
   display:flex;
@@ -1470,7 +1566,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .bio-textarea:focus{
   border-color:var(--gold);
-  box-shadow:0 0 0 3px rgba(200,150,62,.1);
+  box-shadow:0 0 0 3px rgba(240,174,7,.1);
 }
 
 .bio-textarea::placeholder{color:var(--dim)}
@@ -1611,7 +1707,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-radius:18px;
   width:100%;
   max-width:480px;
-  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(200,150,62,.06);
+  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(240,174,7,.06);
   overflow:hidden;
   animation:modal-in .18s ease;
 }
@@ -2074,9 +2170,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .player-card:hover{
-  border-color:rgba(200,150,62,.3);
+  border-color:rgba(240,174,7,.3);
   transform:translateY(-3px);
-  box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 0 1px rgba(200,150,62,.1);
+  box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 0 1px rgba(240,174,7,.1);
 }
 
 /* Faixa superior do card */
@@ -2096,7 +2192,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   content:'';
   position:absolute;
   inset:0;
-  background:linear-gradient(135deg,rgba(200,150,62,.08) 0%,transparent 60%);
+  background:linear-gradient(135deg,rgba(240,174,7,.08) 0%,transparent 60%);
 }
 
 .pc-avatar-wrap{
@@ -2173,7 +2269,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   background:var(--grad-gold);
   color:var(--navy);
   border-color:var(--gold);
-  box-shadow:0 2px 12px rgba(200,150,62,.25);
+  box-shadow:0 2px 12px rgba(240,174,7,.25);
 }
 
 .btn-invite.sent{
@@ -2529,7 +2625,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .admin-card-sub{font-size:12px;color:var(--muted);margin-top:1px}
 
 .admin-badge{
-  background:linear-gradient(135deg,#C8963E,#F0B429);
+  background:linear-gradient(135deg,#f0ae07,#f5c238);
   color:var(--navy);
   font-size:9px;
   font-weight:800;
