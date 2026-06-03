@@ -396,9 +396,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .av-sm{width:32px;height:32px;font-size:13px}
 .av-md{width:52px;height:52px;font-size:19px}
-.av-lg{width:72px;height:72px;font-size:26px}
-.av-xl{width:90px;height:90px;font-size:32px}
-.av-2xl{width:140px;height:140px;font-size:50px}
+.av-lg{width:150px;height:150px;font-size:52px}
+.av-xl{width:150px;height:150px;font-size:52px}
+.av-2xl{width:150px;height:150px;font-size:52px}
 
 /* Anel gold nos avatares grandes */
 .av-xl,.av-2xl{

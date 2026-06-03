@@ -54,15 +54,21 @@ function avatarColor(name) {
   return colors[Math.abs(h)];
 }
 
+// Tamanhos explícitos para garantir que nunca somam quando o CSS recarrega
+const AV_SIZES = { 'av-sm':32, 'av-md':52, 'av-lg':150, 'av-xl':150, 'av-2xl':150 };
+
 function avatarHTML(user, size = 'av-md') {
   const col    = avatarColor(user.username || user.lol_game_name || 'U');
-  const letter = (user.username || user.lol_game_name || 'U')[0].toUpperCase();
+  const letter = (user.display_name || user.username || user.lol_game_name || 'U')[0].toUpperCase();
   const status = user.online_status || 'offline';
   const dotCls = status === 'online' ? 'dot-online' : status === 'away' ? 'dot-away' : 'dot-offline';
+  const px     = AV_SIZES[size] || 52;
+
   if (user.avatar_url) {
-    return `<img src="${user.avatar_url}" class="av ${size}" style="object-fit:cover" alt="">`;
+    return `<img src="${user.avatar_url}" class="av ${size}"
+      style="width:${px}px;height:${px}px;border-radius:50%;object-fit:cover;flex-shrink:0;display:block" alt="">`;
   }
-  return `<div class="av ${size}" style="background:${col};color:#0A0E1A">${letter}<div class="status-dot ${dotCls}"></div></div>`;
+  return `<div class="av ${size}" style="width:${px}px;height:${px}px;background:${col};color:#0A0E1A;flex-shrink:0">${letter}<div class="status-dot ${dotCls}"></div></div>`;
 }
 
 // Nome público: display_name se existir, fallback para username
@@ -199,21 +205,14 @@ function updateMyAvatar() {
   if (!me) return;
   const el = $('my-avatar-feed');
   if (!el) return;
-  if (me.avatar_url) {
-    el.innerHTML = '';
-    el.style.background = 'transparent';
-    el.style.padding = '0';
-    el.style.overflow = 'hidden';
-    const img = document.createElement('img');
-    img.src = me.avatar_url;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
-    el.appendChild(img);
-  } else {
-    el.innerHTML = '';
-    const col    = avatarColor(me.username || 'U');
-    const letter = (me.username || 'U')[0].toUpperCase();
-    el.style.background = col;
-    el.textContent      = letter;
+  // Substitui o elemento inteiro para garantir tamanho e imagem corretos
+  const html = avatarHTML({ ...me, online_status: 'online' }, 'av-lg');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const newEl = tmp.firstElementChild;
+  if (newEl) {
+    newEl.id = 'my-avatar-feed';
+    el.replaceWith(newEl);
   }
 }
 
