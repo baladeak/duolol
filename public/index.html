@@ -365,7 +365,9 @@
 </div>
 
 <!-- ═══ PAINEL DA FILA ═══ -->
-<div id="queue-panel" class="queue-panel">
+<div id="queue-overlay" class="queue-overlay" onclick="closeQueuePanel()"></div>
+<!-- PAINEL DA FILA -->
+<div id="queue-panel" class="queue-panel" onclick="event.stopPropagation()">
 
   <!-- Header -->
   <div class="queue-header">
@@ -424,8 +426,8 @@
   </div><!-- /queue-body -->
 </div>
 
-<!-- Botão flutuante para abrir a fila -->
-<button id="queue-fab" class="queue-fab" onclick="openQueuePanel()" title="Fila ao vivo">
+<!-- Botão flutuante para abrir a fila — posicionado à direita -->
+<button id="queue-fab" class="queue-fab" onclick="openQueuePanel()" title="Fila ao vivo — Procurar Duo Agora">
   <i class="ti ti-users-group"></i>
   <span class="queue-fab-badge" id="queue-fab-badge" style="display:none">0</span>
 </button>

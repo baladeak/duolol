@@ -264,8 +264,11 @@ async function refreshMe() {
     bootAdmin();
     updateMuteBtn();
   } catch (err) {
-    // Token expirado
-    if (err.error && err.error.includes('Token')) logout();
+    // Só desloga se for erro de autenticação (401), não erros de rede
+    if (err && (err.error?.includes('Token') || err.error?.includes('inválido') || err.error?.includes('expirado'))) {
+      logout();
+    }
+    // Erros de rede/servidor são ignorados — mantém sessão local
   }
 }
 
@@ -2519,15 +2522,15 @@ function playQueueSound() {
 
 // Abrir painel
 function openQueuePanel() {
-  const panel = $('queue-panel');
-  panel.classList.add('open');
+  $('queue-panel').classList.add('open');
+  $('queue-overlay').classList.add('open');
   $('queue-fab').style.display = 'none';
   loadQueueList();
 }
 
-// Fechar painel
 function closeQueuePanel() {
   $('queue-panel').classList.remove('open');
+  $('queue-overlay').classList.remove('open');
   $('queue-fab').style.display = 'flex';
 }
 
@@ -2748,4 +2751,16 @@ async function checkQueueStatus() {
   } catch {}
 }
 
-;
+
+// ── Inicialização ─────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (token && me) {
+    bootApp();
+  } else {
+    // Garante que a tela de auth aparece
+    const authScreen = document.getElementById('auth-screen');
+    const appScreen  = document.getElementById('app-screen');
+    if (authScreen) authScreen.style.display = 'flex';
+    if (appScreen)  appScreen.style.display  = 'none';
+  }
+});

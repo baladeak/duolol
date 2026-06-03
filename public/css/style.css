@@ -3157,15 +3157,23 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
    FILA AO VIVO
 ══════════════════════════════════════════════ */
 
-/* Botão flutuante FAB */
+/* Overlay escuro ao abrir fila */
+.queue-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:940;display:none;
+  backdrop-filter:blur(2px);
+}
+.queue-overlay.open{display:block}
+
+/* Botão flutuante FAB — canto direito, acima da barra lateral direita */
 .queue-fab{
-  position:fixed;bottom:24px;left:24px;
+  position:fixed;bottom:32px;right:32px;
   width:52px;height:52px;border-radius:50%;
   background:var(--gold);color:var(--navy);
   border:none;cursor:pointer;font-size:22px;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 20px rgba(200,150,62,.5);
-  transition:all .2s;z-index:900;
+  transition:all .2s;z-index:960;
 }
 .queue-fab:hover{background:var(--gold-l);transform:scale(1.08)}
 .queue-fab.in-queue{
@@ -3185,22 +3193,28 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border:2px solid var(--navy);
 }
 
-/* Painel principal */
+/* Painel principal — modal centralizado 50% da tela */
 .queue-panel{
-  position:fixed;bottom:0;left:88px;
-  width:320px;
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0.95);
+  width:min(680px, 90vw);
+  height:min(600px, 80vh);
   background:var(--navy-m);
   border:1px solid var(--border-h);
-  border-bottom:none;
-  border-radius:13px 13px 0 0;
-  box-shadow:0 -4px 40px rgba(0,0,0,.7);
+  border-radius:16px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(200,150,62,.1);
   z-index:950;
   display:none;
   flex-direction:column;
-  max-height:520px;
+  opacity:0;
+  transition:transform .2s ease, opacity .2s ease;
 }
-.queue-panel.open{display:flex}
-.queue-panel.minimized .queue-body-wrap{display:none}
+.queue-panel.open{
+  display:flex;
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
 
 /* Header */
 .queue-header{
@@ -3254,9 +3268,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 /* Lista de jogadores */
 .queue-list{
-  flex:1;overflow-y:auto;padding:6px 8px;
-  display:flex;flex-direction:column;gap:4px;
-  min-height:0;
+  flex:1;overflow-y:auto;padding:8px 12px;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  min-height:0;align-content:start;
 }
 .queue-list::-webkit-scrollbar{width:3px}
 .queue-list::-webkit-scrollbar-thumb{background:var(--navy-c)}
