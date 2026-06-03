@@ -31,7 +31,9 @@ router.post('/', auth, async (req, res) => {
   if (!content?.trim() || content.trim().length < 5) return res.status(400).json({ error: 'Conteúdo muito curto' });
   if (content.length > 500) return res.status(400).json({ error: 'Máximo 500 caracteres' });
   try {
-    const [u] = await db.execute('SELECT solo_tier,solo_rank,flex_tier,flex_rank FROM users WHERE id=?', [req.user.id]);
+    const [u] = await db.execute('SELECT solo_tier,solo_rank,flex_tier,flex_rank,post_restricted_until FROM users WHERE id=?', [req.user.id]);
+    if (u[0]?.post_restricted_until && new Date(u[0].post_restricted_until) > new Date())
+      return res.status(403).json({ error: `Você está impedido de postar até ${new Date(u[0].post_restricted_until).toLocaleString('pt-BR')}` });
     const user = u[0];
     const soloSnap = user.solo_tier ? `${user.solo_tier} ${user.solo_rank||''}`.trim() : null;
     const flexSnap = user.flex_tier ? `${user.flex_tier} ${user.flex_rank||''}`.trim() : null;

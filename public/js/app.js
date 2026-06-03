@@ -175,6 +175,9 @@ function bootApp() {
   // Atualiza avatar no compositor
   updateMyAvatar();
 
+  // Mostra nav de admin se for admin
+  bootAdmin();
+
   // Carrega dados
   refreshMe();
   loadPage('feed');
@@ -221,6 +224,7 @@ async function refreshMe() {
     localStorage.setItem('duoq_me', JSON.stringify(me));
     updateMyAvatar();
     renderSidebarRanks();
+    bootAdmin();
   } catch (err) {
     // Token expirado
     if (err.error && err.error.includes('Token')) logout();
@@ -984,6 +988,142 @@ async function pollOnlineCount() {
     const el = $('online-count');
     if (el) el.textContent = count;
   } catch {}
+}
+
+// ── Admin panel ────────────────────────────────
+function bootAdmin() {
+  const btn = $('nav-admin');
+  if (btn) btn.style.display = me?.admin_role === 'admin' ? '' : 'none';
+}
+
+async function adminSearch() {
+  const q    = $('admin-search')?.value.trim() || '';
+  const list = $('admin-user-list');
+  list.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando...</div>';
+  try {
+    const users = await api('/admin/users?q=' + encodeURIComponent(q));
+    if (!users.length) {
+      list.innerHTML = '<div class="empty"><i class="ti ti-users-off"></i><p>Nenhum usuário encontrado</p></div>';
+      return;
+    }
+    list.innerHTML = users.map(u => adminUserCard(u)).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i><p>${err.error || 'Erro ao buscar'}</p></div>`;
+  }
+}
+
+function adminUserCard(u) {
+  const restricted = u.post_restricted_until && new Date(u.post_restricted_until) > new Date();
+  const restrictedUntil = restricted
+    ? new Date(u.post_restricted_until).toLocaleString('pt-BR')
+    : null;
+
+  return `
+  <div class="admin-card" id="admin-card-${u.id}">
+    <div class="admin-card-head">
+      <div class="av av-md" style="background:${avatarColor(u.username)};color:#0E0E12;flex-shrink:0">${(u.display_name||u.username||'?')[0].toUpperCase()}</div>
+      <div class="admin-card-info">
+        <div class="admin-card-name">${escapeHtml(u.display_name || u.username)}
+          ${u.admin_role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : ''}
+          ${u.is_banned ? '<span class="banned-badge">BANIDO</span>' : ''}
+          ${restricted ? `<span class="restrict-badge">RESTRITO até ${restrictedUntil}</span>` : ''}
+        </div>
+        <div class="admin-card-sub">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)} · <span style="color:var(--dim)">${escapeHtml(u.email)}</span></div>
+        <div class="admin-card-sub" style="color:var(--dim);font-size:11px">@${escapeHtml(u.username)} · ID #${u.id}</div>
+      </div>
+    </div>
+
+    <div class="admin-actions">
+
+      <div class="admin-action-group">
+        <div class="admin-group-label">Mudar senha</div>
+        <div style="display:flex;gap:6px">
+          <input class="form-input" id="pwd-${u.id}" type="password" placeholder="Nova senha (mín. 6)" style="flex:1;padding:8px 10px;font-size:12px">
+          <button class="admin-btn admin-btn-gold" onclick="adminChangePassword(${u.id})">Salvar</button>
+        </div>
+      </div>
+
+      <div class="admin-action-group">
+        <div class="admin-group-label">Mudar nick do LoL</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input class="form-input" id="nick-${u.id}" type="text" value="${escapeHtml(u.lol_game_name)}" placeholder="Nome" style="flex:1;padding:8px 10px;font-size:12px">
+          <span style="color:var(--dim);font-weight:700">#</span>
+          <input class="form-input" id="tag-${u.id}" type="text" value="${escapeHtml(u.lol_tag_line)}" placeholder="TAG" style="width:72px;padding:8px 10px;font-size:12px">
+          <button class="admin-btn admin-btn-gold" onclick="adminChangeNick(${u.id})">Salvar</button>
+        </div>
+      </div>
+
+      <div class="admin-action-group">
+        <div class="admin-group-label">Impedir de postar</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${u.id},1)">1h</button>
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${u.id},6)">6h</button>
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${u.id},24)">24h</button>
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${u.id},72)">3 dias</button>
+          <button class="admin-btn admin-btn-warn" onclick="adminRestrict(${u.id},168)">7 dias</button>
+          ${restricted ? `<button class="admin-btn admin-btn-green" onclick="adminRestrict(${u.id},0)">Remover restrição</button>` : ''}
+        </div>
+      </div>
+
+      <div class="admin-action-group">
+        <div class="admin-group-label">Ações de conta</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${u.is_banned
+            ? `<button class="admin-btn admin-btn-green" onclick="adminBan(${u.id},false)"><i class="ti ti-user-check"></i> Desbanir</button>`
+            : `<button class="admin-btn admin-btn-red" onclick="adminBan(${u.id},true)"><i class="ti ti-ban"></i> Banir</button>`}
+          ${u.admin_role === 'admin'
+            ? `<button class="admin-btn admin-btn-warn" onclick="adminSetRole(${u.id},'user')"><i class="ti ti-arrow-down"></i> Remover admin</button>`
+            : `<button class="admin-btn admin-btn-blue" onclick="adminSetRole(${u.id},'admin')"><i class="ti ti-shield"></i> Tornar admin</button>`}
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+async function adminChangePassword(userId) {
+  const pwd = $('pwd-' + userId)?.value;
+  if (!pwd || pwd.length < 6) { toast('Senha deve ter pelo menos 6 caracteres'); return; }
+  try {
+    await api('/admin/users/' + userId + '/password', { method: 'PATCH', body: { password: pwd } });
+    $('pwd-' + userId).value = '';
+    toast('✅ Senha alterada!');
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function adminChangeNick(userId) {
+  const name = $('nick-' + userId)?.value.trim();
+  const tag  = $('tag-' + userId)?.value.trim();
+  if (!name || !tag) { toast('Preencha nome e tag'); return; }
+  try {
+    await api('/admin/users/' + userId + '/nick', { method: 'PATCH', body: { lol_game_name: name, lol_tag_line: tag } });
+    toast('✅ Nick atualizado!');
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function adminBan(userId, ban) {
+  try {
+    await api('/admin/users/' + userId + '/ban', { method: 'PATCH', body: { banned: ban } });
+    toast(ban ? '🔨 Usuário banido' : '✅ Usuário desbanido');
+    adminSearch();
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function adminRestrict(userId, hours) {
+  try {
+    await api('/admin/users/' + userId + '/restrict', { method: 'PATCH', body: { hours } });
+    toast(hours === 0 ? '✅ Restrição removida' : `⏳ Usuário impedido de postar por ${hours}h`);
+    adminSearch();
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function adminSetRole(userId, role) {
+  if (!confirm(role === 'admin' ? 'Tornar este usuário administrador?' : 'Remover permissões de admin?')) return;
+  try {
+    await api('/admin/users/' + userId + '/role', { method: 'PATCH', body: { role } });
+    toast(role === 'admin' ? '✅ Admin concedido' : '✅ Admin removido');
+    adminSearch();
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
 }
 
 // ── Init ───────────────────────────────────────

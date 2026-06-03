@@ -101,6 +101,9 @@
         <button class="s-item" id="nav-profile" onclick="loadPage('profile')">
           <i class="ti ti-user"></i><span>Perfil</span>
         </button>
+        <button class="s-item s-item-admin" id="nav-admin" onclick="loadPage('admin')" style="display:none">
+          <i class="ti ti-shield-lock"></i><span>Admin</span>
+        </button>
       </nav>
       <div class="s-friends">
         <div class="s-section-title">Amigos Online</div>
@@ -170,6 +173,17 @@
           </button>
         </div>
         <div class="scrollable" id="notif-list"></div>
+      </div>
+
+      <!-- ADMIN -->
+      <div class="page" id="page-admin">
+        <div class="top-bar">
+          <span class="top-bar-title" style="color:#F87171"><i class="ti ti-shield-lock" style="margin-right:8px"></i>PAINEL ADMIN</span>
+          <input class="search-inp" id="admin-search" placeholder="Buscar por nome, nick ou email..." style="max-width:320px"
+            onkeyup="if(event.key==='Enter')adminSearch()">
+          <button onclick="adminSearch()" class="pill p-gold on">Buscar</button>
+        </div>
+        <div class="scrollable" id="admin-user-list"></div>
       </div>
 
       <!-- PERFIL -->

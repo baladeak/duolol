@@ -17,7 +17,12 @@ app.use(express.json());
 
 // Migração automática — adiciona colunas novas sem quebrar o banco existente
 const db = require('./db/connection');
-db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`).catch(()=>{});
+const migrations = [
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
+];
+migrations.forEach(sql => db.execute(sql).catch(() => {}));
 
 // Health check ANTES de tudo — EasyPanel usa isso para saber se o app está vivo
 app.get('/health', (_, res) => res.json({ status: 'ok', ts: new Date() }));
@@ -28,6 +33,7 @@ app.use('/api/posts',         require('./routes/posts'));
 app.use('/api/users',         require('./routes/users'));
 app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/admin',         require('./routes/admin'));
 
 // Frontend estático
 app.use(express.static(path.join(__dirname, 'public')));
