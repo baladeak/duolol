@@ -15,11 +15,34 @@ const $ = id => document.getElementById(id);
 
 // Som de notificação MSN
 function playMsnSound() {
+  if (me?.chat_muted) return; // respeitando preferência salva
   try {
     const audio = new Audio('/sounds/msn.wav');
     audio.volume = 0.6;
-    audio.play().catch(() => {}); // ignora bloqueio de autoplay
+    audio.play().catch(() => {});
   } catch {}
+}
+
+async function toggleChatMute() {
+  const muted = !me?.chat_muted;
+  try {
+    await api('/users/me', { method: 'PATCH', body: { chat_muted: muted } });
+    me.chat_muted = muted;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    updateMuteBtn();
+    toast(muted ? '🔇 Som do chat mutado' : '🔔 Som do chat ativado');
+  } catch { toast('Erro ao salvar preferência'); }
+}
+
+function updateMuteBtn() {
+  const btn = $('rp-mute-btn');
+  if (!btn) return;
+  const muted = me?.chat_muted;
+  btn.innerHTML = muted
+    ? '<i class="ti ti-volume-off"></i>'
+    : '<i class="ti ti-volume"></i>';
+  btn.title   = muted ? 'Som mutado — clique para ativar' : 'Som ativo — clique para mutar';
+  btn.classList.toggle('rp-mute-active', !!muted);
 }
 
 function api(path, opts = {}) {
@@ -234,6 +257,7 @@ async function refreshMe() {
     updateMyAvatar();
     renderSidebarRanks();
     bootAdmin();
+    updateMuteBtn();
   } catch (err) {
     // Token expirado
     if (err.error && err.error.includes('Token')) logout();

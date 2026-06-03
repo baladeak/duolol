@@ -531,6 +531,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .rp-chat-all:hover{color:var(--gold-l);background:var(--gold-dim)}
+.rp-mute-active{color:var(--red) !important}
+.rp-mute-active:hover{background:rgba(232,68,68,.1) !important;color:#FCA5A5 !important}
 
 .rp-conv-list{
   flex:1;

@@ -22,6 +22,7 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_muted TINYINT(1) NOT NULL DEFAULT 0`,
   `CREATE TABLE IF NOT EXISTS post_reports (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     post_id     INT NOT NULL,

@@ -32,7 +32,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -113,12 +113,13 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles, display_name } = req.body;
+  const { bio, roles, display_name, chat_muted } = req.body;
   if (display_name !== undefined) {
     const dn = display_name.trim().slice(0, 60) || null;
     await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
   }
   if (bio !== undefined) await db.execute('UPDATE users SET bio=? WHERE id=?', [bio, req.user.id]);
+  if (chat_muted !== undefined) await db.execute('UPDATE users SET chat_muted=? WHERE id=?', [chat_muted ? 1 : 0, req.user.id]);
   if (Array.isArray(roles)) {
     await db.execute('DELETE FROM user_roles WHERE user_id=?', [req.user.id]);
     for (let idx = 0; idx < Math.min(roles.length, 5); idx++)
