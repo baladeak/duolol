@@ -346,8 +346,53 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .s-friends{
-  padding:14px 12px;
   border-top:1px solid var(--border);
+  flex-shrink:0;
+  max-height:260px;
+  display:flex;
+  flex-direction:column;
+}
+
+.s-friends-header{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 12px 8px;cursor:pointer;
+  flex-shrink:0;
+}
+.s-friends-header:hover .s-section-title{color:var(--muted)}
+
+.s-friends-count{
+  font-size:10px;font-weight:700;
+  background:var(--green);color:#fff;
+  border-radius:10px;padding:1px 6px;
+  min-width:16px;text-align:center;
+  display:none;
+}
+
+.s-friends-body-collapsed #s-friends-body{display:none}
+.s-friends-body-collapsed #friends-chevron{transform:rotate(180deg)}
+
+#s-friends-body{
+  overflow-y:auto;
+  flex:1;
+  padding:0 8px 10px;
+}
+#s-friends-body::-webkit-scrollbar{width:3px}
+#s-friends-body::-webkit-scrollbar-thumb{background:var(--navy-c)}
+
+.s-friends-section-label{
+  font-size:9px;font-weight:700;letter-spacing:1.5px;
+  color:var(--dim);text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;
+  padding:4px 4px 6px;
+}
+
+.s-online-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+}
+.s-offline-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--dim);flex-shrink:0;
 }
 
 .s-section-title{
@@ -363,10 +408,11 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   display:flex;
   align-items:center;
   gap:9px;
-  padding:5px 5px;
+  padding:5px 4px;
   cursor:pointer;
   border-radius:7px;
-  transition:.15s;
+  transition:.12s;
+  margin-bottom:2px;
 }
 
 .friend-row:hover{background:var(--navy-c)}
@@ -2925,3 +2971,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .pill.p-purple.on{background:rgba(139,92,246,.8);color:#fff;border-color:rgba(139,92,246,.8)}
 .pill.p-red{border-color:rgba(239,68,68,.35);color:#FCA5A5;background:rgba(239,68,68,.1)}
 .pill.p-red.on{background:rgba(239,68,68,.8);color:#fff;border-color:rgba(239,68,68,.8)}
+
+/* ── Botão DM no item de amigo ─── */
+.friend-dm-btn{opacity:0;transition:opacity .15s}
+.friend-row:hover .friend-dm-btn{opacity:1}
+.friend-row:hover{background:var(--navy-h)}

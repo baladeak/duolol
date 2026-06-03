@@ -250,7 +250,7 @@ router.get('/', auth, async (req, res) => {
   const { q, tier, queue = 'SOLO', page = 1 } = req.query;
   const offset = (parseInt(page)-1)*20;
   let where = 'u.id!=? AND u.is_banned=0', params = [req.user.id];
-  if (q) { where += ' AND (u.username LIKE ? OR u.lol_game_name LIKE ?)'; params.push(`%${q}%`,`%${q}%`); }
+  if (q) { where += ' AND (u.lol_game_name LIKE ? OR u.display_name LIKE ? OR u.username LIKE ?)'; params.push(`%${q}%`,`%${q}%`,`%${q}%`); }
   if (tier) { where += ` AND u.${queue==='FLEX'?'flex_tier':'solo_tier'}=?`; params.push(tier.toUpperCase()); }
   const [users] = await db.execute(
     `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,

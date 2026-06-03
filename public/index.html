@@ -143,9 +143,31 @@
         </div>
       </div>
 
-      <div class="s-friends">
-        <div class="s-section-title">Amigos Online</div>
-        <div id="friends-online"></div>
+      <div class="s-friends" id="s-friends-panel">
+        <div class="s-friends-header" onclick="toggleFriendsPanel()">
+          <span class="s-section-title" style="margin-bottom:0">
+            <i class="ti ti-users" style="font-size:13px;margin-right:5px"></i>Amigos
+          </span>
+          <span id="friends-online-badge" class="s-friends-count"></span>
+          <i class="ti ti-chevron-up" id="friends-chevron" style="font-size:13px;color:var(--dim);margin-left:auto"></i>
+        </div>
+        <div id="s-friends-body">
+          <div class="s-friends-section">
+            <div class="s-friends-section-label">
+              <span class="s-online-dot"></span> Online
+            </div>
+            <div id="friends-online"></div>
+          </div>
+          <div class="s-friends-section" id="s-offline-section">
+            <div class="s-friends-section-label" style="margin-top:8px">
+              <span class="s-offline-dot"></span> Offline
+            </div>
+            <div id="friends-offline"></div>
+          </div>
+          <div id="s-no-friends" style="display:none;font-size:11px;color:var(--dim);padding:4px 0">
+            Sem amigos ainda
+          </div>
+        </div>
       </div>
     </aside>
 

@@ -1793,23 +1793,81 @@ async function unblockUser(userId, name) {
 async function loadFriends() {
   try {
     const friends = await api('/users/me/friends');
-    const list    = $('friends-online');
-    if (!list) return;
-    list.innerHTML = '';
+    const onlineList  = $('friends-online');
+    const offlineList = $('friends-offline');
+    const noFriends   = $('s-no-friends');
+    const offSection  = $('s-offline-section');
+    const badge       = $('friends-online-badge');
+    if (!onlineList) return;
+
+    onlineList.innerHTML = '';
+    offlineList.innerHTML = '';
+
     if (!friends.length) {
-      list.innerHTML = '<div style="font-size:11px;color:var(--dim);padding:4px">Sem amigos ainda</div>';
+      if (noFriends) noFriends.style.display = '';
+      if (offSection) offSection.style.display = 'none';
       return;
     }
-    friends.forEach(f => {
-      const div = document.createElement('div');
-      div.className   = 'friend-row';
-      div.id          = 'friend-' + f.id;
-      div.onclick     = () => openDM(f.id, f.username);
-      div.innerHTML   = `${avatarHTML(f, 'av-sm')}<span class="friend-name">${escapeHtml(f.username)}</span>`;
-      list.appendChild(div);
+    if (noFriends) noFriends.style.display = 'none';
+
+    const online  = friends.filter(f => f.online_status === 'online' || f.online_status === 'away');
+    const offline = friends.filter(f => f.online_status === 'offline' || !f.online_status);
+
+    // Badge com contagem de online
+    if (badge) {
+      badge.textContent = online.length;
+      badge.style.display = online.length > 0 ? '' : 'none';
+    }
+
+    // Renderizar online
+    if (online.length) {
+      onlineList.innerHTML = online.map(f => friendSidebarItemHTML(f)).join('');
+    } else {
+      onlineList.innerHTML = '<div style="font-size:11px;color:var(--dim);padding:3px 4px">Nenhum amigo online</div>';
+    }
+
+    // Renderizar offline
+    if (offSection) offSection.style.display = offline.length ? '' : 'none';
+    if (offline.length) {
+      offlineList.innerHTML = offline.map(f => friendSidebarItemHTML(f)).join('');
+    }
+
+    // Adicionar eventos
+    document.querySelectorAll('.friend-sidebar-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = parseInt(el.dataset.id);
+        const action = el.dataset.action;
+        if (action === 'profile') viewProfile(id);
+        else openDM(id, el.dataset.name);
+      });
     });
   } catch {}
 }
+
+function friendSidebarItemHTML(f) {
+  const name = escapeHtml(f.display_name || f.username);
+  const nick = escapeHtml(f.lol_game_name) + '#' + escapeHtml(f.lol_tag_line);
+  return `<div class="friend-row friend-sidebar-item" id="friend-${f.id}"
+               data-id="${f.id}" data-name="${escapeHtml(f.username)}" data-action="profile"
+               title="${nick}">
+    ${avatarHTML(f, 'av-sm')}
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+      <div style="font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nick}</div>
+    </div>
+    <button class="friend-dm-btn" title="Abrir chat"
+            onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')"
+            style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:14px;padding:2px 4px;border-radius:5px;flex-shrink:0">
+      <i class="ti ti-message-2"></i>
+    </button>
+  </div>`;
+}
+
+function toggleFriendsPanel() {
+  const panel = $('s-friends-panel');
+  if (panel) panel.classList.toggle('s-friends-body-collapsed');
+}
+
 
 // ── Right panel — Chat ao vivo ──────────────────
 let rpConvCache = []; // cache local para updates em tempo real
@@ -1880,6 +1938,8 @@ function updateFriendStatus(userId, status) {
   if (!el) return;
   const dot = el.querySelector('.status-dot');
   if (dot) dot.className = 'status-dot dot-' + status;
+  // Recarregar lista para mover entre online/offline
+  loadFriends();
 }
 
 async function addFriend(userId, btn) {
