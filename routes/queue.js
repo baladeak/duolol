@@ -12,33 +12,29 @@ router.post('/join', auth, async (req, res) => {
   // Remove entrada anterior se existir
   await db.execute('DELETE FROM queue_entries WHERE user_id=?', [req.user.id]);
 
-  // Expira em 30 minutos
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+  // Usar DATE_ADD(NOW()) para evitar bugs de timezone entre Node.js e MySQL
   await db.execute(
-    'INSERT INTO queue_entries (user_id, queue_type, expires_at) VALUES (?,?,?)',
-    [req.user.id, queue_type.toUpperCase(), expiresAt]
+    `INSERT INTO queue_entries (user_id, queue_type, expires_at)
+     VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
+    [req.user.id, queue_type.toUpperCase()]
   );
 
-  // Retorna dados do usuário para broadcast
+  // Buscar dados completos do usuário para broadcast
   const [rows] = await db.execute(
     `SELECT u.id, u.username, u.display_name, u.avatar_url, u.lol_game_name, u.lol_tag_line,
             u.solo_tier, u.solo_rank, u.solo_lp, u.flex_tier, u.flex_rank, u.flex_lp,
             u.online_status, u.has_mic,
-            GROUP_CONCAT(r.role ORDER BY r.priority) AS roles
+            GROUP_CONCAT(r.role ORDER BY r.priority SEPARATOR ',') AS roles
      FROM users u
      LEFT JOIN user_roles r ON r.user_id = u.id
      WHERE u.id = ?
      GROUP BY u.id`, [req.user.id]
   );
 
-  const user = rows[0];
-  user.queue_type = queue_type.toUpperCase();
-  user.joined_at  = new Date();
+  const user = { ...rows[0], queue_type: queue_type.toUpperCase(), joined_at: new Date() };
 
-  // Emitir em tempo real para todos via socket
-  if (global._io) {
-    global._io.emit('queue_update', { action: 'join', user });
-  }
+  // Emitir em tempo real para todos
+  if (global._io) global._io.emit('queue_update', { action: 'join', user });
 
   res.json({ ok: true, user });
 });
@@ -46,17 +42,15 @@ router.post('/join', auth, async (req, res) => {
 // Sair da fila
 router.delete('/leave', auth, async (req, res) => {
   await db.execute('DELETE FROM queue_entries WHERE user_id=?', [req.user.id]);
-  if (global._io) {
-    global._io.emit('queue_update', { action: 'leave', user_id: req.user.id });
-  }
+  if (global._io) global._io.emit('queue_update', { action: 'leave', user_id: req.user.id });
   res.json({ ok: true });
 });
 
-// Listar fila (remove expirados primeiro)
+// Listar fila atual
 router.get('/', auth, async (req, res) => {
   const { queue_type } = req.query;
 
-  // Limpa expirados
+  // Limpar expirados com NOW() do MySQL (sem conversão de timezone)
   await db.execute('DELETE FROM queue_entries WHERE expires_at < NOW()');
 
   let where = '1=1';
@@ -71,7 +65,7 @@ router.get('/', auth, async (req, res) => {
             u.solo_tier, u.solo_rank, u.solo_lp, u.flex_tier, u.flex_rank, u.flex_lp,
             u.online_status, u.has_mic,
             q.queue_type, q.joined_at, q.expires_at,
-            GROUP_CONCAT(r.role ORDER BY r.priority) AS roles
+            GROUP_CONCAT(r.role ORDER BY r.priority SEPARATOR ',') AS roles
      FROM queue_entries q
      JOIN users u ON u.id = q.user_id
      LEFT JOIN user_roles r ON r.user_id = u.id

@@ -2529,8 +2529,17 @@ function openQueuePanel() {
   $('queue-fab').style.display = 'none';
   loadQueueList();
   updateQueueChatInput();
-  // Pedir histórico do chat
-  if (socket) socket.emit('queue_chat_history');
+  // Pedir histórico do chat quando socket estiver pronto
+  emitWhenReady('queue_chat_history');
+}
+
+// Emite evento quando o socket estiver conectado (tenta até 3s)
+function emitWhenReady(event, data, retries = 10) {
+  if (socket?.connected) {
+    data !== undefined ? socket.emit(event, data) : socket.emit(event);
+  } else if (retries > 0) {
+    setTimeout(() => emitWhenReady(event, data, retries - 1), 300);
+  }
 }
 
 function closeQueuePanel() {
@@ -2593,7 +2602,7 @@ async function joinQueue() {
 
     toast('🟢 Você entrou na fila de ' + queueTypeLabel(queueType) + '!');
     updateQueueChatInput();
-    if (socket) socket.emit('queue_chat_history');
+    emitWhenReady('queue_chat_history');
     loadQueueList();
   } catch (err) {
     toast('Erro ao entrar na fila');
@@ -2646,16 +2655,20 @@ function queueTypeLabel(q) {
 async function loadQueueList() {
   try {
     const players = await api('/queue');
-    _allQueuePlayers = players;
-    // Atualizar badge do FAB
-    const badge = $('queue-fab-badge');
-    if (badge) {
-      badge.textContent = players.length;
-      badge.style.display = players.length > 0 ? '' : 'none';
+    // Só atualiza se a API retornou dados válidos (array)
+    if (Array.isArray(players)) {
+      _allQueuePlayers = players;
+      const badge = $('queue-fab-badge');
+      if (badge) {
+        badge.textContent   = players.length;
+        badge.style.display = players.length > 0 ? '' : 'none';
+      }
+      updateQueueCount(players.length);
+      renderQueueList();
     }
-    updateQueueCount(players.length);
-    renderQueueList();
-  } catch {}
+  } catch (err) {
+    console.warn('loadQueueList error:', err);
+  }
 }
 
 function updateQueueCount(n) {
@@ -2784,7 +2797,7 @@ function switchQueueTab(tab) {
     const badge = $('queue-chat-badge');
     if (badge) badge.style.display = 'none';
     // Pedir histórico
-    if (socket) socket.emit('queue_chat_history');
+    emitWhenReady('queue_chat_history');
     // Focar no input
     setTimeout(() => $('queue-chat-input')?.focus(), 50);
   }
@@ -2794,9 +2807,10 @@ function sendQueueChat() {
   const input = $('queue-chat-input');
   if (!input || !input.value.trim()) return;
   if (!_inQueue) { toast('⚠️ Entre na fila para enviar mensagens'); return; }
+  if (!socket?.connected) { toast('⚠️ Sem conexão em tempo real. Tentando reconectar...'); return; }
   const content = input.value.trim();
   input.value = '';
-  if (socket) socket.emit('queue_chat', { content });
+  socket.emit('queue_chat', { content });
 }
 
 function appendQueueChatMsg(msg) {
