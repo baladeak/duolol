@@ -24,12 +24,13 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
+  const { email, password } = req.body; // "email" agora aceita username ou email
+  if (!email || !password) return res.status(400).json({ error: 'Usuário/email e senha obrigatórios' });
   try {
+    const val = email.trim();
     const [rows] = await db.execute(
-      'SELECT * FROM users WHERE email=? AND is_banned=0 LIMIT 1',
-      [email.trim().toLowerCase()]
+      'SELECT * FROM users WHERE (email=? OR username=?) AND is_banned=0 LIMIT 1',
+      [val.toLowerCase(), val]
     );
     if (!rows.length) return res.status(401).json({ error: 'Credenciais inválidas' });
     const u = rows[0];

@@ -77,11 +77,22 @@ router.post('/me/friend-request', auth, async (req, res) => {
 // Responder por sender_id (usado pelas notificações)
 router.post('/me/friend-request/respond', auth, async (req, res) => {
   const { sender_id, action } = req.body;
+  // Busca qualquer solicitação pendente (sem filtrar status — compatível com bancos sem DEFAULT)
   const [fr] = await db.execute(
-    'SELECT * FROM friend_requests WHERE sender_id=? AND receiver_id=? AND status="PENDING" LIMIT 1',
+    `SELECT * FROM friend_requests
+     WHERE sender_id=? AND receiver_id=?
+       AND COALESCE(status,'PENDING') NOT IN ('ACCEPTED','REJECTED')
+     LIMIT 1`,
     [sender_id, req.user.id]
   );
-  if (!fr.length) return res.status(404).json({ error: 'Solicitação não encontrada' });
+  if (!fr.length) {
+    // Fallback: verifica se já são amigos (solicitação já foi aceita antes)
+    const a = Math.min(parseInt(sender_id), req.user.id);
+    const b = Math.max(parseInt(sender_id), req.user.id);
+    const [existing] = await db.execute('SELECT id FROM friendships WHERE user_a_id=? AND user_b_id=?', [a, b]);
+    if (existing.length) return res.json({ ok: true, already_friends: true });
+    return res.status(404).json({ error: 'Solicitação não encontrada' });
+  }
   const req_ = fr[0];
   if (action === 'accept') {
     await db.execute('UPDATE friend_requests SET status="ACCEPTED" WHERE id=?', [req_.id]);

@@ -850,6 +850,22 @@ function updateMsgBadge() {
   b.style.display = msgCount > 0 ? '' : 'none';
 }
 
+// ── YouTube helpers ────────────────────────────
+function ytId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function ytThumb(id) { return `https://img.youtube.com/vi/${id}/mqdefault.jpg`; }
+function spotifyId(url) {
+  const m = url.match(/spotify\.com\/(?:playlist|album|track)\/([A-Za-z0-9]+)/);
+  return m ? m[1] : null;
+}
+function spotifyType(url) {
+  const m = url.match(/spotify\.com\/(playlist|album|track)\//);
+  return m ? m[1] : 'playlist';
+}
+
 // ── Profile ────────────────────────────────────
 async function loadMyProfile() {
   try {
@@ -884,6 +900,9 @@ function renderProfile(user, isMe) {
     : isMe
       ? `<p class="profile-bio-empty">Clique em editar para contar seu estilo de jogo, lane favorita e horários...</p>`
       : `<p class="profile-bio-empty">Este jogador ainda não escreveu uma bio.</p>`;
+
+  // Carrega conteúdo do perfil em paralelo
+  api('/profile/' + user.id).then(content => renderProfileContent(user.id, content, isMe)).catch(() => {});
 
   $('profile-content').innerHTML = `
     <div class="profile-banner">
@@ -976,8 +995,300 @@ function renderProfile(user, isMe) {
         </div>
       </div>` : ''}
 
+    </div>
+
+    <!-- Abas estilo Instagram -->
+    <div class="profile-tabs" id="profile-tabs">
+      <button class="ptab active" data-tab="playlists" onclick="switchProfileTab('playlists')">
+        <i class="ti ti-playlist"></i> Playlists
+      </button>
+      <button class="ptab" data-tab="gameplays" onclick="switchProfileTab('gameplays')">
+        <i class="ti ti-device-gamepad-2"></i> Gameplays
+      </button>
+      <button class="ptab" data-tab="screenshots" onclick="switchProfileTab('screenshots')">
+        <i class="ti ti-camera"></i> Screenshots
+      </button>
+      <button class="ptab" data-tab="socials" onclick="switchProfileTab('socials')">
+        <i class="ti ti-at"></i> Redes
+      </button>
+    </div>
+    <div id="profile-tab-content">
+      <div class="loading"><div class="spinner"></div></div>
     </div>`;
+
   renderSidebarRanks();
+}
+
+let _profileContentCache = null;
+let _profileIsMe = false;
+let _profileTabActive = 'playlists';
+
+function renderProfileContent(userId, content, isMe) {
+  _profileContentCache = content;
+  _profileIsMe = isMe;
+  switchProfileTab(_profileTabActive, false);
+}
+
+function switchProfileTab(tab, scroll = true) {
+  _profileTabActive = tab;
+  document.querySelectorAll('.ptab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const box = $('profile-tab-content');
+  if (!box) return;
+  const c = _profileContentCache;
+  const isMe = _profileIsMe;
+
+  if (tab === 'playlists')   box.innerHTML = renderPlaylists(c?.playlists || [], isMe);
+  if (tab === 'gameplays')   box.innerHTML = renderGameplays(c?.gameplays || [], isMe);
+  if (tab === 'screenshots') box.innerHTML = renderScreenshots(c?.screenshots || [], isMe);
+  if (tab === 'socials')     box.innerHTML = renderSocialsTab(c?.socials || null, isMe);
+
+  if (scroll) box.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ── Playlists ──────────────────────────────────
+function renderPlaylists(items, isMe) {
+  const addBtn = isMe ? `
+    <div class="ptab-add-form" id="playlist-form" style="display:none">
+      <div class="ptab-form-grid">
+        <input class="form-input" id="pl-title" placeholder="Título da playlist" maxlength="120">
+        <input class="form-input" id="pl-genre" placeholder="Gênero (ex: Lo-fi, Rock)" maxlength="60">
+        <select class="form-input" id="pl-platform">
+          <option value="youtube">YouTube</option>
+          <option value="spotify">Spotify</option>
+        </select>
+        <input class="form-input" id="pl-url" placeholder="Link do YouTube ou Spotify" maxlength="500">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-post" onclick="addPlaylist()"><i class="ti ti-plus"></i> Adicionar</button>
+        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('playlist-form').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+    <button class="ptab-add-btn" onclick="$('playlist-form').style.display=$('playlist-form').style.display==='none'?'block':'none'">
+      <i class="ti ti-plus"></i> Adicionar Playlist
+    </button>` : '';
+
+  if (!items.length) return `<div class="ptab-empty"><i class="ti ti-playlist"></i><p>${isMe ? 'Adicione suas playlists favoritas para jogar!' : 'Nenhuma playlist ainda.'}</p></div>${addBtn}`;
+
+  return `${addBtn}<div class="ptab-playlist-list">${items.map(p => playlistCard(p, isMe)).join('')}</div>`;
+}
+
+function playlistCard(p, isMe) {
+  const yid = p.platform === 'youtube' ? ytId(p.url) : null;
+  const sid = p.platform === 'spotify' ? spotifyId(p.url) : null;
+  const stype = sid ? spotifyType(p.url) : 'playlist';
+
+  const player = yid
+    ? `<div class="mini-player-wrap" id="mpy-${p.id}">
+        <img src="${ytThumb(yid)}" class="mini-thumb" onclick="playYT('${yid}','mpy-${p.id}')" alt="">
+        <div class="mini-play-btn" onclick="playYT('${yid}','mpy-${p.id}')"><i class="ti ti-player-play-filled"></i></div>
+       </div>`
+    : sid
+      ? `<iframe src="https://open.spotify.com/embed/${stype}/${sid}?utm_source=generator&theme=0"
+           class="spotify-embed" allowtransparency="true" allow="encrypted-media" loading="lazy"></iframe>`
+      : `<a href="${escapeHtml(p.url)}" target="_blank" class="ext-link"><i class="ti ti-external-link"></i> Abrir link</a>`;
+
+  return `
+  <div class="playlist-card" id="plcard-${p.id}">
+    ${player}
+    <div class="playlist-info">
+      <div class="playlist-title">${escapeHtml(p.title)}</div>
+      ${p.genre ? `<div class="playlist-genre">${escapeHtml(p.genre)}</div>` : ''}
+      <div class="playlist-platform platform-${p.platform}">
+        <i class="ti ti-${p.platform === 'youtube' ? 'brand-youtube' : 'brand-spotify'}"></i>
+        ${p.platform === 'youtube' ? 'YouTube' : 'Spotify'}
+      </div>
+    </div>
+    ${isMe ? `<button class="ptab-del-btn" onclick="deletePlaylist(${p.id})"><i class="ti ti-trash"></i></button>` : ''}
+  </div>`;
+}
+
+function playYT(id, wrapperId) {
+  const wrap = $(wrapperId);
+  if (!wrap) return;
+  wrap.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1"
+    class="yt-iframe" allow="autoplay; encrypted-media" allowfullscreen loading="lazy"></iframe>`;
+}
+
+async function addPlaylist() {
+  const title = $('pl-title')?.value.trim();
+  const genre = $('pl-genre')?.value.trim();
+  const platform = $('pl-platform')?.value;
+  const url = $('pl-url')?.value.trim();
+  if (!title || !url) { toast('Preencha título e link'); return; }
+  try {
+    const item = await api('/profile/me/playlist', { method:'POST', body:{title,genre,platform,url} });
+    _profileContentCache.playlists.unshift(item);
+    switchProfileTab('playlists', false);
+    toast('✅ Playlist adicionada!');
+  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
+}
+
+async function deletePlaylist(id) {
+  await api('/profile/me/playlist/' + id, { method:'DELETE' });
+  _profileContentCache.playlists = _profileContentCache.playlists.filter(p => p.id !== id);
+  switchProfileTab('playlists', false);
+  toast('Playlist removida');
+}
+
+// ── Gameplays ──────────────────────────────────
+function renderGameplays(items, isMe) {
+  const addBtn = isMe ? `
+    <div class="ptab-add-form" id="gameplay-form" style="display:none">
+      <div class="ptab-form-grid">
+        <input class="form-input" id="gp-title" placeholder="Título do vídeo" maxlength="120">
+        <input class="form-input" id="gp-url" placeholder="Link do YouTube" maxlength="500">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-post" onclick="addGameplay()"><i class="ti ti-plus"></i> Adicionar</button>
+        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('gameplay-form').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+    <button class="ptab-add-btn" onclick="$('gameplay-form').style.display=$('gameplay-form').style.display==='none'?'block':'none'">
+      <i class="ti ti-plus"></i> Adicionar Gameplay
+    </button>` : '';
+
+  if (!items.length) return `<div class="ptab-empty"><i class="ti ti-device-gamepad-2"></i><p>${isMe ? 'Adicione seus melhores vídeos de gameplay!' : 'Nenhuma gameplay ainda.'}</p></div>${addBtn}`;
+
+  return `${addBtn}<div class="ptab-video-grid">${items.map(g => gameplayCard(g, isMe)).join('')}</div>`;
+}
+
+function gameplayCard(g, isMe) {
+  const yid = ytId(g.url);
+  const player = yid
+    ? `<div class="mini-player-wrap" id="mpg-${g.id}">
+        <img src="${ytThumb(yid)}" class="mini-thumb" onclick="playYT('${yid}','mpg-${g.id}')" alt="">
+        <div class="mini-play-btn" onclick="playYT('${yid}','mpg-${g.id}')"><i class="ti ti-player-play-filled"></i></div>
+       </div>`
+    : `<a href="${escapeHtml(g.url)}" target="_blank" class="ext-link"><i class="ti ti-external-link"></i> Abrir</a>`;
+
+  return `
+  <div class="gameplay-card" id="gpcard-${g.id}">
+    ${player}
+    <div class="gameplay-title">${escapeHtml(g.title)}</div>
+    ${isMe ? `<button class="ptab-del-btn" onclick="deleteGameplay(${g.id})"><i class="ti ti-trash"></i></button>` : ''}
+  </div>`;
+}
+
+async function addGameplay() {
+  const title = $('gp-title')?.value.trim();
+  const url = $('gp-url')?.value.trim();
+  if (!title || !url) { toast('Preencha título e link'); return; }
+  if (!ytId(url)) { toast('Link do YouTube inválido'); return; }
+  try {
+    const item = await api('/profile/me/gameplay', { method:'POST', body:{title,url} });
+    _profileContentCache.gameplays.unshift(item);
+    switchProfileTab('gameplays', false);
+    toast('✅ Gameplay adicionada!');
+  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
+}
+
+async function deleteGameplay(id) {
+  await api('/profile/me/gameplay/' + id, { method:'DELETE' });
+  _profileContentCache.gameplays = _profileContentCache.gameplays.filter(g => g.id !== id);
+  switchProfileTab('gameplays', false);
+  toast('Gameplay removida');
+}
+
+// ── Screenshots ────────────────────────────────
+function renderScreenshots(items, isMe) {
+  const addBtn = isMe ? `
+    <label class="ptab-add-btn" style="cursor:pointer">
+      <i class="ti ti-upload"></i> Upload Screenshot
+      <input type="file" accept="image/*" style="display:none" onchange="uploadScreenshot(event)">
+    </label>` : '';
+
+  if (!items.length) return `<div class="ptab-empty"><i class="ti ti-camera"></i><p>${isMe ? 'Adicione suas melhores screenshots de partidas!' : 'Nenhum screenshot ainda.'}</p></div>${addBtn}`;
+
+  return `${addBtn}<div class="ptab-screenshot-grid">${items.map(s => screenshotCard(s, isMe)).join('')}</div>`;
+}
+
+function screenshotCard(s, isMe) {
+  return `
+  <div class="screenshot-card" id="sscard-${s.id}">
+    <img src="${s.image}" class="screenshot-img" onclick="openScreenshot('${s.id}')" alt="${escapeHtml(s.caption||'')}">
+    ${s.caption ? `<div class="screenshot-caption">${escapeHtml(s.caption)}</div>` : ''}
+    ${isMe ? `<button class="ptab-del-btn ptab-del-ss" onclick="deleteScreenshot(${s.id})"><i class="ti ti-trash"></i></button>` : ''}
+  </div>`;
+}
+
+async function uploadScreenshot(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  toast('⏳ Processando imagem...');
+  try {
+    const image = await compressImage(file, 1200, 0.85);
+    const caption = prompt('Legenda (opcional):') || '';
+    const item = await api('/profile/me/screenshot', { method:'POST', body:{image, caption} });
+    _profileContentCache.screenshots.unshift(item);
+    switchProfileTab('screenshots', false);
+    toast('✅ Screenshot adicionada!');
+  } catch (err) { toast('❌ ' + (err.error||'Erro ao enviar')); }
+}
+
+async function deleteScreenshot(id) {
+  if (!confirm('Remover screenshot?')) return;
+  await api('/profile/me/screenshot/' + id, { method:'DELETE' });
+  _profileContentCache.screenshots = _profileContentCache.screenshots.filter(s => s.id !== id);
+  switchProfileTab('screenshots', false);
+  toast('Screenshot removida');
+}
+
+function openScreenshot(id) {
+  const s = _profileContentCache?.screenshots?.find(x => x.id == id);
+  if (!s) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:3000;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:20px';
+  ov.onclick = () => ov.remove();
+  ov.innerHTML = `<img src="${s.image}" style="max-width:100%;max-height:90vh;border-radius:10px;box-shadow:0 0 60px rgba(0,0,0,.8)">`;
+  document.body.appendChild(ov);
+}
+
+// ── Redes Sociais ──────────────────────────────
+function renderSocialsTab(socials, isMe) {
+  const ig = socials?.instagram || '';
+  const tt = socials?.tiktok || '';
+  const yt = socials?.youtube || '';
+
+  const viewLinks = `
+    <div class="socials-view">
+      ${ig ? `<a href="https://instagram.com/${ig.replace('@','')}" target="_blank" class="social-link social-ig"><i class="ti ti-brand-instagram"></i><span>@${ig.replace('@','')}</span></a>` : ''}
+      ${tt ? `<a href="https://tiktok.com/@${tt.replace('@','')}" target="_blank" class="social-link social-tt"><i class="ti ti-brand-tiktok"></i><span>@${tt.replace('@','')}</span></a>` : ''}
+      ${yt ? `<a href="${yt.startsWith('http') ? yt : 'https://youtube.com/@'+yt.replace('@','')}" target="_blank" class="social-link social-yt"><i class="ti ti-brand-youtube"></i><span>${yt}</span></a>` : ''}
+      ${!ig && !tt && !yt ? `<div class="ptab-empty"><i class="ti ti-at"></i><p>${isMe ? 'Adicione suas redes sociais!' : 'Nenhuma rede social.'}</p></div>` : ''}
+    </div>`;
+
+  const editForm = isMe ? `
+    <div class="ptab-add-form" id="socials-form" style="display:none">
+      <div class="ptab-form-grid">
+        <div class="social-input-wrap"><i class="ti ti-brand-instagram social-input-icon" style="color:#E1306C"></i>
+          <input class="form-input" id="soc-ig" placeholder="@seu_instagram" value="${escapeHtml(ig)}" maxlength="120"></div>
+        <div class="social-input-wrap"><i class="ti ti-brand-tiktok social-input-icon" style="color:#fff"></i>
+          <input class="form-input" id="soc-tt" placeholder="@seu_tiktok" value="${escapeHtml(tt)}" maxlength="120"></div>
+        <div class="social-input-wrap"><i class="ti ti-brand-youtube social-input-icon" style="color:#FF0000"></i>
+          <input class="form-input" id="soc-yt" placeholder="@seu_youtube ou link" value="${escapeHtml(yt)}" maxlength="200"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-post" onclick="saveSocials()"><i class="ti ti-check"></i> Salvar</button>
+        <button class="btn-outline" style="padding:8px 14px;font-size:12px" onclick="$('socials-form').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+    <button class="ptab-add-btn" onclick="$('socials-form').style.display=$('socials-form').style.display==='none'?'block':'none'">
+      <i class="ti ti-pencil"></i> Editar Redes Sociais
+    </button>` : '';
+
+  return editForm + viewLinks;
+}
+
+async function saveSocials() {
+  const instagram = $('soc-ig')?.value.trim();
+  const tiktok    = $('soc-tt')?.value.trim();
+  const youtube   = $('soc-yt')?.value.trim();
+  try {
+    await api('/profile/me/socials', { method:'PUT', body:{instagram,tiktok,youtube} });
+    _profileContentCache.socials = { instagram, tiktok, youtube };
+    switchProfileTab('socials', false);
+    toast('✅ Redes sociais salvas!');
+  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
 }
 
 function toggleBioEdit(btn) {

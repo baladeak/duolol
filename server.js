@@ -23,6 +23,37 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_muted TINYINT(1) NOT NULL DEFAULT 0`,
+  `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
+  `CREATE TABLE IF NOT EXISTS profile_playlists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    genre VARCHAR(60) NULL,
+    platform ENUM('youtube','spotify') NOT NULL DEFAULT 'youtube',
+    url VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS profile_gameplays (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS profile_screenshots (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    image MEDIUMTEXT NOT NULL,
+    caption VARCHAR(200) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS profile_socials (
+    user_id INT PRIMARY KEY,
+    instagram VARCHAR(120) NULL,
+    tiktok VARCHAR(120) NULL,
+    youtube VARCHAR(200) NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
   `CREATE TABLE IF NOT EXISTS user_blocks (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     blocker_id INT NOT NULL,
@@ -53,6 +84,7 @@ app.use('/api/users',         require('./routes/users'));
 app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin',         require('./routes/admin'));
+app.use('/api/profile',       require('./routes/profile'));
 
 // Frontend estático
 app.use(express.static(path.join(__dirname, 'public')));
