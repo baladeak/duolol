@@ -1169,10 +1169,10 @@ function renderProfile(user, isMe) {
       <div class="profile-actions">
         ${isMe
           ? `<button id="mic-toggle-btn" type="button"
-               class="mic-toggle-btn ${user.has_mic ? 'mic-on' : ''}"
-               onclick="toggleMicSave(this)">
+               class="mic-icon-btn ${user.has_mic ? 'mic-on' : ''}"
+               onclick="toggleMicSave(this)"
+               title="${user.has_mic ? 'Microfone ativo — clique para desativar' : 'Sem microfone — clique para ativar'}">
                <i class="ti ti-microphone${user.has_mic ? '' : '-off'}"></i>
-               <span>${user.has_mic ? 'Tenho microfone' : 'Sem microfone'}</span>
              </button>
              <button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
              <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`
@@ -1262,15 +1262,7 @@ function renderProfile(user, isMe) {
         </div>
       </div>
 
-      ${user.roles?.length ? `
-      <div class="profile-section">
-        <div class="profile-section-head">
-          <span class="profile-section-title"><i class="ti ti-sword"></i> Lanes</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${user.roles.map(r => `<span class="tag tag-solo on" style="cursor:default">${r.role}</span>`).join('')}
-        </div>
-      </div>` : ''}
+      
 
     </div>
 
@@ -1882,16 +1874,18 @@ function toggleMicEdit(btn) {
   const isOn = btn.classList.toggle('mic-on');
   const icon  = btn.querySelector('i');
   const label = btn.querySelector('span');
-  icon.className    = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
-  label.textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
+  icon.className = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
+  btn.title      = isOn ? 'Microfone ativo — clique para desativar' : 'Sem microfone — clique para ativar';
+  if (btn.querySelector('span')) btn.querySelector('span').textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
 }
 
 async function toggleMicSave(btn) {
   const isOn = btn.classList.toggle('mic-on');
   const icon  = btn.querySelector('i');
   const label = btn.querySelector('span');
-  icon.className    = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
-  label.textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
+  icon.className = isOn ? 'ti ti-microphone' : 'ti ti-microphone-off';
+  btn.title      = isOn ? 'Microfone ativo — clique para desativar' : 'Sem microfone — clique para ativar';
+  if (btn.querySelector('span')) btn.querySelector('span').textContent = isOn ? 'Tenho microfone' : 'Sem microfone';
   try {
     await api('/users/me', { method: 'PATCH', body: { has_mic: isOn ? 1 : 0 } });
     me.has_mic = isOn ? 1 : 0;

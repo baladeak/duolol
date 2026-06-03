@@ -1663,7 +1663,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 .pstat-lbl{
   font-size:10px;
-  color:var(--dim);
+  color:var(--text);
   text-transform:uppercase;
   letter-spacing:1px;
   margin-top:3px;
@@ -1678,7 +1678,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-body{
   padding:16px 20px;
   display:grid;
-  grid-template-columns:1.1fr 1.6fr 0.8fr;
+  grid-template-columns:1fr 1.5fr;
   gap:20px;
   align-items:stretch;
   overflow-y:auto;
@@ -3126,4 +3126,29 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-actions .mic-toggle-btn{
   width:100%;
   justify-content:center;
+}
+
+/* Ícone de mic compacto no perfil */
+.mic-icon-btn{
+  width:36px;height:36px;
+  border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--navy);border:1.5px solid var(--border-h);
+  color:var(--dim);font-size:18px;
+  transition:all .2s;
+}
+.mic-icon-btn:hover{
+  border-color:var(--muted);color:var(--muted);
+}
+.mic-icon-btn.mic-on{
+  background:rgba(34,197,94,.12);
+  border-color:rgba(34,197,94,.5);
+  color:var(--green);
+}
+.mic-icon-btn.mic-on:hover{
+  background:rgba(34,197,94,.2);
+}
+/* Remover a regra antiga que forçava width:100% */
+.profile-actions .mic-toggle-btn{
+  width:auto;
 }
