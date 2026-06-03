@@ -1069,11 +1069,14 @@ async function confirmAddModal() {
   if (!_addModalAction) return;
   const btn = $('add-modal-confirm');
   btn.disabled = true;
-  btn.textContent = 'Salvando...';
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Salvando...';
   try {
-    await _addModalAction();
-    closeAddModal();
-  } catch {}
+    const result = await _addModalAction();
+    // false = usuário não selecionou arquivo (toast já foi mostrado)
+    if (result !== false) closeAddModal();
+  } catch (err) {
+    toast('❌ ' + (err?.error || err?.message || 'Erro ao salvar. Tente novamente.'));
+  }
   btn.disabled = false;
   btn.innerHTML = '<i class="ti ti-check"></i> Adicionar';
 }
@@ -1159,13 +1162,11 @@ async function addPlaylist() {
   const genre = $('pl-genre')?.value.trim();
   const platform = $('pl-platform')?.value;
   const url = $('pl-url')?.value.trim();
-  if (!title || !url) { toast('Preencha título e link'); return; }
-  try {
-    const item = await api('/profile/me/playlist', { method:'POST', body:{title,genre,platform,url} });
-    _profileContentCache.playlists.unshift(item);
-    switchProfileTab('playlists', false);
-    toast('✅ Playlist adicionada!');
-  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
+  if (!title || !url) { toast('⚠️ Preencha título e link'); return false; }
+  const item = await api('/profile/me/playlist', { method:'POST', body:{title,genre,platform,url} });
+  if (_profileContentCache) _profileContentCache.playlists.unshift(item);
+  switchProfileTab('playlists', false);
+  toast('✅ Playlist adicionada!');
 }
 
 async function deletePlaylist(id) {
@@ -1220,14 +1221,12 @@ function gameplayCard(g, isMe) {
 async function addGameplay() {
   const title = $('gp-title')?.value.trim();
   const url = $('gp-url')?.value.trim();
-  if (!title || !url) { toast('Preencha título e link'); return; }
-  if (!ytId(url)) { toast('Link do YouTube inválido'); return; }
-  try {
-    const item = await api('/profile/me/gameplay', { method:'POST', body:{title,url} });
-    _profileContentCache.gameplays.unshift(item);
-    switchProfileTab('gameplays', false);
-    toast('✅ Gameplay adicionada!');
-  } catch (err) { toast('❌ ' + (err.error||'Erro')); }
+  if (!title || !url) { toast('⚠️ Preencha título e link'); return false; }
+  if (!ytId(url)) { toast('⚠️ Link do YouTube inválido'); return false; }
+  const item = await api('/profile/me/gameplay', { method:'POST', body:{title,url} });
+  if (_profileContentCache) _profileContentCache.gameplays.unshift(item);
+  switchProfileTab('gameplays', false);
+  toast('✅ Gameplay adicionada!');
 }
 
 async function deleteGameplay(id) {
@@ -1288,13 +1287,16 @@ function previewScreenshot(e) {
 
 async function uploadScreenshot() {
   const inp = $('ss-file-input');
-  if (!inp?.files?.length) { toast('Selecione uma imagem'); throw new Error('no file'); }
+  if (!inp?.files?.length) {
+    toast('⚠️ Selecione uma imagem primeiro');
+    return false; // sinaliza que não deve fechar o modal
+  }
   const file = inp.files[0];
-  toast('⏳ Processando...');
+  toast('⏳ Comprimindo imagem...');
   const image = await compressImage(file, 1200, 0.85);
   const caption = $('ss-caption')?.value.trim() || '';
   const item = await api('/profile/me/screenshot', { method:'POST', body:{image, caption} });
-  _profileContentCache.screenshots.unshift(item);
+  if (_profileContentCache) _profileContentCache.screenshots.unshift(item);
   switchProfileTab('screenshots', false);
   toast('✅ Screenshot adicionada!');
 }
@@ -1364,7 +1366,7 @@ async function saveSocials() {
   const tiktok    = $('soc-tt')?.value.trim();
   const youtube   = $('soc-yt')?.value.trim();
   await api('/profile/me/socials', { method:'PUT', body:{instagram,tiktok,youtube} });
-  _profileContentCache.socials = { instagram, tiktok, youtube };
+  if (_profileContentCache) _profileContentCache.socials = { instagram, tiktok, youtube };
   switchProfileTab('socials', false);
   toast('✅ Redes sociais salvas!');
 }
