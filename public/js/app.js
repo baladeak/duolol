@@ -933,11 +933,16 @@ function renderBannerChampList(champs) {
   const list = document.getElementById('banner-champ-list');
   list.innerHTML = champs.map(c => {
     const key = champKey(c);
-    return `<div class="banner-champ-item" onclick="selectBannerChamp('${key}','${escapeHtml(c)}',this)">
+    // Usa data-attributes para evitar quebra com aspas simples nos nomes (Kai'Sa, Rek'Sai, etc.)
+    return `<div class="banner-champ-item" data-key="${key}" data-name="${escapeHtml(c)}" onclick="selectBannerChampEl(this)">
       <img src="${portraitUrl(key)}" class="banner-champ-portrait" onerror="this.style.display='none'" loading="lazy">
       <span>${escapeHtml(c)}</span>
     </div>`;
   }).join('');
+}
+
+function selectBannerChampEl(el) {
+  selectBannerChamp(el.dataset.key, el.dataset.name, el);
 }
 
 let _lastBannerChampEl = null;
@@ -955,17 +960,31 @@ async function selectBannerChamp(key, displayName, el) {
     return;
   }
 
+  // Filtra skins sem imagem (chromas não têm splash/tile próprio)
+  const skinsWithImage = await filterSkinsWithImage(key, skins);
+
   panel.innerHTML = `
     <div style="margin-bottom:12px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;color:var(--gold-l)">${escapeHtml(displayName)}</div>
     <div class="banner-skin-grid">
-      ${skins.map(s => `
+      ${skinsWithImage.map(s => `
         <div class="banner-skin-card" data-key="${key}" data-num="${s.num}" data-name="${escapeHtml(s.name==='default'?displayName:s.name)}"
              onclick="selectBannerSkin(this)">
           <img src="${tileUrl(key, s.num)}" class="banner-skin-thumb" loading="lazy"
-               onerror="this.style.display='none'">
+               onerror="this.parentElement.style.display='none'">
           <div class="banner-skin-label">${s.name==='default'?'Padrão':escapeHtml(s.name)}</div>
         </div>`).join('')}
     </div>`;
+}
+
+// Testa quais skins têm imagem válida (remove chromas que retornam 404)
+async function filterSkinsWithImage(key, skins) {
+  const checks = skins.map(s => 
+    fetch(tileUrl(key, s.num), { method: 'HEAD' })
+      .then(r => r.ok ? s : null)
+      .catch(() => null)
+  );
+  const results = await Promise.all(checks);
+  return results.filter(Boolean);
 }
 
 function selectBannerSkin(el) {
