@@ -90,6 +90,9 @@
         <button class="s-item" id="nav-explore" onclick="loadPage('explore')">
           <i class="ti ti-users"></i><span>Explorar</span>
         </button>
+        <button class="s-item" id="nav-friends" onclick="loadPage('friends')">
+          <i class="ti ti-users"></i><span>Amigos</span>
+        </button>
         <button class="s-item" id="nav-messages" onclick="loadPage('messages')">
           <i class="ti ti-message-2"></i><span>Mensagens</span>
           <span class="s-badge" id="msg-badge" style="display:none">0</span>
@@ -172,6 +175,14 @@
         </div>
       </div>
 
+      <!-- AMIGOS -->
+      <div class="page" id="page-friends">
+        <div class="top-bar">
+          <span class="top-bar-title">AMIGOS</span>
+        </div>
+        <div class="scrollable" id="friends-list-page"></div>
+      </div>
+
       <!-- MENSAGENS -->
       <div class="page" id="page-messages">
         <div class="top-bar"><span class="top-bar-title">MENSAGENS</span></div>
@@ -250,8 +261,10 @@
 <!-- Chat flutuante -->
 <div class="chat-win" id="chat-window">
   <div class="chat-win-head">
-    <div class="av av-sm" style="background:var(--blue);color:#fff" id="chat-av-header"></div>
-    <span class="chat-win-name" id="chat-partner-name">...</span>
+    <div class="av av-sm" style="background:var(--blue);color:#fff;cursor:pointer" id="chat-av-header"
+         onclick="currentChatPartner&&viewProfile(currentChatPartner.id)"></div>
+    <span class="chat-win-name" id="chat-partner-name" style="cursor:pointer"
+          onclick="currentChatPartner&&viewProfile(currentChatPartner.id)">...</span>
     <button class="chat-win-close" onclick="document.getElementById('chat-window').classList.remove('open')"><i class="ti ti-x"></i></button>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>

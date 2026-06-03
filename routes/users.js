@@ -128,6 +128,38 @@ router.patch('/me', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Remover amizade
+router.delete('/me/friends/:id', auth, async (req, res) => {
+  const a = Math.min(req.user.id, parseInt(req.params.id));
+  const b = Math.max(req.user.id, parseInt(req.params.id));
+  await db.execute('DELETE FROM friendships WHERE user_a_id=? AND user_b_id=?', [a, b]);
+  res.json({ ok: true });
+});
+
+// Bloquear usuário
+router.post('/me/block/:id', auth, async (req, res) => {
+  const targetId = parseInt(req.params.id);
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Não pode bloquear a si mesmo' });
+  // Remove amizade ao bloquear
+  const a = Math.min(req.user.id, targetId);
+  const b = Math.max(req.user.id, targetId);
+  await db.execute('DELETE FROM friendships WHERE user_a_id=? AND user_b_id=?', [a, b]);
+  await db.execute('INSERT IGNORE INTO user_blocks (blocker_id, blocked_id) VALUES (?,?)', [req.user.id, targetId]);
+  res.json({ ok: true });
+});
+
+// Desbloquear usuário
+router.delete('/me/block/:id', auth, async (req, res) => {
+  await db.execute('DELETE FROM user_blocks WHERE blocker_id=? AND blocked_id=?', [req.user.id, parseInt(req.params.id)]);
+  res.json({ ok: true });
+});
+
+// Checar se um usuário está bloqueado
+router.get('/me/block/:id', auth, async (req, res) => {
+  const [r] = await db.execute('SELECT id FROM user_blocks WHERE blocker_id=? AND blocked_id=?', [req.user.id, parseInt(req.params.id)]);
+  res.json({ blocked: r.length > 0 });
+});
+
 router.post('/me/sync-elo', auth, async (req, res) => {
   const key = RIOT_KEY();
   if (!key || key.includes('xxxxxxxx'))
@@ -220,7 +252,11 @@ router.get('/:id', auth, async (req, res) => {
     'SELECT id FROM friendships WHERE (user_a_id=? AND user_b_id=?) OR (user_a_id=? AND user_b_id=?) LIMIT 1',
     [req.user.id, req.params.id, req.params.id, req.user.id]
   );
-  res.json({ ...rows[0], roles, is_friend: fs.length > 0 });
+  const [bl] = await db.execute(
+    'SELECT id FROM user_blocks WHERE blocker_id=? AND blocked_id=? LIMIT 1',
+    [req.user.id, req.params.id]
+  );
+  res.json({ ...rows[0], roles, is_friend: fs.length > 0, is_blocked: bl.length > 0 });
 });
 
 module.exports = router;

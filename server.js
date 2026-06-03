@@ -23,6 +23,13 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_muted TINYINT(1) NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS user_blocks (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    blocker_id INT NOT NULL,
+    blocked_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_block (blocker_id, blocked_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS post_reports (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     post_id     INT NOT NULL,

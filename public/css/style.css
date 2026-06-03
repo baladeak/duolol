@@ -1545,6 +1545,120 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   opacity:1;
 }
 
+/* ── Página de Amigos ─────────────────────────── */
+.friends-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:14px;
+  padding:18px;
+}
+
+.friend-card{
+  background:var(--navy-c);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  transition:.2s;
+}
+
+.friend-card:hover{
+  border-color:var(--border-h);
+  transform:translateY(-2px);
+  box-shadow:0 8px 28px rgba(0,0,0,.4);
+}
+
+.friend-card-av{position:relative}
+
+.friend-card-info{
+  text-align:center;
+  width:100%;
+}
+
+.friend-card-name{
+  font-family:'Rajdhani',sans-serif;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.5px;
+  cursor:pointer;
+  color:var(--text);
+  transition:.15s;
+  margin-bottom:3px;
+}
+
+.friend-card-name:hover{color:var(--gold-l)}
+
+.friend-card-nick{
+  font-size:12px;
+  color:var(--dim);
+  margin-bottom:8px;
+}
+
+.friend-card-elos{
+  display:flex;
+  gap:5px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+
+.friend-card-status{
+  font-size:12px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  justify-content:center;
+}
+
+.fc-dot{
+  width:7px;height:7px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.fc-online{color:var(--green)}
+.fc-online .fc-dot{background:var(--green);box-shadow:0 0 5px rgba(34,197,94,.5)}
+.fc-offline{color:var(--dim)}
+.fc-offline .fc-dot{background:var(--dim)}
+
+.friend-card-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  width:100%;
+}
+
+.fc-btn{
+  padding:8px 6px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--navy);
+  color:var(--muted);
+  font-family:'Exo 2',sans-serif;
+  letter-spacing:.3px;
+  transition:.18s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  white-space:nowrap;
+}
+
+.fc-btn:hover{background:var(--navy-h);color:var(--text);border-color:var(--border-h)}
+.fc-btn-blue{border-color:rgba(64,128,255,.3);color:#93C5FD;background:rgba(64,128,255,.08)}
+.fc-btn-blue:hover{background:rgba(64,128,255,.2);color:#fff;border-color:var(--blue)}
+.fc-btn-warn{border-color:rgba(251,191,36,.25);color:#FDE68A;background:rgba(251,191,36,.07)}
+.fc-btn-warn:hover{background:rgba(251,191,36,.18);border-color:rgba(251,191,36,.5)}
+.fc-btn-red{border-color:rgba(232,68,68,.25);color:#FCA5A5;background:rgba(232,68,68,.07)}
+.fc-btn-red:hover{background:rgba(232,68,68,.18);border-color:rgba(232,68,68,.5)}
+
 /* ── Explore ──────────────────────────────────── */
 
 .explore-grid{

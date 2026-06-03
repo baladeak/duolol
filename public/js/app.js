@@ -333,6 +333,7 @@ function loadPage(name) {
 
   if (name === 'feed')          loadFeed();
   if (name === 'explore')       loadExplore();
+  if (name === 'friends')       loadFriendsPage();
   if (name === 'messages')      loadConversations();
   if (name === 'notifications') loadNotifications();
   if (name === 'profile')       loadMyProfile();
@@ -906,8 +907,17 @@ function renderProfile(user, isMe) {
         ${isMe
           ? `<button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
              <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`
-          : `<button class="btn-outline" onclick="addFriendById(${user.id},'${escapeHtml(user.username)}',this)"><i class="ti ti-user-plus"></i> Adicionar</button>
-             <button class="btn-outline" style="border-color:rgba(64,128,255,.4);color:#93C5FD" onclick="openDM(${user.id},'${escapeHtml(user.username)}')"><i class="ti ti-message-2"></i> DM</button>`}
+          : `<button class="btn-outline" style="border-color:rgba(64,128,255,.4);color:#93C5FD" onclick="openDM(${user.id},'${escapeHtml(dName(user))}')"><i class="ti ti-message-2"></i> Mensagem</button>
+             ${user.is_friend
+               ? `<button class="btn-outline" onclick="confirmUnfriend(${user.id},'${escapeHtml(dName(user))}')"><i class="ti ti-user-minus"></i> Desfazer amizade</button>`
+               : `<button class="btn-outline" onclick="addFriendById(${user.id},'${escapeHtml(dName(user))}',this)"><i class="ti ti-user-plus"></i> Adicionar</button>`}
+             <button class="btn-outline" id="profile-block-btn-${user.id}"
+               style="border-color:rgba(239,68,68,.35);color:#FCA5A5"
+               onclick="${user.is_blocked ? `unblockUser(${user.id},'${escapeHtml(dName(user))}')` : `confirmBlockUser(${user.id},'${escapeHtml(dName(user))}')`}">
+               <i class="ti ti-${user.is_blocked ? 'lock-open' : 'ban'}"></i> ${user.is_blocked ? 'Desbloquear' : 'Bloquear'}
+             </button>
+             <button class="btn-outline" style="border-color:rgba(251,191,36,.35);color:#FDE68A"
+               onclick="openReportModal(null,${user.id})"><i class="ti ti-flag"></i> Denunciar</button>`}
       </div>
     </div>
 
@@ -1009,6 +1019,98 @@ async function saveBio() {
     toast('✅ Perfil atualizado!');
     loadMyProfile();
   } catch { toast('❌ Erro ao salvar'); }
+}
+
+// ── Página de Amigos ───────────────────────────
+async function loadFriendsPage() {
+  const list = $('friends-list-page');
+  list.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando...</div>';
+  try {
+    const friends = await api('/users/me/friends');
+    if (!friends.length) {
+      list.innerHTML = '<div class="empty"><i class="ti ti-users-off"></i><p>Você ainda não tem amigos. Explore e adicione jogadores!</p></div>';
+      return;
+    }
+    list.innerHTML = `<div class="friends-grid">${friends.map(f => friendCardHTML(f)).join('')}</div>`;
+  } catch { list.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+function friendCardHTML(f) {
+  const col    = avatarColor(f.username || 'U');
+  const px     = AV_SIZES['av-lg'] || 150;
+  const letter = (f.display_name || f.username || 'U')[0].toUpperCase();
+  const online = f.online_status === 'online';
+  const eloSolo = eloLabel(f.solo_tier, f.solo_rank, f.solo_lp || 0);
+  const eloFlex = eloLabel(f.flex_tier, f.flex_rank, f.flex_lp || 0);
+
+  const avatarEl = f.avatar_url
+    ? `<img src="${f.avatar_url}" style="width:${px}px;height:${px}px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="viewProfile(${f.id})" alt="">`
+    : `<div class="av av-lg" style="width:${px}px;height:${px}px;background:${col};color:#0E0E12;cursor:pointer" onclick="viewProfile(${f.id})">${letter}<div class="status-dot ${online ? 'dot-online' : 'dot-offline'}"></div></div>`;
+
+  return `
+  <div class="friend-card" id="fcard-${f.id}">
+    <div class="friend-card-av">${avatarEl}</div>
+    <div class="friend-card-info">
+      <div class="friend-card-name" onclick="viewProfile(${f.id})">${escapeHtml(f.display_name || f.username)}</div>
+      <div class="friend-card-nick">${escapeHtml(f.lol_game_name)}#${escapeHtml(f.lol_tag_line)}</div>
+      <div class="friend-card-elos">
+        <span class="elo ${eloClass(f.solo_tier)}">Solo ${eloSolo}</span>
+        <span class="elo ${eloClass(f.flex_tier)}">Flex ${eloFlex}</span>
+      </div>
+      <div class="friend-card-status ${online ? 'fc-online' : 'fc-offline'}">
+        <span class="fc-dot"></span>${online ? 'Online' : 'Offline'}
+      </div>
+    </div>
+    <div class="friend-card-actions">
+      <button class="fc-btn fc-btn-blue" onclick="openDM(${f.id},'${escapeHtml(f.display_name||f.username)}')">
+        <i class="ti ti-message-2"></i> Mensagem
+      </button>
+      <button class="fc-btn" onclick="viewProfile(${f.id})">
+        <i class="ti ti-user"></i> Perfil
+      </button>
+      <button class="fc-btn fc-btn-warn" onclick="confirmUnfriend(${f.id},'${escapeHtml(f.display_name||f.username)}')">
+        <i class="ti ti-user-minus"></i> Desfazer
+      </button>
+      <button class="fc-btn fc-btn-red" onclick="confirmBlockUser(${f.id},'${escapeHtml(f.display_name||f.username)}')">
+        <i class="ti ti-ban"></i> Bloquear
+      </button>
+    </div>
+  </div>`;
+}
+
+async function confirmUnfriend(userId, name) {
+  if (!confirm(`Desfazer amizade com ${name}?`)) return;
+  try {
+    await api(`/users/me/friends/${userId}`, { method: 'DELETE' });
+    $('fcard-' + userId)?.remove();
+    toast('✅ Amizade desfeita');
+    loadFriends(); // atualiza sidebar
+    if (!document.querySelector('.friend-card')) {
+      $('friends-list-page').innerHTML = '<div class="empty"><i class="ti ti-users-off"></i><p>Você ainda não tem amigos.</p></div>';
+    }
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function confirmBlockUser(userId, name) {
+  if (!confirm(`Bloquear ${name}? Isso também vai desfazer a amizade.`)) return;
+  try {
+    await api(`/users/me/block/${userId}`, { method: 'POST' });
+    $('fcard-' + userId)?.remove();
+    toast(`🚫 ${name} foi bloqueado`);
+    loadFriends();
+    // Atualiza botão no perfil se estiver aberto
+    const btn = $('profile-block-btn-' + userId);
+    if (btn) { btn.innerHTML = '<i class="ti ti-lock-open"></i> Desbloquear'; btn.onclick = () => unblockUser(userId, name); }
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
+}
+
+async function unblockUser(userId, name) {
+  try {
+    await api(`/users/me/block/${userId}`, { method: 'DELETE' });
+    toast(`✅ ${name} foi desbloqueado`);
+    const btn = $('profile-block-btn-' + userId);
+    if (btn) { btn.innerHTML = '<i class="ti ti-ban"></i> Bloquear'; btn.onclick = () => confirmBlockUser(userId, name); }
+  } catch (err) { toast('❌ ' + (err.error || 'Erro')); }
 }
 
 // ── Friends sidebar ────────────────────────────
