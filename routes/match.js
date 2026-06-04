@@ -112,7 +112,7 @@ router.post('/swipe', auth, async (req, res) => {
         );
         // Criar amizade pendente automaticamente
         await db.execute(
-          'INSERT IGNORE INTO friend_requests (from_id,to_id,status) VALUES (?,?,?)',
+          'INSERT IGNORE INTO friend_requests (sender_id,receiver_id,status) VALUES (?,?,?)',
           [req.user.id, target_id, 'PENDING']
         );
         if (global._io) {
@@ -154,7 +154,7 @@ router.post('/heart-back/:actorId', auth, async (req, res) => {
     );
     // Criar solicitação de amizade
     await db.execute(
-      'INSERT IGNORE INTO friend_requests (from_id,to_id,status) VALUES (?,?,?)',
+      'INSERT IGNORE INTO friend_requests (sender_id,receiver_id,status) VALUES (?,?,?)',
       [req.user.id, actorId, 'PENDING']
     );
     if (global._io) {
