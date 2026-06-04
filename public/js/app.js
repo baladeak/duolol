@@ -385,6 +385,7 @@ function postHTML(p) {
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
           ${p.has_mic ? '<span class="post-mic" title="Tem microfone"><i class="ti ti-microphone"></i></span>' : ''}
+          ${p.online_status === 'online' ? '<span class="post-online"><i class="ti ti-circle-filled"></i> Online</span>' : ''}
           <span class="post-time">${timeAgo(p.created_at)}</span>
           <!-- Menu 3 pontos -->
           <div class="post-menu" style="margin-left:auto;position:relative">

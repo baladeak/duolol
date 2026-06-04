@@ -3655,3 +3655,20 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-radius:4px;padding:1px 5px;
   flex-shrink:0;
 }
+
+/* ── Badge Online no feed ─────────────────────── */
+.post-online{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;
+  color:#4ade80;
+  letter-spacing:.3px;
+}
+.post-online i{
+  font-size:9px;
+  color:#4ade80;
+  animation:pulse-online 2s infinite;
+}
+@keyframes pulse-online{
+  0%,100%{opacity:1}
+  50%{opacity:.4}
+}
