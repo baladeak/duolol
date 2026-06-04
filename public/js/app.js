@@ -337,6 +337,7 @@ function loadPage(name) {
   if (name === 'messages')      loadConversations();
   if (name === 'notifications') loadNotifications();
   if (name === 'profile')       loadMyProfile();
+  if (name === 'groups')        loadGroupsPage();
 }
 
 // ── Feed ───────────────────────────────────────
