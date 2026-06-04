@@ -949,6 +949,7 @@ async function openBannerPicker() {
 function closeBannerModal() {
   document.getElementById('banner-modal').style.display = 'none';
   document.body.style.overflow = '';
+  _groupBannerMode = false;
 }
 
 function filterBannerChamps(q) {
@@ -1007,6 +1008,7 @@ function selectBannerSkin(el) {
 }
 
 async function confirmBannerSelection() {
+  if (_groupBannerMode) { await confirmBannerSelectionGroup(); return; }
   if (!_bannerSelection) return;
   const banner = `${_bannerSelection.key}_${_bannerSelection.num}`;
   try {
@@ -2353,8 +2355,14 @@ async function viewGroup(id) {
   try {
     const g = await api(`/groups/${id}`);
     _currentGroupRole = g.my_role || null;
+    const canEditGroup = g.my_role === 'owner' || g.my_role === 'admin';
     $('group-banner-area').innerHTML = `
-      <div class="group-detail-banner">${g.banner_url?`<img src="${escapeHtml(g.banner_url)}" alt="">`:''}</div>
+      <div class="group-detail-banner" id="group-banner-img">
+        ${g.banner_url?`<img src="${escapeHtml(g.banner_url)}" alt="">` : ''}
+        ${canEditGroup ? `<button class="profile-banner-btn" onclick="openGroupBannerPicker()" title="Alterar capa do grupo">
+          <i class="ti ti-photo"></i> Alterar capa
+        </button>` : ''}
+      </div>
       <div class="group-detail-info">
         <div class="group-detail-av">${g.avatar_url?`<img src="${escapeHtml(g.avatar_url)}" alt="">`:escapeHtml((g.name||'?')[0].toUpperCase())}</div>
         <div class="group-detail-meta">
@@ -2596,6 +2604,38 @@ async function loadFriendsInMessages(){const panel=$('friends-in-messages');if(!
 function socialFriendHTML(f){const name=escapeHtml(f.display_name||f.username),nick=escapeHtml(f.lol_game_name)+'#'+escapeHtml(f.lol_tag_line),isOnline=f.online_status==='online',dotCls=isOnline?'dot-online':f.online_status==='away'?'dot-away':'dot-offline',statusText=isOnline?'Online':f.online_status==='away'?'Ausente':'Offline';return `<div class="social-friend-item" onclick="viewProfile(${f.id})" title="Ver perfil de ${name}">${avatarHTML(f,'av-md')}<div class="social-friend-info"><div class="social-friend-name">${name}</div><div class="social-friend-status"><span class="social-dot-sm ${dotCls}"></span>${statusText}</div></div><button class="social-chat-btn" onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')" title="Abrir conversa"><i class="ti ti-message-circle"></i></button></div>`;}
 
 // ── Inicialização ─────────────────────────────
+
+// ── Capa do Grupo ────────────────────────────────
+let _groupBannerMode = false; // true = picker para grupo, false = para perfil
+
+async function openGroupBannerPicker() {
+  _groupBannerMode = true;
+  await openBannerPicker();
+}
+
+async function confirmBannerSelectionGroup() {
+  if (!_bannerSelection) return;
+  const banner = `${_bannerSelection.key}_${_bannerSelection.num}`;
+  try {
+    await api(`/groups/${_currentGroupId}`, { method:'PATCH', body:{ banner_url: splashUrl(_bannerSelection.key, _bannerSelection.num) } });
+    // Atualizar visualmente sem recarregar tudo
+    const img = document.querySelector('#group-banner-img img');
+    const bannerDiv = $('group-banner-img');
+    if (img) {
+      img.src = splashUrl(_bannerSelection.key, _bannerSelection.num);
+    } else if (bannerDiv) {
+      const newImg = document.createElement('img');
+      newImg.src = splashUrl(_bannerSelection.key, _bannerSelection.num);
+      bannerDiv.insertBefore(newImg, bannerDiv.firstChild);
+    }
+    closeBannerModal();
+    _groupBannerMode = false;
+    toast('✅ Capa do grupo atualizada!');
+  } catch (err) {
+    toast('Erro ao salvar capa'); console.error(err);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   if (token && me) {
     bootApp();
