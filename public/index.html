@@ -111,6 +111,9 @@
         <button class="s-item" id="nav-explore" onclick="loadPage('explore')">
           <i class="ti ti-world"></i><span>Explorar</span>
         </button>
+        <button class="s-item" id="nav-match" onclick="loadPage('match')">
+          <i class="ti ti-hearts"></i><span>Match Duo</span>
+        </button>
         <button class="s-item" id="nav-friends" onclick="loadPage('friends')">
           <i class="ti ti-users"></i><span>Amigos</span>
         </button>
@@ -197,6 +200,18 @@
           <div id="feed-posts"></div>
           <!-- Sentinel para infinite scroll -->
           <div id="feed-sentinel"></div>
+        </div>
+      </div>
+
+      <!-- MATCH DUO -->
+      <div class="page" id="page-match">
+        <div class="top-bar">
+          <span class="top-bar-title" style="display:flex;align-items:center;gap:8px">
+            <i class="ti ti-hearts" style="color:#F43F5E"></i> MATCH DUO
+          </span>
+        </div>
+        <div class="match-page" id="match-page-content">
+          <!-- Conteúdo injetado pelo JS -->
         </div>
       </div>
 

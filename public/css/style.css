@@ -3838,3 +3838,143 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .mfilter-btn.on{
   background:var(--gold);color:var(--navy);border-color:var(--gold);
 }
+
+/* ══════════════════════════════════════════════
+   MATCH DUO
+══════════════════════════════════════════════ */
+.match-page{
+  height:100%;display:flex;flex-direction:column;
+  background:var(--navy);
+}
+
+.match-container{
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px;height:100%;max-width:480px;margin:0 auto;width:100%;
+}
+
+.match-info-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;margin-bottom:14px;
+}
+.match-info-text{
+  font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;
+}
+.match-info-text i{color:#F43F5E}
+.match-reload-btn{
+  background:none;border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;color:var(--dim);cursor:pointer;transition:.15s;
+}
+.match-reload-btn:hover{border-color:var(--border-h);color:var(--text)}
+
+/* Área do card */
+.match-card-area{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  width:100%;position:relative;overflow:hidden;
+}
+
+/* Card do duo */
+.match-duo-card{
+  width:100%;max-width:420px;
+  background:var(--navy-c);border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  cursor:grab;user-select:none;
+  position:relative;
+}
+.match-duo-card:active{cursor:grabbing}
+
+/* Labels de swipe */
+.swipe-label{
+  position:absolute;top:24px;padding:8px 18px;
+  border-radius:10px;font-size:18px;font-weight:800;
+  letter-spacing:2px;z-index:10;opacity:0;pointer-events:none;
+  border:3px solid;
+}
+.swipe-label.like{
+  right:20px;color:#4ADE80;border-color:#4ADE80;
+  transform:rotate(15deg);
+}
+.swipe-label.skip{
+  left:20px;color:#F87171;border-color:#F87171;
+  transform:rotate(-15deg);
+}
+
+/* Hero */
+.match-card-hero{
+  height:200px;background:var(--navy-h);position:relative;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;overflow:hidden;
+}
+.av-match{
+  width:120px!important;height:120px!important;
+  border-radius:50%!important;
+  border:4px solid var(--gold)!important;
+  font-size:42px!important;
+}
+.match-card-score{
+  position:absolute;bottom:10px;right:12px;
+  background:rgba(10,14,26,.8);border-radius:8px;
+  padding:4px 10px;font-size:12px;font-weight:700;
+  display:flex;align-items:center;gap:5px;
+  backdrop-filter:blur(4px);
+}
+
+/* Info */
+.match-card-info{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.match-card-name{
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  color:var(--text);display:flex;align-items:center;gap:8px;
+}
+.match-online-dot{
+  width:9px;height:9px;border-radius:50%;flex-shrink:0;
+}
+.match-online-dot.online{background:var(--green)}
+.match-online-dot.offline{background:var(--dim)}
+.match-card-nick{font-size:13px;color:var(--dim);margin-top:-4px}
+.match-card-elos{display:flex;gap:6px;flex-wrap:wrap}
+.match-card-roles{display:flex;gap:6px;flex-wrap:wrap}
+.match-champ-mini{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--border);object-fit:cover;
+}
+.match-card-champs{display:flex;align-items:center;gap:6px}
+.match-card-bio{
+  font-size:13px;color:var(--muted);
+  font-style:italic;padding:8px 12px;
+  background:var(--navy);border-radius:8px;
+  border-left:3px solid var(--gold-d);
+}
+
+/* Botões de ação */
+.match-actions{
+  display:flex;gap:32px;padding:16px 0 8px;
+  justify-content:center;align-items:center;
+}
+.match-btn{
+  width:64px;height:64px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;cursor:pointer;transition:all .2s;
+  border:none;box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.match-skip{
+  background:var(--navy-c);color:#F87171;border:2px solid rgba(248,113,113,.3);
+}
+.match-skip:hover{background:rgba(248,113,113,.15);transform:scale(1.1)}
+.match-like{
+  background:linear-gradient(135deg,#F43F5E,#EC4899);color:#fff;
+  width:74px;height:74px;font-size:28px;
+}
+.match-like:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(244,63,94,.5)}
+
+/* Counter */
+.match-counter{
+  font-size:12px;color:var(--dim);padding:8px 0;
+}
+
+/* Empty state */
+.match-empty{
+  text-align:center;padding:40px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.match-empty h3{font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--text)}
+.match-empty p{font-size:13px;color:var(--dim);max-width:280px}

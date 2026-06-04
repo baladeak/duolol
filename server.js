@@ -28,6 +28,15 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(120) NULL`,
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `ALTER TABLE posts MODIFY COLUMN queue_type ENUM('SOLO','FLEX','BOTH','ARAM','ARENA') NOT NULL DEFAULT 'SOLO'`,
+  `CREATE TABLE IF NOT EXISTS duo_swipes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    target_id  INT NOT NULL,
+    action     ENUM('like','skip') NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_swipe (user_id, target_id),
+    INDEX idx_user_date (user_id, created_at)
+  )`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS has_mic TINYINT(1) NOT NULL DEFAULT 0`,
   `CREATE TABLE IF NOT EXISTS \`groups\` (
     id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -153,6 +162,7 @@ app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/queue',         require('./routes/queue'));
 app.use('/api/groups',        require('./routes/groups'));
+app.use('/api/match',         require('./routes/match'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/profile',       require('./routes/profile'));
 

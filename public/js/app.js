@@ -338,6 +338,7 @@ function loadPage(name) {
   if (name === 'notifications') loadNotifications();
   if (name === 'profile')       loadMyProfile();
   if (name === 'groups')        loadGroupsPage();
+  if (name === 'match')         loadMatchPage();
 }
 
 // ── Feed ───────────────────────────────────────
@@ -2752,4 +2753,239 @@ function champKey2(name) {
     'Yorick':'Yorick','Zac':'Zac'
   };
   return map[name] || name?.replace(/[^a-zA-Z0-9]/g, '') || name;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MATCH DUO — Sistema de compatibilidade
+// ══════════════════════════════════════════════════════════════
+let _matchQueue   = [];  // fila de sugestões
+let _matchIndex   = 0;   // índice atual
+let _matchLoading = false;
+let _matchDragging = false;
+let _matchStartX   = 0;
+let _matchCurrentX = 0;
+
+async function loadMatchPage() {
+  const page = $('match-page-content');
+  if (!page) return;
+
+  // Verificar se o usuário tem lane e elo configurados
+  if (!me?.solo_tier && !me?.flex_tier) {
+    page.innerHTML = `
+      <div class="match-empty">
+        <i class="ti ti-hearts" style="font-size:48px;color:var(--dim)"></i>
+        <h3>Configure seu perfil primeiro</h3>
+        <p>Sincronize seu elo e adicione suas lanes para encontrar duos compatíveis</p>
+        <button class="btn-post" onclick="loadPage('profile')" style="margin-top:16px">
+          <i class="ti ti-user"></i> Ir para o Perfil
+        </button>
+      </div>`;
+    return;
+  }
+
+  page.innerHTML = `
+    <div class="match-container">
+      <div class="match-info-bar">
+        <span class="match-info-text"><i class="ti ti-sparkles"></i> Duos compatíveis com você</span>
+        <button class="match-reload-btn" onclick="reloadMatchQueue()" title="Buscar novos">
+          <i class="ti ti-refresh"></i>
+        </button>
+      </div>
+      <div class="match-card-area" id="match-card-area">
+        <div class="loading"><div class="spinner"></div> Buscando duos compatíveis...</div>
+      </div>
+      <div class="match-actions" id="match-actions" style="display:none">
+        <button class="match-btn match-skip"  onclick="swipeDuo('skip')"  title="Passar">
+          <i class="ti ti-x"></i>
+        </button>
+        <button class="match-btn match-like"  onclick="swipeDuo('like')"  title="Convidar para Duo!">
+          <i class="ti ti-heart"></i>
+        </button>
+      </div>
+      <div class="match-counter" id="match-counter"></div>
+    </div>`;
+
+  await fetchMatchQueue();
+}
+
+async function fetchMatchQueue() {
+  _matchLoading = true;
+  _matchIndex   = 0;
+  _matchQueue   = [];
+
+  const area = $('match-card-area');
+  if (area) area.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando duos compatíveis...</div>';
+
+  try {
+    _matchQueue = await api('/match/suggestions');
+    renderMatchCard();
+  } catch {
+    if (area) area.innerHTML = '<div class="match-empty"><i class="ti ti-alert-circle"></i><p>Erro ao buscar sugestões</p></div>';
+  }
+  _matchLoading = false;
+}
+
+async function reloadMatchQueue() {
+  const area = $('match-card-area');
+  if (area) area.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando...</div>';
+  await fetchMatchQueue();
+}
+
+function renderMatchCard() {
+  const area    = $('match-card-area');
+  const actions = $('match-actions');
+  const counter = $('match-counter');
+  if (!area) return;
+
+  if (!_matchQueue.length || _matchIndex >= _matchQueue.length) {
+    area.innerHTML = `
+      <div class="match-empty">
+        <i class="ti ti-check" style="font-size:48px;color:var(--green)"></i>
+        <h3>Você viu todos os duos disponíveis!</h3>
+        <p>Volte amanhã para novas sugestões ou clique em recarregar</p>
+        <button class="btn-post" onclick="reloadMatchQueue()" style="margin-top:16px">
+          <i class="ti ti-refresh"></i> Buscar novamente
+        </button>
+      </div>`;
+    if (actions) actions.style.display = 'none';
+    if (counter) counter.textContent = '';
+    return;
+  }
+
+  const p = _matchQueue[_matchIndex];
+  if (actions) actions.style.display = 'flex';
+
+  // Compatibilidade visual em %
+  const pct     = Math.min(100, Math.round(p.score));
+  const pctColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--gold-l)' : 'var(--muted)';
+  const roles   = Array.isArray(p.roles) ? p.roles : (p.roles||'').split(',').filter(Boolean);
+  const champs  = p.main_champions ? JSON.parse(p.main_champions) : [];
+
+  area.innerHTML = `
+    <div class="match-duo-card" id="match-duo-card"
+         onmousedown="matchDragStart(event)"
+         ontouchstart="matchDragStart(event)">
+
+      <!-- Indicadores de swipe -->
+      <div class="swipe-label like"  id="swipe-like-label"><i class="ti ti-heart"></i> DUO!</div>
+      <div class="swipe-label skip"  id="swipe-skip-label"><i class="ti ti-x"></i> PASS</div>
+
+      <!-- Avatar e capa -->
+      <div class="match-card-hero" onclick="viewProfile(${p.id})">
+        ${avatarHTML(p, 'av-match')}
+        <div class="match-card-score" style="color:${pctColor}">
+          <i class="ti ti-target"></i> ${pct}% compatível
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="match-card-info">
+        <div class="match-card-name" onclick="viewProfile(${p.id})" style="cursor:pointer">
+          ${escapeHtml(p.display_name || p.username)}
+          ${p.has_mic ? '<i class="ti ti-microphone" style="color:var(--green);font-size:14px"></i>' : ''}
+          <span class="match-online-dot ${p.online_status === 'online' ? 'online' : 'offline'}"></span>
+        </div>
+        <div class="match-card-nick">${escapeHtml(p.lol_game_name)}#${escapeHtml(p.lol_tag_line)}</div>
+
+        <div class="match-card-elos">
+          <span class="elo ${eloClass(p.solo_tier)}">Solo ${eloLabel(p.solo_tier, p.solo_rank, p.solo_lp)}</span>
+          <span class="elo ${eloClass(p.flex_tier)}">Flex ${eloLabel(p.flex_tier, p.flex_rank, p.flex_lp)}</span>
+        </div>
+
+        ${roles.length ? `<div class="match-card-roles">${roles.map(r =>
+          `<span class="tag tag-solo on" style="cursor:default">${r}</span>`
+        ).join('')}</div>` : ''}
+
+        ${champs.length ? `<div class="match-card-champs">
+          ${champs.slice(0, 3).map(ch => {
+            const key = ch.replace(/[^a-zA-Z0-9]/g, '');
+            return `<img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${key}.png"
+                        class="match-champ-mini" title="${escapeHtml(ch)}" loading="lazy"
+                        onerror="this.style.display='none'">`;
+          }).join('')}
+          <span style="font-size:11px;color:var(--dim);align-self:center">Campeões principais</span>
+        </div>` : ''}
+
+        ${p.bio ? `<div class="match-card-bio">"${escapeHtml(p.bio)}"</div>` : ''}
+      </div>
+    </div>`;
+
+  if (counter) counter.textContent = `${_matchIndex + 1} / ${_matchQueue.length}`;
+
+  // Inicializar drag/swipe
+  initMatchDrag();
+}
+
+// ── Swipe ────────────────────────────────────────
+async function swipeDuo(action) {
+  const p = _matchQueue[_matchIndex];
+  if (!p) return;
+
+  const card = $('match-duo-card');
+  if (card) {
+    card.style.transition = 'transform .3s ease, opacity .3s';
+    card.style.transform  = action === 'like' ? 'translateX(120%) rotate(20deg)' : 'translateX(-120%) rotate(-20deg)';
+    card.style.opacity    = '0';
+  }
+
+  try { await api('/match/swipe', { method:'POST', body:{ target_id: p.id, action } }); } catch {}
+
+  if (action === 'like') {
+    toast(`💙 Convite enviado para ${p.display_name || p.username}!`);
+  }
+
+  setTimeout(() => {
+    _matchIndex++;
+    renderMatchCard();
+  }, 300);
+}
+
+// ── Drag para swipe no desktop e mobile ──────────
+function initMatchDrag() {
+  const card = $('match-duo-card');
+  if (!card) return;
+  card.addEventListener('mousemove',  matchDragMove);
+  card.addEventListener('mouseup',    matchDragEnd);
+  card.addEventListener('mouseleave', matchDragEnd);
+  card.addEventListener('touchmove',  matchDragMove, { passive: false });
+  card.addEventListener('touchend',   matchDragEnd);
+}
+
+function matchDragStart(e) {
+  _matchDragging = true;
+  _matchStartX   = e.touches ? e.touches[0].clientX : e.clientX;
+  _matchCurrentX = _matchStartX;
+  const card = $('match-duo-card');
+  if (card) card.style.transition = 'none';
+}
+
+function matchDragMove(e) {
+  if (!_matchDragging) return;
+  e.preventDefault?.();
+  _matchCurrentX = e.touches ? e.touches[0].clientX : e.clientX;
+  const dx   = _matchCurrentX - _matchStartX;
+  const rot  = dx * 0.08;
+  const card = $('match-duo-card');
+  if (!card) return;
+  card.style.transform = `translateX(${dx}px) rotate(${rot}deg)`;
+
+  // Labels de like/skip
+  const likeL = $('swipe-like-label');
+  const skipL = $('swipe-skip-label');
+  if (dx > 40)  { if (likeL) likeL.style.opacity = Math.min(1, (dx-40)/60)+''; if (skipL) skipL.style.opacity = '0'; }
+  else if (dx < -40) { if (skipL) skipL.style.opacity = Math.min(1, (-dx-40)/60)+''; if (likeL) likeL.style.opacity = '0'; }
+  else { if (likeL) likeL.style.opacity = '0'; if (skipL) skipL.style.opacity = '0'; }
+}
+
+function matchDragEnd() {
+  if (!_matchDragging) return;
+  _matchDragging = false;
+  const dx   = _matchCurrentX - _matchStartX;
+  const card = $('match-duo-card');
+  if (!card) return;
+  card.style.transition = 'transform .2s ease';
+
+  if (dx > 80)       swipeDuo('like');
+  else if (dx < -80) swipeDuo('skip');
+  else { card.style.transform = 'translateX(0) rotate(0)'; }
 }
