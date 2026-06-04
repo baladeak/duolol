@@ -116,18 +116,37 @@ router.post('/swipe', auth, async (req, res) => {
           [req.user.id, target_id, 'PENDING']
         );
         if (global._io) {
-          global._io.to(`user_${target_id}`).emit('notification', {type:'DUO_MATCH'});
-          global._io.to(`user_${req.user.id}`).emit('notification', {type:'DUO_MATCH'});
+          const [aRows] = await db.execute('SELECT id,username,display_name,avatar_url FROM users WHERE id=?', [req.user.id]);
+        const actor = aRows[0] || {};
+        global._io.to(`user_${target_id}`).emit('notification', {
+          type:'DUO_MATCH', actor_id:req.user.id,
+          actor_username:actor.username, actor_display_name:actor.display_name, actor_avatar:actor.avatar_url
+        });
+        global._io.to(`user_${req.user.id}`).emit('notification', {
+          type:'DUO_MATCH', actor_id:parseInt(target_id),
+        });
         }
         return res.json({ok:true, match: true});
       }
-      // Só like — notificar o alvo com DUO_LIKE (preview, sem virar amigo ainda)
+      // Só like — notificar o alvo com DUO_LIKE
       await db.execute(
         'INSERT INTO notifications (user_id,actor_id,type) VALUES (?,?,?)',
         [target_id, req.user.id, 'DUO_LIKE']
       );
       if (global._io) {
-        global._io.to(`user_${target_id}`).emit('notification', {type:'DUO_LIKE'});
+        // Buscar dados do ator para mostrar no popup em tempo real
+        const [actorRows] = await db.execute(
+          'SELECT id, username, display_name, avatar_url FROM users WHERE id=?',
+          [req.user.id]
+        );
+        const actor = actorRows[0] || {};
+        global._io.to(`user_${target_id}`).emit('notification', {
+          type:                'DUO_LIKE',
+          actor_id:             req.user.id,
+          actor_username:       actor.username,
+          actor_display_name:   actor.display_name,
+          actor_avatar:         actor.avatar_url,
+        });
       }
     }
     res.json({ok:true, match: false});

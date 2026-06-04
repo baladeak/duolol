@@ -312,11 +312,60 @@ function onSocketMessage(msg) {
 function onSocketNotif(notif) {
   notifCount++;
   updateNotifBadge();
+
+  // DUO_LIKE — mostrar popup especial com botão de ver preview
+  if (notif.type === 'DUO_LIKE' && notif.actor_id) {
+    showDuoLiveNotif(notif, 'DUO_LIKE');
+    return;
+  }
+  // DUO_MATCH — match mútuo!
+  if (notif.type === 'DUO_MATCH' && notif.actor_id) {
+    showDuoLiveNotif(notif, 'DUO_MATCH');
+    return;
+  }
+
   const icons = {
     POST_LIKE:'❤️', POST_COMMENT:'💬', FRIEND_REQUEST:'👤',
     FRIEND_ACCEPTED:'✅', NEW_MESSAGE:'💬', ELO_UPDATE:'🏆'
   };
   toast((icons[notif.type] || '🔔') + ' Nova notificação');
+}
+
+function showDuoLiveNotif(notif, type) {
+  // Remove notif anterior se existir
+  const existing = document.getElementById('duo-live-notif');
+  if (existing) existing.remove();
+
+  const isMatch = type === 'DUO_MATCH';
+  const name    = escapeHtml(notif.actor_display_name || notif.actor_username || 'Alguém');
+  const avLetter= (notif.actor_display_name || notif.actor_username || '?')[0].toUpperCase();
+  const avHTML  = notif.actor_avatar
+    ? `<img src="${escapeHtml(notif.actor_avatar)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+    : `<div style="width:42px;height:42px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">${avLetter}</div>`;
+
+  const div = document.createElement('div');
+  div.id = 'duo-live-notif';
+  div.className = 'duo-live-notif' + (isMatch ? ' is-match' : '');
+  div.innerHTML = `
+    <div class="duo-live-notif-inner">
+      ${avHTML}
+      <div class="duo-live-notif-text">
+        <div class="duo-live-notif-title">
+          ${isMatch ? '💙 É um MATCH!' : '❤️ Novo like no Match Duo'}
+        </div>
+        <div class="duo-live-notif-sub">
+          ${isMatch ? `Você e <strong>${name}</strong> se curtiram!` : `<strong>${name}</strong> curtiu você`}
+        </div>
+      </div>
+      <button class="duo-live-notif-btn" onclick="document.getElementById('duo-live-notif').remove();openDuoPreview(${notif.actor_id},'${type}')">
+        Ver perfil
+      </button>
+      <button onclick="this.parentElement.parentElement.remove()" class="duo-live-close"><i class="ti ti-x"></i></button>
+    </div>`;
+
+  document.body.appendChild(div);
+  // Auto-remover após 12 segundos
+  setTimeout(() => div.remove(), 12000);
 }
 
 // ── Navigation ─────────────────────────────────
@@ -3024,11 +3073,18 @@ async function openDuoPreview(actorId, notifType) {
   body.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
   try {
+    // Garantir que temos a versão do DDragon carregada
+    if (!_ddragonVersion || _ddragonVersion === '14.24.1') {
+      try { await fetchDDragonVersion(); } catch {}
+    }
+
     const p = await api(`/match/profile/${actorId}`);
     _duoPreviewActor = p;
 
     const roles   = Array.isArray(p.roles) ? p.roles : (p.roles||'').split(',').filter(Boolean);
-    const champs  = p.main_champions ? JSON.parse(p.main_champions) : [];
+    let champs = [];
+    try { champs = p.main_champions ? JSON.parse(p.main_champions) : []; } catch { champs = []; }
+    if (!Array.isArray(champs)) champs = [];
     const isMatch = notifType === 'DUO_MATCH';
 
     body.innerHTML = `
@@ -3079,8 +3135,9 @@ async function openDuoPreview(actorId, notifType) {
           </button>
         </div>
       </div>`;
-  } catch {
-    body.innerHTML = '<div class="empty"><p>Erro ao carregar perfil</p></div>';
+  } catch (err) {
+    console.error('openDuoPreview error:', err);
+    body.innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i><p>Erro ao carregar perfil</p><p style="font-size:11px;color:var(--dim)">${escapeHtml(String(err?.message||err))}</p></div>`;
   }
 }
 
