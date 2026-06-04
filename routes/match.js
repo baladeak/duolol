@@ -183,4 +183,46 @@ router.post('/heart-back/:actorId', auth, async (req, res) => {
   } catch(err){ res.status(500).json({error:'Erro'}); }
 });
 
+
+// GET /api/match/my-matches — matches mútuos
+router.get('/my-matches', auth, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT u.id, u.username, u.display_name, u.avatar_url, u.lol_game_name, u.lol_tag_line,
+              u.solo_tier, u.solo_rank, u.solo_lp, u.flex_tier, u.flex_rank, u.flex_lp,
+              u.online_status, u.bio, u.has_mic, u.main_champions,
+              GROUP_CONCAT(r.role ORDER BY r.priority SEPARATOR ',') AS roles,
+              ds1.created_at AS matched_at
+       FROM duo_swipes ds1
+       JOIN duo_swipes ds2 ON ds2.user_id = ds1.target_id AND ds2.target_id = ds1.user_id AND ds2.action = 'like'
+       JOIN users u ON u.id = ds1.target_id
+       LEFT JOIN user_roles r ON r.user_id = u.id
+       WHERE ds1.user_id = ? AND ds1.action = 'like'
+       GROUP BY u.id, ds1.created_at
+       ORDER BY ds1.created_at DESC`,
+      [req.user.id]
+    );
+    const result = rows.map(p => ({
+      ...p,
+      roles: (p.roles || '').split(',').filter(Boolean)
+    }));
+    res.json(result);
+  } catch (err) {
+    console.error('my-matches:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// DELETE /api/match/my-matches/:targetId — remover match
+router.delete('/my-matches/:targetId', auth, async (req, res) => {
+  try {
+    await db.execute(
+      'DELETE FROM duo_swipes WHERE (user_id=? AND target_id=?) OR (user_id=? AND target_id=?)',
+      [req.user.id, req.params.targetId, req.params.targetId, req.user.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
 module.exports = router;

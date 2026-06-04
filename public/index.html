@@ -313,6 +313,7 @@
           <div class="admin-tabs">
             <button class="admin-tab active" id="atab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Usuários</button>
             <button class="admin-tab" id="atab-reports" onclick="switchAdminTab('reports')"><i class="ti ti-flag"></i> Denúncias <span class="s-badge" id="reports-badge" style="display:none">0</span></button>
+            <button class="admin-tab" id="atab-config" onclick="switchAdminTab('config')"><i class="ti ti-settings"></i> Configurações</button>
           </div>
         </div>
         <!-- Aba usuários -->
@@ -324,6 +325,43 @@
           </div>
           <div class="scrollable" id="admin-user-list"></div>
         </div>
+        <!-- Aba configurações -->
+        <div id="admin-tab-config" style="display:none;flex-direction:column;flex:1;overflow:hidden;padding:20px">
+          <div class="admin-config-section">
+            <div class="admin-config-title">
+              <i class="ti ti-hearts" style="color:#F43F5E"></i> Match Duo
+            </div>
+            <div class="admin-config-desc">
+              Reseta todos os swipes do Match Duo. As pessoas poderão se dar like novamente e ver sugestões do zero.
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button class="admin-config-btn danger" onclick="adminResetMatches()">
+                <i class="ti ti-refresh"></i> Resetar todos os Matches
+              </button>
+              <span id="reset-match-result" style="font-size:12px;color:var(--green);display:none">
+                <i class="ti ti-check"></i> Resetado com sucesso!
+              </span>
+            </div>
+          </div>
+
+          <div class="admin-config-section">
+            <div class="admin-config-title">
+              <i class="ti ti-clock" style="color:var(--gold-l)"></i> Fila ao vivo
+            </div>
+            <div class="admin-config-desc">
+              Limpa todas as entradas da fila ao vivo. Útil se houver jogadores travados na fila.
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button class="admin-config-btn warning" onclick="adminResetQueue()">
+                <i class="ti ti-trash"></i> Limpar fila ao vivo
+              </button>
+              <span id="reset-queue-result" style="font-size:12px;color:var(--green);display:none">
+                <i class="ti ti-check"></i> Fila limpa!
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- Aba denúncias -->
         <div id="admin-tab-reports" style="display:none;flex-direction:column;flex:1;overflow:hidden">
           <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--navy-m)">

@@ -2264,8 +2264,9 @@ async function adminDeletePost(postId) {
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
   $('atab-' + tab)?.classList.add('active');
-  $('admin-tab-users').style.display  = tab === 'users'   ? 'flex' : 'none';
+  $('admin-tab-users').style.display   = tab === 'users'   ? 'flex' : 'none';
   $('admin-tab-reports').style.display = tab === 'reports' ? 'flex' : 'none';
+  $('admin-tab-config').style.display  = tab === 'config'  ? 'flex' : 'none';
   if (tab === 'reports') loadAdminReports();
 }
 
@@ -2848,28 +2849,52 @@ async function loadMatchPage() {
   }
 
   page.innerHTML = `
-    <div class="match-container">
-      <div class="match-info-bar">
-        <span class="match-info-text"><i class="ti ti-sparkles"></i> Duos compatíveis com você</span>
-        <button class="match-reload-btn" onclick="reloadMatchQueue()" title="Buscar novos">
-          <i class="ti ti-refresh"></i>
+    <div class="match-page-wrap">
+      <!-- Abas -->
+      <div class="match-page-tabs">
+        <button class="match-page-tab on" id="mptab-discover" onclick="switchMatchPageTab('discover',this)">
+          <i class="ti ti-sparkles"></i> Descobrir
+        </button>
+        <button class="match-page-tab" id="mptab-matches" onclick="switchMatchPageTab('matches',this)">
+          <i class="ti ti-hearts"></i> Meus Matches
+          <span class="match-page-badge" id="match-count-badge" style="display:none">0</span>
         </button>
       </div>
-      <div class="match-card-area" id="match-card-area">
-        <div class="loading"><div class="spinner"></div> Buscando duos compatíveis...</div>
+
+      <!-- Aba Descobrir -->
+      <div id="match-tab-discover" class="match-tab-panel">
+        <div class="match-container">
+          <div class="match-info-bar">
+            <span class="match-info-text"><i class="ti ti-sparkles"></i> Duos compatíveis com você</span>
+            <button class="match-reload-btn" onclick="reloadMatchQueue()" title="Buscar novos">
+              <i class="ti ti-refresh"></i>
+            </button>
+          </div>
+          <div class="match-card-area" id="match-card-area">
+            <div class="loading"><div class="spinner"></div> Buscando duos compatíveis...</div>
+          </div>
+          <div class="match-actions" id="match-actions" style="display:none">
+            <button class="match-btn match-skip" onclick="swipeDuo('skip')" title="Passar">
+              <i class="ti ti-x"></i>
+            </button>
+            <button class="match-btn match-like" onclick="swipeDuo('like')" title="Curtir!">
+              <i class="ti ti-heart"></i>
+            </button>
+          </div>
+          <div class="match-counter" id="match-counter"></div>
+        </div>
       </div>
-      <div class="match-actions" id="match-actions" style="display:none">
-        <button class="match-btn match-skip"  onclick="swipeDuo('skip')"  title="Passar">
-          <i class="ti ti-x"></i>
-        </button>
-        <button class="match-btn match-like"  onclick="swipeDuo('like')"  title="Convidar para Duo!">
-          <i class="ti ti-heart"></i>
-        </button>
+
+      <!-- Aba Meus Matches -->
+      <div id="match-tab-matches" class="match-tab-panel" style="display:none">
+        <div id="my-matches-list" class="my-matches-grid">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
       </div>
-      <div class="match-counter" id="match-counter"></div>
     </div>`;
 
   await fetchMatchQueue();
+  loadMyMatches();
 }
 
 async function fetchMatchQueue() {
@@ -3195,4 +3220,157 @@ function closeDuoAnim() {
   const actions = $('match-actions');
   if (actions) actions.style.display = 'flex';
   renderMatchCard();
+}
+
+// ── Admin: Configurações ───────────────────────
+async function adminResetMatches() {
+  if (!confirm('Resetar TODOS os swipes do Match Duo?\n\nTodas as pessoas poderão se dar like novamente.')) return;
+  try {
+    await api('/admin/reset-matches', { method: 'POST' });
+    const el = $('reset-match-result');
+    if (el) { el.style.display = ''; setTimeout(() => el.style.display = 'none', 4000); }
+    toast('✅ Matches resetados! Todos podem se dar like novamente.');
+  } catch (e) { toast('Erro: ' + (e.error || 'Não foi possível resetar')); }
+}
+
+async function adminResetQueue() {
+  if (!confirm('Limpar toda a fila ao vivo?')) return;
+  try {
+    await api('/admin/reset-queue', { method: 'POST' });
+    const el = $('reset-queue-result');
+    if (el) { el.style.display = ''; setTimeout(() => el.style.display = 'none', 4000); }
+    toast('✅ Fila limpa!');
+    if (global._io) global._io.emit('queue_update', { action: 'reset' });
+  } catch (e) { toast('Erro: ' + (e.error || 'Não foi possível limpar')); }
+}
+
+// ── Meus Matches ──────────────────────────────────
+let _matchPageTab = 'discover';
+
+function switchMatchPageTab(tab, btn) {
+  _matchPageTab = tab;
+  document.querySelectorAll('.match-page-tab').forEach(t => t.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  $('match-tab-discover').style.display = tab === 'discover' ? '' : 'none';
+  $('match-tab-matches').style.display  = tab === 'matches'  ? '' : 'none';
+  if (tab === 'matches') loadMyMatches();
+}
+
+async function loadMyMatches() {
+  const list = $('my-matches-list');
+  if (!list) return;
+  list.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando matches...</div>';
+  try {
+    const matches = await api('/match/my-matches');
+
+    // Atualizar badge
+    const badge = $('match-count-badge');
+    if (badge) {
+      badge.textContent   = matches.length;
+      badge.style.display = matches.length > 0 ? '' : 'none';
+    }
+
+    if (!matches.length) {
+      list.innerHTML = `
+        <div class="match-empty" style="padding:48px 20px">
+          <i class="ti ti-heart-off" style="font-size:48px;color:var(--dim)"></i>
+          <h3>Nenhum match ainda</h3>
+          <p>Deslize para a direita em jogadores compatíveis e aguarde eles curtirem você de volta!</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = matches.map(p => myMatchCardHTML(p)).join('');
+  } catch {
+    list.innerHTML = '<div class="match-empty"><p>Erro ao carregar matches</p></div>';
+  }
+}
+
+function myMatchCardHTML(p) {
+  let champs = [];
+  try { champs = p.main_champions ? JSON.parse(p.main_champions) : []; } catch {}
+  if (!Array.isArray(champs)) champs = [];
+  const roles = Array.isArray(p.roles) ? p.roles : (p.roles||'').split(',').filter(Boolean);
+
+  return `<div class="my-match-card" id="mmcard-${p.id}">
+    <!-- Header com avatar e status -->
+    <div class="my-match-header">
+      <div onclick="viewProfile(${p.id})" style="cursor:pointer;position:relative;flex-shrink:0">
+        ${avatarHTML(p, 'av-xl')}
+        <span class="my-match-status-dot ${p.online_status==='online'?'online':'offline'}"></span>
+      </div>
+      <div class="my-match-info">
+        <div class="my-match-name" onclick="viewProfile(${p.id})" style="cursor:pointer">
+          ${escapeHtml(p.display_name || p.username)}
+          ${p.has_mic ? '<i class="ti ti-microphone" title="Tem microfone" style="color:var(--green);font-size:14px"></i>' : ''}
+        </div>
+        <div class="my-match-nick">${escapeHtml(p.lol_game_name)}#${escapeHtml(p.lol_tag_line)}</div>
+        <div class="my-match-elos">
+          <span class="elo ${eloClass(p.solo_tier)}">Solo ${eloLabel(p.solo_tier,p.solo_rank,p.solo_lp)}</span>
+          <span class="elo ${eloClass(p.flex_tier)}">Flex ${eloLabel(p.flex_tier,p.flex_rank,p.flex_lp)}</span>
+        </div>
+      </div>
+      <button class="my-match-delete" onclick="deleteMyMatch(${p.id})" title="Remover match">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+
+    <!-- Lanes -->
+    ${roles.length ? `<div class="my-match-section">
+      <div class="my-match-label"><i class="ti ti-sword" style="font-size:12px"></i> Lanes</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${roles.map(r => `<span class="tag tag-solo on" style="cursor:default;font-size:11px">${r}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Campeões -->
+    ${champs.length ? `<div class="my-match-section">
+      <div class="my-match-label"><i class="ti ti-star" style="font-size:12px"></i> Campeões principais</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${champs.slice(0,5).map(ch => {
+          const k = champKey2(ch);
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+            <img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${k}.png"
+                 style="width:36px;height:36px;border-radius:50%;border:2px solid var(--border)"
+                 title="${escapeHtml(ch)}" onerror="this.parentElement.style.display='none'" loading="lazy">
+            <span style="font-size:9px;color:var(--dim);max-width:40px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(ch)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Bio -->
+    ${p.bio ? `<div class="my-match-section">
+      <div class="my-match-label"><i class="ti ti-quote" style="font-size:12px"></i> Sobre</div>
+      <div class="my-match-bio">"${escapeHtml(p.bio)}"</div>
+    </div>` : ''}
+
+    <!-- Ações -->
+    <div class="my-match-actions">
+      <button class="duo-action-dm" onclick="openDM(${p.id},'${escapeHtml(p.username)}')" style="flex:1;justify-content:center">
+        <i class="ti ti-message-2"></i> Mensagem
+      </button>
+      <button class="duo-action-add" onclick="addFriend(${p.id},this)" style="flex:1;justify-content:center">
+        <i class="ti ti-user-plus"></i> Adicionar
+      </button>
+      <button class="duo-action-profile" onclick="viewProfile(${p.id})" style="justify-content:center;padding:9px 12px">
+        <i class="ti ti-user"></i>
+      </button>
+    </div>
+  </div>`;
+}
+
+async function deleteMyMatch(userId) {
+  if (!confirm('Remover este match? Vocês poderão se ver novamente nas sugestões.')) return;
+  try {
+    await api(`/match/my-matches/${userId}`, { method: 'DELETE' });
+    const card = $('mmcard-' + userId);
+    if (card) {
+      card.style.transition = 'opacity .3s, transform .3s';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.9)';
+      setTimeout(() => { card.remove(); }, 300);
+    }
+    toast('Match removido');
+  } catch { toast('Erro ao remover match'); }
 }

@@ -4131,3 +4131,127 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   color:var(--dim);font-size:14px;padding:4px;flex-shrink:0;
 }
 .duo-live-close:hover{color:var(--text)}
+
+/* ── Admin Configurações ──────────────────────── */
+.admin-config-section{
+  background:var(--navy-c);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;margin-bottom:14px;
+  max-width:560px;
+}
+.admin-config-title{
+  font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:1px;color:var(--text);
+  display:flex;align-items:center;gap:8px;margin-bottom:6px;
+}
+.admin-config-desc{
+  font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;
+}
+.admin-config-btn{
+  padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;border:none;display:flex;align-items:center;gap:7px;
+  font-family:'Exo 2',sans-serif;transition:.15s;
+}
+.admin-config-btn.danger{
+  background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#FCA5A5;
+}
+.admin-config-btn.danger:hover{background:rgba(239,68,68,.28)}
+.admin-config-btn.warning{
+  background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);color:#FDE68A;
+}
+.admin-config-btn.warning:hover{background:rgba(251,191,36,.22)}
+
+/* ── Match Duo — Abas ─────────────────────────── */
+.match-page-wrap{
+  display:flex;flex-direction:column;height:100%;
+}
+.match-page-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:var(--navy-m);
+}
+.match-page-tab{
+  flex:1;padding:12px;background:none;border:none;
+  font-family:'Exo 2',sans-serif;font-size:13px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:.15s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.match-page-tab:hover{color:var(--text)}
+.match-page-tab.on{color:#F43F5E;border-bottom-color:#F43F5E}
+.match-page-tab i{font-size:16px}
+.match-page-badge{
+  background:#F43F5E;color:#fff;font-size:9px;font-weight:700;
+  border-radius:10px;padding:1px 6px;
+}
+.match-tab-panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── Meus Matches — grid ──────────────────────── */
+.my-matches-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+  gap:14px;
+  padding:16px;
+  overflow-y:auto;
+  align-content:start;
+}
+
+.my-match-card{
+  background:var(--navy-c);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;transition:.15s;
+  display:flex;flex-direction:column;
+}
+.my-match-card:hover{border-color:rgba(244,63,94,.3)}
+
+.my-match-header{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:16px 14px 12px;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.my-match-status-dot{
+  position:absolute;bottom:2px;right:2px;
+  width:12px;height:12px;border-radius:50%;
+  border:2px solid var(--navy-c);
+}
+.my-match-status-dot.online{background:var(--green)}
+.my-match-status-dot.offline{background:var(--dim)}
+
+.my-match-info{flex:1;min-width:0}
+.my-match-name{
+  font-size:15px;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.my-match-nick{font-size:11.5px;color:var(--dim);margin-bottom:6px}
+.my-match-elos{display:flex;gap:5px;flex-wrap:wrap}
+
+.my-match-delete{
+  position:absolute;top:10px;right:10px;
+  background:none;border:1px solid var(--border);
+  color:var(--dim);border-radius:7px;
+  width:28px;height:28px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:.13s;flex-shrink:0;
+}
+.my-match-delete:hover{border-color:rgba(239,68,68,.4);color:#FCA5A5;background:rgba(239,68,68,.1)}
+
+.my-match-section{
+  padding:10px 14px 0;
+}
+.my-match-label{
+  font-size:10px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:5px;
+  margin-bottom:6px;
+}
+.my-match-bio{
+  font-size:13px;color:var(--muted);
+  font-style:italic;line-height:1.5;
+  padding:8px 10px;
+  background:var(--navy);border-radius:7px;
+  border-left:3px solid rgba(244,63,94,.4);
+}
+.my-match-actions{
+  display:flex;gap:8px;padding:12px 14px;
+  border-top:1px solid var(--border);margin-top:12px;
+}
