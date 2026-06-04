@@ -3639,3 +3639,19 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   font-family:'Exo 2',sans-serif;outline:none;
 }
 .group-chat-input:focus{border-color:var(--gold-d)}
+
+/* ── Botão Grupos destacado na sidebar ─── */
+.s-item-groups{
+  color:var(--gold-l) !important;
+  position:relative;
+}
+.s-item-groups i{
+  color:var(--gold-l) !important;
+}
+.s-item-new{
+  margin-left:auto;
+  font-size:8px;font-weight:800;letter-spacing:1px;
+  background:var(--gold);color:var(--navy);
+  border-radius:4px;padding:1px 5px;
+  flex-shrink:0;
+}

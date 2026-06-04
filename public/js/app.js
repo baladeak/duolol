@@ -2509,15 +2509,22 @@ let _queueJoinedAt = null;
 let _queueMinimized = false;
 
 // Som de notificação (novo jogador na fila)
-// Pré-carrega o som de entrada na fila
-const _queueSound = new Audio('/sounds/entrouFila.mp3');
-_queueSound.volume = 0.6;
+// Som da fila — criado depois da primeira interação do usuário
+// (browsers bloqueiam Audio criado antes de interação)
+let _queueSound = null;
 
 function playQueueSound() {
   try {
+    if (!_queueSound) {
+      _queueSound = new Audio('/sounds/entrouFila.mp3');
+      _queueSound.volume = 0.7;
+    }
     _queueSound.currentTime = 0;
-    _queueSound.play().catch(() => {});
-  } catch {}
+    const p = _queueSound.play();
+    if (p) p.catch(e => console.warn('Som bloqueado pelo browser:', e));
+  } catch (e) {
+    console.warn('playQueueSound:', e);
+  }
 }
 
 // Abrir painel
