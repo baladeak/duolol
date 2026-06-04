@@ -2917,32 +2917,10 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   .s-logo-text{display:none}
 }
 
-/* ── Barra de pesquisa global ─────────────────── */
-#global-search-bar{
-  position:fixed;top:0;left:0;right:0;z-index:2000;
-  background:var(--navy-m);border-bottom:1px solid var(--border);
-  padding:10px 20px;flex-direction:column;gap:0;
-  display:none;
-  animation:search-drop .2s ease;
-}
-#global-search-bar.open{display:flex}
-@keyframes search-drop{
-  from{opacity:0;transform:translateY(-10px)}
-  to{opacity:1;transform:translateY(0)}
-}
-#global-search-wrap{
-  display:flex;align-items:center;gap:10px;
-  background:var(--navy);border:1px solid var(--border-h);
-  border-radius:10px;padding:8px 14px;
-}
-.global-search-inp{
-  flex:1;background:transparent;border:none;outline:none;
-  font-family:'Exo 2',sans-serif;font-size:14px;color:var(--text);
-}
+/* ── Busca — modal centralizado ───────────────── */
 .global-search-inp::placeholder{color:var(--dim)}
 #global-search-results{
-  max-height:320px;overflow-y:auto;margin-top:8px;
-  display:flex;flex-direction:column;gap:4px;
+  display:flex;flex-direction:column;gap:2px;padding:8px;
 }
 .gs-result{
   display:flex;align-items:center;gap:12px;padding:10px 12px;
@@ -2956,15 +2934,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .gs-result-elos{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
 .gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}
 
-/* Botão de pesquisa na sidebar */
-.s-search-btn{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;
-  border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500;
-  color:var(--muted);transition:.15s;margin-bottom:2px;
-  border:none;background:none;width:100%;text-align:left;
-}
-.s-search-btn:hover{background:var(--navy-h);color:var(--text)}
-.s-search-btn i{font-size:17px;width:20px;text-align:center}
+
 
 /* ── Tags ARAM e Arena ────────────────────────── */
 .tag-aram{background:rgba(139,92,246,.12);color:#C4B5FD;border-color:rgba(139,92,246,.35)}
@@ -4322,3 +4292,24 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .explore-player-actions .duo-action-dm{
   padding:7px 10px;font-size:13px;justify-content:center;
 }
+
+/* ── Botão ícone de busca no logo ────────────── */
+.s-icon-btn{
+  background:none;border:1px solid var(--border);
+  color:var(--dim);border-radius:8px;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:15px;transition:.15s;flex-shrink:0;
+}
+.s-icon-btn:hover{color:var(--text);border-color:var(--border-h);background:var(--navy-h)}
+
+/* ── Resultados da busca ──────────────────────── */
+.gs-result{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;
+  border-radius:9px;cursor:pointer;transition:.12s;
+}
+.gs-result:hover{background:var(--navy-h)}
+.gs-result-info{flex:1;min-width:0}
+.gs-result-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.gs-result-nick{font-size:11.5px;color:var(--dim)}
+.gs-result-elos{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}

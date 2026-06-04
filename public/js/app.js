@@ -2647,22 +2647,21 @@ async function createGroup() {
 // ── Pesquisa global ─────────────────────────────
 let _searchTimer = null;
 function openGlobalSearch(){
-  const bar=$('global-search-bar');
-  if(!bar)return;
-  bar.classList.add('open');
-  if($('global-search-clear'))$('global-search-clear').style.display='';
-  setTimeout(()=>$('global-search-input')?.focus(),50);
+  const modal=$('search-modal');
+  if(!modal)return;
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+  setTimeout(()=>$('global-search-input')?.focus(),80);
 }
 function closeGlobalSearch(){
-  const bar=$('global-search-bar');
-  if(!bar)return;
-  bar.classList.remove('open');
+  const modal=$('search-modal');
+  if(!modal)return;
+  modal.style.display='none';
+  document.body.style.overflow='';
   const inp=$('global-search-input');
   if(inp)inp.value='';
   const res=$('global-search-results');
   if(res)res.innerHTML='';
-  const clr=$('global-search-clear');
-  if(clr)clr.style.display='none';
 }
 function onGlobalSearch(q){clearTimeout(_searchTimer);const results=$('global-search-results');if(!q.trim()){results.innerHTML='';return;}results.innerHTML='<div class="gs-empty"><div class="spinner" style="margin:0 auto"></div></div>';_searchTimer=setTimeout(()=>runGlobalSearch(q),350);}
 async function runGlobalSearch(q){

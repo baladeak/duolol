@@ -95,16 +95,15 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="s-logo">
+      <div class="s-logo" style="display:flex;align-items:center;justify-content:space-between">
         <div class="s-logo-icon">D</div>
         <span class="s-logo-text">DUOQ.GG</span>
+        <button onclick="openGlobalSearch()" class="s-icon-btn" title="Buscar invocador">
+          <i class="ti ti-search"></i>
+        </button>
       </div>
       <nav class="s-nav">
-        <!-- Botão de pesquisa global -->
-        <button class="s-search-btn" id="btn-open-search" onclick="openGlobalSearch()">
-          <i class="ti ti-search"></i><span>Buscar invocador</span>
-        </button>
-        <div style="height:1px;background:var(--border);margin:4px 0 6px"></div>
+
         <button class="s-item active" id="nav-feed" onclick="loadPage('feed')">
           <i class="ti ti-home"></i><span>Feed</span>
         </button>
@@ -616,6 +615,23 @@
   <div class="duo-preview-wrap">
     <button onclick="closeDuoPreview()" class="duo-preview-close"><i class="ti ti-x"></i></button>
     <div id="duo-preview-body"></div>
+  </div>
+</div>
+
+<!-- Modal de Busca -->
+<div id="search-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;align-items:flex-start;justify-content:center;padding-top:80px;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeGlobalSearch()">
+  <div style="background:var(--navy-m);border:1px solid var(--border-h);border-radius:14px;width:min(560px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.7);overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <i class="ti ti-search" style="color:var(--dim);font-size:18px;flex-shrink:0"></i>
+      <input id="global-search-input" class="global-search-inp" style="flex:1;background:transparent;border:none;outline:none;font-size:15px;color:var(--text);font-family:'Exo 2',sans-serif"
+             placeholder="Buscar invocador por nick ou nome..."
+             oninput="onGlobalSearch(this.value)"
+             onkeydown="if(event.key==='Escape')closeGlobalSearch()">
+      <button onclick="closeGlobalSearch()" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:15px;padding:4px">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    <div id="global-search-results" style="max-height:380px;overflow-y:auto"></div>
   </div>
 </div>
 
