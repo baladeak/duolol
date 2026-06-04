@@ -1297,10 +1297,12 @@ function renderProfile(user, isMe) {
 
 let _profileContentCache = null;
 let _profileIsMe = false;
-let _profileTabActive = 'playlists';
+let _profileUserId = null;
+let _profileTabActive = 'matches';
 
 function renderProfileContent(userId, content, isMe) {
   _profileContentCache = content;
+  _profileUserId = userId;
   _profileIsMe = isMe;
   switchProfileTab(_profileTabActive, false);
 }
@@ -1313,6 +1315,7 @@ function switchProfileTab(tab, scroll = true) {
   const c = _profileContentCache;
   const isMe = _profileIsMe;
 
+  if (tab === 'matches')     loadProfileMatches(_profileUserId);
   if (tab === 'playlists')   box.innerHTML = renderPlaylists(c?.playlists || [], isMe);
   if (tab === 'gameplays')   box.innerHTML = renderGameplays(c?.gameplays || [], isMe);
   if (tab === 'screenshots') box.innerHTML = renderScreenshots(c?.screenshots || [], isMe);
@@ -2651,3 +2654,83 @@ window.addEventListener('DOMContentLoaded', () => {
     if (appScreen)  appScreen.style.display  = 'none';
   }
 });
+
+// ══════════════════════════════════════════════
+//  HISTÓRICO DE PARTIDAS
+// ══════════════════════════════════════════════
+const QUEUE_LABELS = {
+  420: 'Ranqueada Solo/Duo', 440: 'Ranqueada Flex',
+  450: 'ARAM', 490: 'Normal', 400: 'Normal Draft',
+  900: 'ARURF', 1020: 'One for All', 1700: 'Arena',
+  1900: 'URF', 700: 'Clash'
+};
+
+async function loadProfileMatches(userId) {
+  const box = $('profile-tab-content');
+  if (!box) return;
+  box.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando partidas...</div>';
+  try {
+    const matches = await api(`/users/${userId}/matches`);
+    if (!matches.length) {
+      box.innerHTML = '<div class="empty"><i class="ti ti-sword-off"></i><p>Nenhuma partida ranqueada encontrada</p><p style="font-size:12px;color:var(--dim)">Sincronize o elo para buscar partidas</p></div>';
+      return;
+    }
+    box.innerHTML = `<div class="matches-list">${matches.map(m => matchCardHTML(m)).join('')}</div>`;
+  } catch (err) {
+    box.innerHTML = '<div class="empty"><i class="ti ti-alert-circle"></i><p>Erro ao carregar partidas</p><p style="font-size:12px;color:var(--dim)">Verifique se o elo está sincronizado</p></div>';
+  }
+}
+
+function matchCardHTML(m) {
+  const kda       = m.deaths === 0 ? 'Perfeito' : ((m.kills + m.assists) / m.deaths).toFixed(2);
+  const kdaClass  = parseFloat(kda) >= 4 ? 'kda-great' : parseFloat(kda) >= 2.5 ? 'kda-good' : 'kda-bad';
+  const csMin     = m.gameDuration > 0 ? (m.cs / (m.gameDuration / 60)).toFixed(1) : '0';
+  const duration  = `${Math.floor(m.gameDuration / 60)}m ${m.gameDuration % 60}s`;
+  const queueName = QUEUE_LABELS[m.queueId] || m.gameMode || 'Partida';
+  const champKey  = champKey2(m.champion);
+  const champIcon = `https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${champKey}.png`;
+  const timeAgoStr = m.gameCreation ? timeAgo(new Date(m.gameCreation)) : '';
+
+  return `<div class="match-card ${m.win ? 'match-win' : 'match-loss'}">
+    <div class="match-result-bar"></div>
+    <div class="match-champ">
+      <img src="${champIcon}" class="match-champ-icon" onerror="this.src='/img/placeholder.png'" loading="lazy">
+      <div class="match-champ-level">${m.level}</div>
+    </div>
+    <div class="match-main">
+      <div class="match-top">
+        <span class="match-result-label ${m.win ? 'win' : 'loss'}">${m.win ? 'Vitória' : 'Derrota'}</span>
+        <span class="match-queue">${queueName}</span>
+        <span class="match-duration">${duration}</span>
+        <span class="match-time" style="margin-left:auto">${timeAgoStr}</span>
+      </div>
+      <div class="match-champ-name">${escapeHtml(m.champion)}</div>
+      <div class="match-stats">
+        <span class="match-kda-raw"><strong>${m.kills}</strong> / <span style="color:#FCA5A5">${m.deaths}</span> / <strong>${m.assists}</strong></span>
+        <span class="match-kda ${kdaClass}">${kda} KDA</span>
+        <span class="match-cs"><i class="ti ti-coins" style="font-size:12px"></i> ${m.cs} CS <span style="color:var(--dim)">(${csMin}/min)</span></span>
+      </div>
+    </div>
+    <div class="match-items">
+      ${m.items.slice(0, 6).map(item => item
+        ? `<img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/item/${item}.png" class="match-item" loading="lazy" onerror="this.style.background='var(--navy)'">`
+        : '<div class="match-item match-item-empty"></div>'
+      ).join('')}
+    </div>
+  </div>`;
+}
+
+// Mapear nome do campeão para chave do DDragon
+function champKey2(name) {
+  const map = {
+    'Aurelion Sol':'AurelionSol','Bel\'Veth':'Belveth','Cho\'Gath':'Chogath',
+    'Dr. Mundo':'DrMundo','Jarvan IV':'JarvanIV','K\'Sante':'KSante',
+    'Kai\'Sa':'Kaisa','Kha\'Zix':'Khazix','Kog\'Maw':'KogMaw',
+    'LeBlanc':'Leblanc','Lee Sin':'LeeSin','Master Yi':'MasterYi',
+    'Miss Fortune':'MissFortune','Nunu & Willump':'Nunu','Rek\'Sai':'RekSai',
+    'Renata Glasc':'Renata','Tahm Kench':'TahmKench','Twisted Fate':'TwistedFate',
+    'Vel\'Koz':'Velkoz','Wukong':'MonkeyKing','Xin Zhao':'XinZhao',
+    'Yorick':'Yorick','Zac':'Zac'
+  };
+  return map[name] || name?.replace(/[^a-zA-Z0-9]/g, '') || name;
+}

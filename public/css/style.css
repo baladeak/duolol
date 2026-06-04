@@ -3737,3 +3737,88 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   flex-wrap:wrap;
   gap:6px;
 }
+
+/* ══════════════════════════════════════════
+   HISTÓRICO DE PARTIDAS
+══════════════════════════════════════════ */
+.matches-list{
+  display:flex;flex-direction:column;gap:6px;padding:14px 16px;
+}
+
+.match-card{
+  display:flex;align-items:center;gap:12px;
+  background:var(--navy-c);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;
+  position:relative;overflow:hidden;transition:.15s;
+}
+.match-card:hover{border-color:var(--border-h)}
+
+.match-result-bar{
+  position:absolute;left:0;top:0;bottom:0;width:4px;
+}
+.match-win .match-result-bar{background:var(--green)}
+.match-loss .match-result-bar{background:#EF4444}
+
+/* Ícone do campeão */
+.match-champ{position:relative;flex-shrink:0}
+.match-champ-icon{
+  width:52px;height:52px;border-radius:50%;
+  border:2px solid var(--border-h);object-fit:cover;
+}
+.match-win .match-champ-icon{border-color:rgba(34,197,94,.5)}
+.match-loss .match-champ-icon{border-color:rgba(239,68,68,.4)}
+.match-champ-level{
+  position:absolute;bottom:-2px;right:-2px;
+  background:var(--navy-m);border:1px solid var(--border);
+  border-radius:5px;font-size:10px;font-weight:700;
+  color:var(--muted);padding:1px 4px;
+}
+
+/* Conteúdo principal */
+.match-main{flex:1;min-width:0}
+.match-top{
+  display:flex;align-items:center;gap:8px;
+  flex-wrap:wrap;margin-bottom:3px;
+}
+.match-result-label{
+  font-size:12px;font-weight:700;letter-spacing:.5px;
+}
+.match-result-label.win{color:var(--green)}
+.match-result-label.loss{color:#FCA5A5}
+.match-queue{
+  font-size:11px;color:var(--muted);
+  background:var(--navy);border:1px solid var(--border);
+  border-radius:4px;padding:1px 7px;
+}
+.match-duration{font-size:11px;color:var(--dim)}
+.match-time{font-size:11px;color:var(--dim)}
+.match-champ-name{
+  font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:4px;
+}
+.match-stats{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.match-kda-raw{font-size:13px;font-weight:600}
+.match-kda{
+  font-size:12px;font-weight:700;
+  padding:1px 7px;border-radius:5px;
+}
+.kda-great{background:rgba(200,150,62,.2);color:var(--gold-l)}
+.kda-good{background:rgba(34,197,94,.15);color:var(--green)}
+.kda-bad{background:rgba(100,100,100,.15);color:var(--muted)}
+.match-cs{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+
+/* Itens */
+.match-items{
+  display:grid;grid-template-columns:repeat(3,28px);
+  grid-template-rows:repeat(2,28px);gap:3px;
+  flex-shrink:0;
+}
+.match-item{
+  width:28px;height:28px;border-radius:5px;
+  object-fit:cover;border:1px solid var(--border);
+}
+.match-item-empty{
+  width:28px;height:28px;border-radius:5px;
+  background:var(--navy);border:1px solid var(--border);
+}

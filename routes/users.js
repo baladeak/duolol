@@ -286,3 +286,79 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 module.exports = router;
+// ── Histórico de partidas (Match v5) ──────────
+router.get('/:id/matches', auth, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      'SELECT lol_game_name, lol_tag_line, lol_puuid FROM users WHERE id=?',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const u   = rows[0];
+    const key = RIOT_KEY();
+    if (!key) return res.status(503).json({ error: 'API Key não configurada' });
+
+    let puuid = u.lol_puuid;
+
+    // Buscar PUUID se não tiver
+    if (!puuid && u.lol_game_name && u.lol_tag_line) {
+      try {
+        const { data: acc } = await axios.get(
+          `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(u.lol_game_name)}/${encodeURIComponent(u.lol_tag_line)}`,
+          { headers: { 'X-Riot-Token': key } }
+        );
+        puuid = acc.puuid;
+        await db.execute('UPDATE users SET lol_puuid=? WHERE id=?', [puuid, req.params.id]);
+      } catch { return res.json([]); }
+    }
+    if (!puuid) return res.json([]);
+
+    // Buscar IDs das últimas 10 partidas
+    const { data: matchIds } = await axios.get(
+      `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=10`,
+      { headers: { 'X-Riot-Token': key } }
+    );
+
+    if (!matchIds.length) return res.json([]);
+
+    // Buscar detalhes em paralelo (máx 5 por vez para não estourar rate limit)
+    const details = await Promise.all(
+      matchIds.slice(0, 10).map(id =>
+        axios.get(
+          `https://americas.api.riotgames.com/lol/match/v5/matches/${id}`,
+          { headers: { 'X-Riot-Token': key } }
+        ).then(r => r.data).catch(() => null)
+      )
+    );
+
+    const matches = details.filter(Boolean).map(match => {
+      const participant = match.info.participants.find(p => p.puuid === puuid);
+      if (!participant) return null;
+      return {
+        matchId:      match.metadata.matchId,
+        gameMode:     match.info.gameMode,
+        queueId:      match.info.queueId,
+        gameDuration: match.info.gameDuration,
+        gameCreation: match.info.gameCreation,
+        champion:     participant.championName,
+        championId:   participant.championId,
+        win:          participant.win,
+        kills:        participant.kills,
+        deaths:       participant.deaths,
+        assists:      participant.assists,
+        cs:           participant.totalMinionsKilled + participant.neutralMinionsKilled,
+        role:         participant.teamPosition || participant.role,
+        items:        [participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5, participant.item6],
+        level:        participant.champLevel,
+        visionScore:  participant.visionScore,
+        damage:       participant.totalDamageDealtToChampions,
+      };
+    }).filter(Boolean);
+
+    res.json(matches);
+  } catch (err) {
+    console.error('Match history error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Erro ao buscar partidas' });
+  }
+});
