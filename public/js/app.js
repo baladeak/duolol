@@ -2509,19 +2509,24 @@ let _queueJoinedAt = null;
 let _queueMinimized = false;
 
 // Som de notificação (novo jogador na fila)
-// Som da fila — criado depois da primeira interação do usuário
-// (browsers bloqueiam Audio criado antes de interação)
+// Som da fila — carrega o MP3 real
 let _queueSound = null;
 
 function playQueueSound() {
   try {
     if (!_queueSound) {
-      _queueSound = new Audio('/sounds/entrouFila.mp3');
+      _queueSound = new Audio();
+      _queueSound.src = '/sounds/entrouFila.mp3';
       _queueSound.volume = 0.7;
+      _queueSound.load();
     }
-    _queueSound.currentTime = 0;
-    const p = _queueSound.play();
-    if (p) p.catch(e => console.warn('Som bloqueado pelo browser:', e));
+    // Clonar para poder tocar várias vezes seguidas
+    const s = _queueSound.cloneNode();
+    s.volume = 0.7;
+    s.play().catch(() => {
+      // Se falhar (autoplay policy), tenta com interação pendente
+      document.addEventListener('click', () => s.play().catch(()=>{}), { once: true });
+    });
   } catch (e) {
     console.warn('playQueueSound:', e);
   }
