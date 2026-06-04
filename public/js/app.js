@@ -1173,7 +1173,13 @@ function renderProfile(user, isMe) {
       </div>
       <div class="profile-actions">
         ${isMe
-          ? `<button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
+          ? `<button id="mic-toggle-btn" type="button"
+               class="mic-icon-btn ${user.has_mic ? 'mic-on' : ''}"
+               onclick="toggleMicSave(this)"
+               title="${user.has_mic ? 'Microfone ativo — clique para desativar' : 'Sem microfone — clique para ativar'}">
+               <i class="ti ti-microphone${user.has_mic ? '' : '-off'}"></i>
+             </button>
+             <button class="btn-outline" onclick="syncElo()"><i class="ti ti-refresh"></i> Sync Elo</button>
              <button class="btn-outline" onclick="logout()" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`
           : `<button class="btn-outline" style="border-color:rgba(64,128,255,.4);color:#93C5FD" onclick="openDM(${user.id},'${escapeHtml(dName(user))}')"><i class="ti ti-message-2"></i> Mensagem</button>
              ${user.is_friend
