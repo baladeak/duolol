@@ -899,9 +899,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   background:var(--grad-gold);
 }
 
-.post-head{display:flex;gap:12px;margin-bottom:12px}
+.post-head{display:flex;gap:14px;align-items:flex-start}
 
-.post-meta{flex:1}
+.post-meta{flex:1;min-width:0}
 
 .post-top{
   display:flex;
@@ -941,8 +941,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .post-body{
   font-size:13.5px;
   line-height:1.6;
-  margin-bottom:12px;
+  margin:10px 0 12px;
   color:var(--text);
+  word-break:break-word;
 }
 
 .post-actions{
@@ -3671,4 +3672,41 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 @keyframes pulse-online{
   0%,100%{opacity:1}
   50%{opacity:.4}
+}
+
+/* ── Avatar XL para o feed ──────────────────── */
+.av-xl{
+  width:68px;height:68px;border-radius:50%;
+  object-fit:cover;flex-shrink:0;
+}
+.av.av-xl{
+  width:68px;height:68px;font-size:24px;
+  border-radius:50%;flex-shrink:0;
+}
+
+/* ── Separador compositor / feed ─────────────── */
+.feed-divider{
+  display:flex;align-items:center;gap:12px;
+  padding:6px 16px 2px;
+  margin-top:4px;
+}
+.feed-divider-line{
+  flex:1;height:1px;background:var(--border);
+}
+.feed-divider-label{
+  font-family:'Rajdhani',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--dim);
+  white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ── Sentinel de infinite scroll ─────────────── */
+#feed-sentinel{
+  height:40px;display:flex;align-items:center;
+  justify-content:center;padding:8px;
+}
+.load-more-spinner{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--dim);
 }

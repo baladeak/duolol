@@ -185,7 +185,18 @@
               <button class="btn-post" id="btn-publish" onclick="publishPost()">POSTAR</button>
             </div>
           </div>
+          <!-- Separador compositor / posts -->
+          <div class="feed-divider">
+            <div class="feed-divider-line"></div>
+            <div class="feed-divider-label">
+              <i class="ti ti-layout-list" style="font-size:13px"></i> Posts recentes
+            </div>
+            <div class="feed-divider-line"></div>
+          </div>
+
           <div id="feed-posts"></div>
+          <!-- Sentinel para infinite scroll -->
+          <div id="feed-sentinel"></div>
         </div>
       </div>
 
