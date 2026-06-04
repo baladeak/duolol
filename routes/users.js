@@ -196,16 +196,28 @@ router.post('/me/sync-elo', auth, async (req, res) => {
       [req.user.id]
     );
     const u = user[0];
-    let puuid = u.lol_puuid;
 
-    // Passo 1: buscar PUUID pelo Riot ID (account-v1) — aprovado
-    if (!puuid) {
+    if (!u.lol_game_name || !u.lol_tag_line) {
+      return res.status(400).json({ error: 'Configure seu Nick e Tag do LoL antes de sincronizar.' });
+    }
+
+    // Passo 1: SEMPRE buscar PUUID pelo Riot ID para garantir conta correta
+    let puuid;
+    try {
       const { data: acc } = await axios.get(
         `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(u.lol_game_name)}/${encodeURIComponent(u.lol_tag_line)}`,
         { headers: { 'X-Riot-Token': key } }
       );
       puuid = acc.puuid;
       await db.execute('UPDATE users SET lol_puuid=? WHERE id=?', [n(puuid), req.user.id]);
+    } catch (riotErr) {
+      const status = riotErr.response?.status;
+      const msg = status === 404
+        ? `Invocador "${u.lol_game_name}#${u.lol_tag_line}" não encontrado. Verifique o nick e a tag.`
+        : status === 429 ? 'Limite da API Riot atingido. Tente novamente em alguns minutos.'
+        : status === 403 ? 'API Key da Riot inválida ou expirada.'
+        : `Erro ao buscar invocador na Riot API (${status || 'sem conexão'}).`;
+      return res.status(400).json({ error: msg });
     }
 
     // Passo 2: buscar elo direto pelo PUUID (league-v4/entries/by-puuid) — aprovado
