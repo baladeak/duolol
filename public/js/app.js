@@ -769,13 +769,16 @@ function notifItemHTML(n) {
   const icons = {
     POST_LIKE:'ti-heart', POST_COMMENT:'ti-message-2', COMMENT_REPLY:'ti-message-reply',
     FRIEND_REQUEST:'ti-user-plus', FRIEND_ACCEPTED:'ti-user-check',
-    NEW_MESSAGE:'ti-message', DUO_INVITE:'ti-sword', ELO_UPDATE:'ti-trophy', SYSTEM:'ti-info-circle'
+    NEW_MESSAGE:'ti-message', DUO_INVITE:'ti-sword', ELO_UPDATE:'ti-trophy',
+    DUO_LIKE:'ti-heart-handshake', DUO_MATCH:'ti-hearts', SYSTEM:'ti-info-circle'
   };
   const texts = {
     POST_LIKE:'curtiu seu post', POST_COMMENT:'comentou no seu post',
     COMMENT_REPLY:'respondeu seu comentário', FRIEND_REQUEST:'te enviou uma solicitação de amizade',
     FRIEND_ACCEPTED:'aceitou sua solicitação de amizade', NEW_MESSAGE:'te enviou uma mensagem',
-    DUO_INVITE:'te convidou para duo', ELO_UPDATE:'Seu elo foi atualizado!', SYSTEM:'Mensagem do sistema'
+    DUO_INVITE:'te convidou para duo', ELO_UPDATE:'Seu elo foi atualizado!',
+    DUO_LIKE:'te deu like no Match Duo! Veja o perfil dele', DUO_MATCH:'É um MATCH! Vocês dois se curtiram 💙',
+    SYSTEM:'Mensagem do sistema'
   };
 
   const actorName = escapeHtml(n.actor_display_name || n.actor_username || '');
@@ -802,6 +805,18 @@ function notifItemHTML(n) {
       </button>
       <button class="notif-btn-decline" onclick="respondFriendRequest(${n.actor_id},'reject','${n.id}')">
         <i class="ti ti-x"></i> Recusar
+      </button>
+    </div>` :
+  n.type === 'DUO_LIKE' && n.actor_id ? `
+    <div class="notif-friend-btns">
+      <button class="notif-btn-accept" onclick="openDuoPreview(${n.actor_id},'DUO_LIKE')">
+        <i class="ti ti-eye"></i> Ver perfil
+      </button>
+    </div>` :
+  n.type === 'DUO_MATCH' && n.actor_id ? `
+    <div class="notif-friend-btns">
+      <button class="notif-btn-accept" onclick="openDuoPreview(${n.actor_id},'DUO_MATCH')" style="background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:#FB7185">
+        <i class="ti ti-hearts"></i> Ver match
       </button>
     </div>` : '';
 
@@ -2928,11 +2943,17 @@ async function swipeDuo(action) {
     card.style.opacity    = '0';
   }
 
-  try { await api('/match/swipe', { method:'POST', body:{ target_id: p.id, action } }); } catch {}
-
-  if (action === 'like') {
-    toast(`💙 Convite enviado para ${p.display_name || p.username}!`);
-  }
+  try {
+    const res = await api('/match/swipe', { method:'POST', body:{ target_id: p.id, action } });
+    if (action === 'like') {
+      if (res.match) {
+        // MATCH MÚTUO!
+        showMatchAnimation(p);
+        return; // animação cuida do avanço
+      }
+      toast(`💙 Like enviado! ${p.display_name || p.username} vai ser notificado.`);
+    }
+  } catch {}
 
   setTimeout(() => {
     _matchIndex++;
@@ -2988,4 +3009,133 @@ function matchDragEnd() {
   if (dx > 80)       swipeDuo('like');
   else if (dx < -80) swipeDuo('skip');
   else { card.style.transform = 'translateX(0) rotate(0)'; }
+}
+
+// ── Preview de Duo Like / Match ───────────────────
+let _duoPreviewActor = null;
+
+async function openDuoPreview(actorId, notifType) {
+  const modal = $('duo-preview-modal');
+  const body  = $('duo-preview-body');
+  if (!modal || !body) return;
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  body.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const p = await api(`/match/profile/${actorId}`);
+    _duoPreviewActor = p;
+
+    const roles   = Array.isArray(p.roles) ? p.roles : (p.roles||'').split(',').filter(Boolean);
+    const champs  = p.main_champions ? JSON.parse(p.main_champions) : [];
+    const isMatch = notifType === 'DUO_MATCH';
+
+    body.innerHTML = `
+      <div class="duo-preview-header ${isMatch ? 'is-match' : ''}">
+        ${isMatch ? '<div class="duo-preview-match-badge"><i class="ti ti-hearts"></i> MATCH!</div>' : '<div class="duo-preview-like-badge"><i class="ti ti-heart-handshake"></i> Curtiu você</div>'}
+      </div>
+      <div class="duo-preview-content">
+        <div class="duo-preview-av-wrap" onclick="closeDuoPreview();viewProfile(${p.id})">
+          ${avatarHTML(p, 'av-match')}
+        </div>
+        <div class="duo-preview-name" onclick="closeDuoPreview();viewProfile(${p.id})" style="cursor:pointer">
+          ${escapeHtml(p.display_name || p.username)}
+          ${p.has_mic ? '<i class="ti ti-microphone" style="color:var(--green);font-size:15px"></i>' : ''}
+          <span class="match-online-dot ${p.online_status==='online'?'online':'offline'}"></span>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-bottom:10px">${escapeHtml(p.lol_game_name)}#${escapeHtml(p.lol_tag_line)}</div>
+
+        <div class="duo-preview-elos">
+          <span class="elo ${eloClass(p.solo_tier)}">Solo ${eloLabel(p.solo_tier,p.solo_rank,p.solo_lp)}</span>
+          <span class="elo ${eloClass(p.flex_tier)}">Flex ${eloLabel(p.flex_tier,p.flex_rank,p.flex_lp)}</span>
+        </div>
+
+        ${roles.length ? `<div class="duo-preview-roles">${roles.map(r=>`<span class="tag tag-solo on" style="cursor:default">${r}</span>`).join('')}</div>` : ''}
+
+        ${champs.length ? `<div class="duo-preview-champs">
+          <span style="font-size:11px;color:var(--dim);margin-bottom:4px;display:block">Campeões principais</span>
+          <div style="display:flex;gap:6px">
+            ${champs.slice(0,3).map(ch=>{const k=ch.replace(/[^a-zA-Z0-9]/g,'');return `<img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${k}.png" class="match-champ-mini" title="${escapeHtml(ch)}" onerror="this.style.display='none'">`;}).join('')}
+          </div>
+        </div>` : ''}
+
+        ${p.bio ? `<div class="match-card-bio">"${escapeHtml(p.bio)}"</div>` : ''}
+
+        <!-- Ações -->
+        <div class="duo-preview-actions">
+          ${!isMatch ? `
+          <button class="duo-action-heart" onclick="heartBackDuo(${p.id})" title="Curtir de volta!">
+            <i class="ti ti-heart-filled"></i> Curtir de volta
+          </button>` : ''}
+          <button class="duo-action-add" onclick="closeDuoPreview();addFriend(${p.id},this)">
+            <i class="ti ti-user-plus"></i> Adicionar
+          </button>
+          <button class="duo-action-dm" onclick="closeDuoPreview();openDM(${p.id},'${escapeHtml(p.username)}')">
+            <i class="ti ti-message-2"></i> Mensagem
+          </button>
+          <button class="duo-action-profile" onclick="closeDuoPreview();viewProfile(${p.id})">
+            <i class="ti ti-user"></i> Ver perfil
+          </button>
+        </div>
+      </div>`;
+  } catch {
+    body.innerHTML = '<div class="empty"><p>Erro ao carregar perfil</p></div>';
+  }
+}
+
+function closeDuoPreview() {
+  const modal = $('duo-preview-modal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+  _duoPreviewActor = null;
+}
+
+async function heartBackDuo(actorId) {
+  try {
+    await api(`/match/heart-back/${actorId}`, { method:'POST' });
+    // Atualizar modal para mostrar MATCH
+    const body = $('duo-preview-body');
+    if (body) {
+      const badge = body.querySelector('.duo-preview-like-badge');
+      if (badge) {
+        badge.className = 'duo-preview-match-badge';
+        badge.innerHTML = '<i class="ti ti-hearts"></i> MATCH! Vocês dois se curtiram 💙';
+      }
+      const heartBtn = body.querySelector('.duo-action-heart');
+      if (heartBtn) heartBtn.remove();
+    }
+    toast('💙 MATCH! Vocês dois se curtiram!');
+  } catch { toast('Erro ao curtir de volta'); }
+}
+
+// Animação de match mútuo ao deslizar
+function showMatchAnimation(p) {
+  const area = $('match-card-area');
+  if (!area) return;
+  area.innerHTML = `
+    <div class="match-anim-wrap">
+      <div class="match-anim-hearts">💙</div>
+      <div class="match-anim-title">É um MATCH!</div>
+      <div class="match-anim-sub">Você e ${escapeHtml(p.display_name||p.username)} se curtiram</div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="duo-action-dm" onclick="closeDuoAnim();openDM(${p.id},'${escapeHtml(p.username)}')">
+          <i class="ti ti-message-2"></i> Mandar mensagem
+        </button>
+        <button class="duo-action-profile" onclick="closeDuoAnim();viewProfile(${p.id})">
+          <i class="ti ti-user"></i> Ver perfil
+        </button>
+      </div>
+      <button class="btn-outline" onclick="closeDuoAnim()" style="margin-top:12px;padding:8px 20px">
+        Continuar buscando
+      </button>
+    </div>`;
+  const actions = $('match-actions');
+  if (actions) actions.style.display = 'none';
+}
+
+function closeDuoAnim() {
+  _matchIndex++;
+  const actions = $('match-actions');
+  if (actions) actions.style.display = 'flex';
+  renderMatchCard();
 }
