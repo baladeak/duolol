@@ -392,14 +392,13 @@ function postHTML(p) {
   return `
   <div class="post-card" id="post-${p.id}">
     <div class="post-head">
-      <div onclick="viewProfile(${p.user_id})" style="cursor:pointer;flex-shrink:0" title="Ver perfil de ${escapeHtml(p.lol_game_name)}">${avatarHTML(p, 'av-xl')}</div>
+      <div onclick="viewProfile(${p.user_id})" style="cursor:pointer;flex-shrink:0;align-self:flex-start" title="Ver perfil de ${escapeHtml(p.lol_game_name)}">${avatarHTML(p, 'av-xl')}</div>
       <div class="post-meta">
         <div class="post-top">
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
           ${p.has_mic ? '<span class="post-mic" title="Tem microfone"><i class="ti ti-microphone"></i></span>' : ''}
           ${p.online_status === 'online' ? '<span class="post-online"><i class="ti ti-circle-filled"></i> Online</span>' : ''}
-          <span class="post-time">${timeAgo(p.created_at)}</span>
           <!-- Menu 3 pontos -->
           <div class="post-menu" style="margin-left:auto;position:relative">
             <button class="post-menu-btn" onclick="togglePostMenu(${p.id},${p.user_id})" title="Opções"><i class="ti ti-dots"></i></button>
@@ -422,12 +421,18 @@ function postHTML(p) {
           <span class="elo ${eloClass(p.flex_tier)}">Flex ${eloLabel(p.flex_tier, p.flex_rank, p.flex_lp)}</span>
         </div>
         <div class="post-body">${escapeHtml(p.content)}</div>
+        <div class="post-tag-row">
+          <span class="tag ${
+            p.queue_type==='FLEX'  ? 'tag-flex on'  :
+            p.queue_type==='ARAM'  ? 'tag-aram on'  :
+            p.queue_type==='ARENA' ? 'tag-arena on' :
+            'tag-solo on'
+          }" style="cursor:default;pointer-events:none">
+            ${p.queue_type==='FLEX' ? 'Flex' : p.queue_type==='ARAM' ? 'ARAM' : p.queue_type==='ARENA' ? 'Arena' : p.queue_type==='BOTH' ? 'Solo + Flex' : 'Solo/Duo'}
+          </span>
+          <span class="post-time" style="margin-left:auto">${timeAgo(p.created_at)}</span>
+        </div>
       </div>
-    </div>
-    <div style="margin-bottom:8px;padding:0 18px">
-      <span class="tag ${p.queue_type==='FLEX' ? 'tag-flex on' : 'tag-solo on'}" style="cursor:default;pointer-events:none">
-        ${p.queue_type==='FLEX' ? 'Flex' : p.queue_type==='BOTH' ? 'Solo + Flex' : 'Solo/Duo'}
-      </span>
     </div>
     <div class="post-actions">
       <button class="act-btn ${p.liked_by_me ? 'liked' : ''}" onclick="toggleLike(${p.id}, this)">
