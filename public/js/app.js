@@ -293,6 +293,7 @@ function connectSocket() {
   socket.on('queue_update',      onQueueUpdate);
   socket.on('queue_chat_msg',    onQueueChatMsg);
   socket.on('queue_chat_history',onQueueChatHistory);
+  socket.on('group_message',     onGroupMessage);
   socket.on('friend_online',({ user_id, status }) => updateFriendStatus(user_id, status));
   socket.on('connect_error', err => console.warn('Socket error:', err.message));
 }
@@ -348,6 +349,7 @@ function loadPage(name) {
   if (name === 'messages')      loadConversations();
   if (name === 'notifications') loadNotifications();
   if (name === 'profile')       loadMyProfile();
+  if (name === 'groups')        loadGroupsPage();
 }
 
 // ── Feed ───────────────────────────────────────
@@ -2507,18 +2509,14 @@ let _queueJoinedAt = null;
 let _queueMinimized = false;
 
 // Som de notificação (novo jogador na fila)
+// Pré-carrega o som de entrada na fila
+const _queueSound = new Audio('/sounds/entrouFila.mp3');
+_queueSound.volume = 0.6;
+
 function playQueueSound() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o   = ctx.createOscillator();
-    const g   = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type      = 'sine';
-    o.frequency.setValueAtTime(880, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
-    g.gain.setValueAtTime(0.3, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    o.start(); o.stop(ctx.currentTime + 0.4);
+    _queueSound.currentTime = 0;
+    _queueSound.play().catch(() => {});
   } catch {}
 }
 
@@ -2888,3 +2886,467 @@ window.addEventListener('DOMContentLoaded', () => {
     if (appScreen)  appScreen.style.display  = 'none';
   }
 });
+
+// ══════════════════════════════════════════════════════════════
+//  GRUPOS / CLÃS
+// ══════════════════════════════════════════════════════════════
+let _currentGroupId   = null;
+let _currentGroupRole = null; // 'owner' | 'admin' | 'member' | null
+let _currentGroupTab  = 'feed';
+
+// ── Página principal de grupos ──────────────────
+async function loadGroupsPage() {
+  const myList  = $('my-groups-list');
+  const allList = $('all-groups-list');
+  if (!myList) return;
+
+  myList.innerHTML  = '<div class="loading"><div class="spinner"></div></div>';
+  allList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const all = await api('/groups');
+    const mine = all.filter(g => g.my_role);
+    const rest = all.filter(g => !g.my_role);
+
+    myList.innerHTML  = mine.length ? mine.map(g => groupCardHTML(g)).join('') : '<p style="color:var(--dim);font-size:13px">Você não faz parte de nenhum grupo ainda.</p>';
+    allList.innerHTML = rest.length ? rest.map(g => groupCardHTML(g)).join('') : '<p style="color:var(--dim);font-size:13px">Nenhum outro grupo encontrado.</p>';
+  } catch {
+    myList.innerHTML = '<p style="color:var(--dim)">Erro ao carregar</p>';
+    allList.innerHTML = '';
+  }
+}
+
+async function searchGroups() {
+  const q = $('groups-search')?.value.trim();
+  const allList = $('all-groups-list');
+  if (!allList) return;
+  allList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const all = await api('/groups' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+    const rest = all.filter(g => !g.my_role);
+    allList.innerHTML = rest.length ? rest.map(g => groupCardHTML(g)).join('') : '<p style="color:var(--dim);font-size:13px">Nenhum grupo encontrado.</p>';
+  } catch { allList.innerHTML = '<p style="color:var(--dim)">Erro</p>'; }
+}
+
+function groupCardHTML(g) {
+  const initial = (g.name || '?')[0].toUpperCase();
+  const avHTML  = g.avatar_url
+    ? `<img src="${escapeHtml(g.avatar_url)}" alt="">`
+    : initial;
+  const roleLabel = g.my_role ? `<span class="group-card-role role-${g.my_role}">${g.my_role === 'owner' ? 'Dono' : g.my_role === 'admin' ? 'Admin' : 'Membro'}</span>` : '';
+
+  return `<div class="group-card" onclick="viewGroup(${g.id})">
+    <div class="group-card-banner">
+      ${g.banner_url ? `<img src="${escapeHtml(g.banner_url)}" alt="">` : ''}
+      <span class="group-card-tag">[${escapeHtml(g.tag)}]</span>
+    </div>
+    <div class="group-card-body">
+      <div class="group-card-av">${avHTML}</div>
+      <div class="group-card-name">${escapeHtml(g.name)}</div>
+      <div class="group-card-desc">${escapeHtml(g.description || 'Sem descrição')}</div>
+      <div class="group-card-footer">
+        <span class="group-card-members"><i class="ti ti-users" style="font-size:12px"></i> ${g.member_count}</span>
+        ${roleLabel}
+        ${!g.my_role ? `<span class="group-card-lock"><i class="ti ti-${g.is_public ? 'lock-open' : 'lock'}"></i></span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Ver detalhe do grupo ────────────────────────
+async function viewGroup(id) {
+  _currentGroupId   = id;
+  _currentGroupRole = null;
+
+  // Mostrar a página de detalhe
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.s-item').forEach(i => i.classList.remove('active'));
+  const page = $('page-group-detail');
+  const nav  = $('nav-groups');
+  if (page) page.classList.add('active');
+  if (nav)  nav.classList.add('active');
+  const rp = document.querySelector('.right-panel');
+  if (rp) rp.style.display = 'none';
+
+  // Loader
+  $('group-detail-name').textContent = 'Carregando...';
+  $('group-tab-content').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  $('group-detail-actions').innerHTML = '';
+  $('group-banner-area').innerHTML = '';
+
+  try {
+    const g = await api(`/groups/${id}`);
+    _currentGroupRole = g.my_role || null;
+
+    // Banner
+    $('group-banner-area').innerHTML = `
+      <div class="group-detail-banner">
+        ${g.banner_url ? `<img src="${escapeHtml(g.banner_url)}" alt="">` : ''}
+      </div>
+      <div class="group-detail-info">
+        <div class="group-detail-av">${g.avatar_url ? `<img src="${escapeHtml(g.avatar_url)}" alt="">` : escapeHtml((g.name||'?')[0].toUpperCase())}</div>
+        <div class="group-detail-meta">
+          <div class="group-detail-name">${escapeHtml(g.name)}</div>
+          <div class="group-detail-tag">[${escapeHtml(g.tag)}]</div>
+          <div class="group-detail-desc">${escapeHtml(g.description || '')}</div>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:4px">
+            <i class="ti ti-users" style="font-size:12px"></i> ${g.member_count} membros •
+            <i class="ti ti-${g.is_public ? 'lock-open' : 'lock'}" style="font-size:12px"></i> ${g.is_public ? 'Público' : 'Privado'}
+          </div>
+        </div>
+      </div>`;
+
+    // Botão de ação (entrar / sair / excluir)
+    let actionHTML = '';
+    if (!g.my_role && !g.my_request) {
+      actionHTML = `<button class="btn-post" onclick="joinGroup(${g.id})"><i class="ti ti-plus"></i> ${g.is_public ? 'Entrar' : 'Solicitar Entrada'}</button>`;
+    } else if (g.my_request === 'pending') {
+      actionHTML = `<button class="btn-outline" disabled style="opacity:.6">Aguardando aprovação...</button>`;
+    } else if (g.my_role && g.my_role !== 'owner') {
+      actionHTML = `<button class="btn-outline" onclick="leaveGroup(${g.id})" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-logout"></i> Sair</button>`;
+    } else if (g.my_role === 'owner') {
+      actionHTML = `<button class="btn-outline" onclick="deleteGroup(${g.id})" style="border-color:rgba(239,68,68,.4);color:#FCA5A5"><i class="ti ti-trash"></i> Excluir Grupo</button>`;
+    }
+    $('group-detail-actions').innerHTML = actionHTML;
+
+    // Aba de solicitações (só para owner/admin)
+    const reqTab = $('group-requests-tab');
+    if (reqTab) reqTab.style.display = (g.my_role === 'owner' || g.my_role === 'admin') ? '' : 'none';
+
+    // Carregar aba feed por padrão
+    _currentGroupTab = 'feed';
+    document.querySelectorAll('.group-tab').forEach(t => t.classList.remove('on'));
+    document.querySelector('.group-tab')?.classList.add('on');
+
+    // Entrar na sala socket do grupo
+    if (socket) socket.emit('join_group_room', id);
+
+    if (g.my_role) {
+      loadGroupFeed();
+    } else {
+      $('group-tab-content').innerHTML = `
+        <div class="empty" style="padding:40px">
+          <i class="ti ti-lock"></i>
+          <p>${g.is_public ? 'Entre no grupo para ver o feed' : 'Grupo privado — solicite entrada para ver o conteúdo'}</p>
+        </div>`;
+    }
+  } catch {
+    $('group-tab-content').innerHTML = '<div class="empty"><p>Erro ao carregar grupo</p></div>';
+  }
+}
+
+function switchGroupTab(tab, btn) {
+  _currentGroupTab = tab;
+  document.querySelectorAll('.group-tab').forEach(t => t.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  if (tab === 'feed')     loadGroupFeed();
+  if (tab === 'chat')     loadGroupChat();
+  if (tab === 'members')  loadGroupMembers();
+  if (tab === 'requests') loadGroupRequests();
+}
+
+// ── Feed do grupo ───────────────────────────────
+async function loadGroupFeed() {
+  const c = $('group-tab-content');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const posts = await api(`/groups/${_currentGroupId}/posts`);
+
+    const composerHTML = `
+      <div style="padding:14px 16px">
+        <div class="composer" style="margin-bottom:0">
+          <div class="composer-body">
+            ${avatarHTML(me, 'av-lg')}
+            <textarea class="composer-ta" id="group-post-ta" placeholder="Compartilhe algo com o grupo..." maxlength="500" rows="2"></textarea>
+          </div>
+          <div class="composer-foot" style="justify-content:flex-end">
+            <button class="btn-post" onclick="publishGroupPost()">POSTAR</button>
+          </div>
+        </div>
+      </div>`;
+
+    const postsHTML = posts.length
+      ? posts.map(p => groupPostHTML(p)).join('')
+      : '<div class="empty"><i class="ti ti-writing-off"></i><p>Nenhum post ainda. Seja o primeiro!</p></div>';
+
+    c.innerHTML = composerHTML + postsHTML;
+  } catch { c.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+function groupPostHTML(p) {
+  const isOwnerAdmin = _currentGroupRole === 'owner' || _currentGroupRole === 'admin';
+  const canDelete    = p.user_id === me?.id || isOwnerAdmin;
+  return `<div class="group-post-card" id="gpost-${p.id}">
+    <div class="post-head">
+      <div onclick="viewProfile(${p.user_id})" style="cursor:pointer;flex-shrink:0">${avatarHTML(p, 'av-lg')}</div>
+      <div class="post-meta">
+        <div class="post-top">
+          <span class="post-name" onclick="viewProfile(${p.user_id})" style="cursor:pointer">${escapeHtml(p.display_name || p.username)}</span>
+          ${p.has_mic ? '<span class="post-mic"><i class="ti ti-microphone"></i></span>' : ''}
+        </div>
+        <span class="post-nick">${escapeHtml(p.lol_game_name)}#${escapeHtml(p.lol_tag_line)}</span>
+        <div style="display:flex;gap:5px;margin-top:4px">
+          <span class="elo ${eloClass(p.solo_tier)}" style="font-size:10px">Solo ${eloLabel(p.solo_tier,p.solo_rank,p.solo_lp)}</span>
+          <span class="elo ${eloClass(p.flex_tier)}" style="font-size:10px">Flex ${eloLabel(p.flex_tier,p.flex_rank,p.flex_lp)}</span>
+        </div>
+      </div>
+      <span class="post-time">${timeAgo(p.created_at)}</span>
+    </div>
+    <div class="post-body">${escapeHtml(p.content)}</div>
+    <div class="post-actions">
+      <button class="act-btn ${p.liked_by_me ? 'liked' : ''}" onclick="likeGroupPost(${p.id},this)">
+        <i class="ti ti-heart"></i> <span>${p.total_likes}</span>
+      </button>
+      ${canDelete ? `<button class="act-btn del-btn" onclick="deleteGroupPost(${p.id})"><i class="ti ti-trash"></i> Deletar</button>` : ''}
+    </div>
+  </div>`;
+}
+
+async function publishGroupPost() {
+  const ta = $('group-post-ta');
+  if (!ta?.value.trim()) return;
+  try {
+    await api(`/groups/${_currentGroupId}/posts`, { method:'POST', body:{ content: ta.value.trim() } });
+    ta.value = '';
+    loadGroupFeed();
+  } catch { toast('Erro ao postar'); }
+}
+
+async function likeGroupPost(postId, btn) {
+  try {
+    const { liked } = await api(`/groups/${_currentGroupId}/posts/${postId}/like`, { method:'POST' });
+    btn.classList.toggle('liked', liked);
+    const span = btn.querySelector('span');
+    if (span) span.textContent = parseInt(span.textContent) + (liked ? 1 : -1);
+  } catch {}
+}
+
+async function deleteGroupPost(postId) {
+  if (!confirm('Deletar este post?')) return;
+  try {
+    await api(`/groups/${_currentGroupId}/posts/${postId}`, { method:'DELETE' });
+    const el = $('gpost-' + postId);
+    if (el) el.remove();
+  } catch { toast('Erro ao deletar'); }
+}
+
+// ── Chat do grupo ────────────────────────────────
+async function loadGroupChat() {
+  const c = $('group-tab-content');
+  c.style.padding = '0';
+  c.innerHTML = `
+    <div class="group-chat-wrap">
+      <div class="group-chat-msgs" id="gchat-msgs"></div>
+      <div class="group-chat-input-row">
+        <input class="group-chat-input" id="gchat-input" placeholder="Mensagem..." maxlength="300"
+               onkeydown="if(event.key==='Enter')sendGroupChatMsg()">
+        <button class="queue-chat-send" onclick="sendGroupChatMsg()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>`;
+
+  try {
+    const msgs = await api(`/groups/${_currentGroupId}/messages`);
+    const container = $('gchat-msgs');
+    msgs.forEach(m => appendGroupMsg(container, m));
+    container.scrollTop = container.scrollHeight;
+  } catch {}
+}
+
+function appendGroupMsg(container, m) {
+  if (!container) return;
+  const isMe  = m.user_id === me?.id;
+  const name  = escapeHtml(m.display_name || m.username);
+  const letter = name[0]?.toUpperCase() || '?';
+  const avHTML = m.avatar_url
+    ? `<img src="${escapeHtml(m.avatar_url)}" class="av av-sm" style="object-fit:cover">`
+    : `<div class="av av-sm" style="background:var(--gold);color:var(--navy);font-weight:700">${letter}</div>`;
+
+  const div = document.createElement('div');
+  div.className = 'queue-chat-bubble' + (isMe ? ' me' : '');
+  div.innerHTML = `
+    <div class="queue-chat-av">${avHTML}</div>
+    <div class="queue-chat-body">
+      ${!isMe ? `<div class="queue-chat-name">${name}</div>` : ''}
+      <div class="queue-chat-text">${escapeHtml(m.content)}</div>
+    </div>`;
+  container.appendChild(div);
+}
+
+async function sendGroupChatMsg() {
+  const input = $('gchat-input');
+  if (!input?.value.trim()) return;
+  const content = input.value.trim();
+  input.value = '';
+  try {
+    await api(`/groups/${_currentGroupId}/messages`, { method:'POST', body:{ content } });
+    // A mensagem chega via socket
+  } catch { toast('Erro ao enviar'); }
+}
+
+// Receber mensagem de grupo via socket
+function onGroupMessage(msg) {
+  if (msg.group_id !== _currentGroupId || _currentGroupTab !== 'chat') return;
+  const container = $('gchat-msgs');
+  if (!container) return;
+  appendGroupMsg(container, msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── Membros ──────────────────────────────────────
+async function loadGroupMembers() {
+  const c = $('group-tab-content');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const members = await api(`/groups/${_currentGroupId}/members`);
+    const isOwner = _currentGroupRole === 'owner';
+    const isAdmin = _currentGroupRole === 'admin';
+
+    c.innerHTML = members.map(m => {
+      const roleLabel = m.role === 'owner' ? 'Dono' : m.role === 'admin' ? 'Admin' : 'Membro';
+      const canKick   = (isOwner && m.role !== 'owner') || (isAdmin && m.role === 'member');
+      const canRole   = isOwner && m.user_id !== me?.id && m.role !== 'owner';
+
+      return `<div class="member-row">
+        <div onclick="viewProfile(${m.id})" style="cursor:pointer;flex-shrink:0">${avatarHTML(m,'av-md')}</div>
+        <div class="member-info" onclick="viewProfile(${m.id})" style="cursor:pointer">
+          <div class="member-name">${escapeHtml(m.display_name || m.username)}
+            <span class="group-card-role role-${m.role}" style="margin-left:6px">${roleLabel}</span>
+          </div>
+          <div class="member-nick">${escapeHtml(m.lol_game_name)}#${escapeHtml(m.lol_tag_line)}</div>
+        </div>
+        <div class="member-actions">
+          ${canRole ? `
+            <button class="queue-add-btn" title="${m.role==='admin'?'Rebaixar para Membro':'Promover a Admin'}"
+              onclick="toggleMemberRole(${m.id},'${m.role}')">
+              <i class="ti ti-${m.role==='admin'?'arrow-down':'star'}"></i>
+            </button>` : ''}
+          ${canKick ? `
+            <button class="queue-add-btn" style="border-color:rgba(239,68,68,.3);color:#FCA5A5" title="Expulsar"
+              onclick="kickGroupMember(${m.id})">
+              <i class="ti ti-user-x"></i>
+            </button>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty"><p>Nenhum membro</p></div>';
+  } catch { c.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+async function toggleMemberRole(userId, currentRole) {
+  const newRole = currentRole === 'admin' ? 'member' : 'admin';
+  const label   = newRole === 'admin' ? 'promover a Admin' : 'rebaixar para Membro';
+  if (!confirm(`Deseja ${label} este membro?`)) return;
+  try {
+    await api(`/groups/${_currentGroupId}/members/${userId}/role`, { method:'PATCH', body:{ role: newRole } });
+    toast(`✅ Cargo atualizado`);
+    loadGroupMembers();
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+async function kickGroupMember(userId) {
+  if (!confirm('Expulsar este membro do grupo?')) return;
+  try {
+    await api(`/groups/${_currentGroupId}/members/${userId}`, { method:'DELETE' });
+    toast('Membro expulso');
+    loadGroupMembers();
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+// ── Solicitações ─────────────────────────────────
+async function loadGroupRequests() {
+  const c = $('group-tab-content');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const reqs = await api(`/groups/${_currentGroupId}/requests`);
+    const badge = $('group-req-badge');
+    if (badge) { badge.textContent = reqs.length; badge.style.display = reqs.length ? '' : 'none'; }
+
+    if (!reqs.length) {
+      c.innerHTML = '<div class="empty"><i class="ti ti-check"></i><p>Nenhuma solicitação pendente</p></div>';
+      return;
+    }
+    c.innerHTML = reqs.map(r => `
+      <div class="request-card" id="req-${r.id}">
+        <div onclick="viewProfile(${r.user_id})" style="cursor:pointer;flex-shrink:0">${avatarHTML(r,'av-md')}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${escapeHtml(r.display_name || r.username)}</div>
+          <div style="font-size:11.5px;color:var(--dim)">${escapeHtml(r.lol_game_name)}#${escapeHtml(r.lol_tag_line)}</div>
+          <div style="display:flex;gap:5px;margin-top:4px">
+            <span class="elo ${eloClass(r.solo_tier)}" style="font-size:10px">${eloLabel(r.solo_tier,r.solo_rank,r.solo_lp)}</span>
+            <span class="elo ${eloClass(r.flex_tier)}" style="font-size:10px">${eloLabel(r.flex_tier,r.flex_rank,r.flex_lp)}</span>
+          </div>
+          ${r.message ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">"${escapeHtml(r.message)}"</div>` : ''}
+        </div>
+        <div class="request-actions">
+          <button class="btn-approve" onclick="handleGroupRequest(${r.id},'approve')"><i class="ti ti-check"></i> Aprovar</button>
+          <button class="btn-reject"  onclick="handleGroupRequest(${r.id},'reject')"><i class="ti ti-x"></i> Rejeitar</button>
+        </div>
+      </div>`).join('');
+  } catch { c.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>'; }
+}
+
+async function handleGroupRequest(reqId, action) {
+  try {
+    await api(`/groups/${_currentGroupId}/requests/${reqId}`, { method:'PATCH', body:{ action } });
+    $('req-' + reqId)?.remove();
+    toast(action === 'approve' ? '✅ Aprovado!' : '❌ Rejeitado');
+    loadGroupRequests();
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+// ── Entrar / sair / excluir ──────────────────────
+async function joinGroup(id) {
+  try {
+    const { status } = await api(`/groups/${id}/join`, { method:'POST', body:{} });
+    if (status === 'joined') { toast('✅ Você entrou no grupo!'); viewGroup(id); }
+    else { toast('📩 Solicitação enviada! Aguarde aprovação.'); viewGroup(id); }
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+async function leaveGroup(id) {
+  if (!confirm('Sair deste grupo?')) return;
+  try {
+    await api(`/groups/${id}/leave`, { method:'DELETE' });
+    toast('Você saiu do grupo');
+    if (socket) socket.emit('leave_group_room', id);
+    loadPage('groups');
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Excluir este grupo permanentemente? Esta ação não pode ser desfeita.')) return;
+  try {
+    await api(`/groups/${id}`, { method:'DELETE' });
+    toast('Grupo excluído');
+    if (socket) socket.emit('leave_group_room', id);
+    loadPage('groups');
+  } catch (e) { toast(e.error || 'Erro'); }
+}
+
+// ── Modal criar grupo ────────────────────────────
+function openCreateGroupModal() {
+  const m = $('create-group-modal');
+  if (m) { m.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+}
+function closeCreateGroupModal() {
+  const m = $('create-group-modal');
+  if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
+async function createGroup() {
+  const name   = $('cg-name')?.value.trim();
+  const tag    = $('cg-tag')?.value.trim();
+  const desc   = $('cg-desc')?.value.trim();
+  const pub    = document.querySelector('input[name="cg-public"]:checked')?.value;
+
+  if (!name) { toast('Nome obrigatório'); return; }
+  if (!tag)  { toast('Tag obrigatória'); return; }
+
+  try {
+    const g = await api('/groups', { method:'POST', body:{ name, tag, description: desc, is_public: pub === '1' ? 1 : 0 } });
+    closeCreateGroupModal();
+    toast(`✅ Grupo [${g.tag}] criado!`);
+    viewGroup(g.id);
+  } catch (e) { toast(e.error || 'Erro ao criar grupo'); }
+}
+
+// Registrar evento de mensagem de grupo no socket

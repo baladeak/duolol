@@ -57,6 +57,8 @@ module.exports = (io) => {
     });
 
     socket.on('join_conversation', id => socket.join(`conv_${id}`));
+    socket.on('join_group_room',   id => socket.join(`group_${id}`));
+    socket.on('leave_group_room',  id => socket.leave(`group_${id}`));
     socket.on('typing', ({ conversation_id }) =>
       socket.to(`conv_${conversation_id}`).emit('typing', { user_id: uid }));
 

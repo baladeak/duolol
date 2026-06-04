@@ -29,6 +29,60 @@ const migrations = [
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `ALTER TABLE posts MODIFY COLUMN queue_type ENUM('SOLO','FLEX','BOTH','ARAM','ARENA') NOT NULL DEFAULT 'SOLO'`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS has_mic TINYINT(1) NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS \`groups\` (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(60)  NOT NULL,
+    tag         VARCHAR(8)   NOT NULL,
+    description TEXT         NULL,
+    owner_id    INT          NOT NULL,
+    is_public   TINYINT(1)   NOT NULL DEFAULT 1,
+    avatar_url  MEDIUMTEXT   NULL,
+    banner_url  MEDIUMTEXT   NULL,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_group_tag (tag),
+    INDEX idx_owner (owner_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_members (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    group_id   INT NOT NULL,
+    user_id    INT NOT NULL,
+    role       ENUM('owner','admin','member') NOT NULL DEFAULT 'member',
+    joined_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_member (group_id, user_id),
+    INDEX idx_user (user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_requests (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    group_id   INT NOT NULL,
+    user_id    INT NOT NULL,
+    message    VARCHAR(300) NULL,
+    status     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_request (group_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_posts (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    group_id   INT NOT NULL,
+    user_id    INT NOT NULL,
+    content    TEXT NOT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_group_posts (group_id, is_deleted, created_at DESC)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_post_likes (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    post_id    INT NOT NULL,
+    user_id    INT NOT NULL,
+    UNIQUE KEY uq_like (post_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_messages (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    group_id   INT NOT NULL,
+    user_id    INT NOT NULL,
+    content    TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_group_msgs (group_id, created_at DESC)
+  )`,
   `CREATE TABLE IF NOT EXISTS queue_entries (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     user_id    INT NOT NULL UNIQUE,
@@ -98,6 +152,7 @@ app.use('/api/users',         require('./routes/users'));
 app.use('/api/messages',      require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/queue',         require('./routes/queue'));
+app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/profile',       require('./routes/profile'));
 

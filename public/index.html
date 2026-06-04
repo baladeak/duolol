@@ -111,6 +111,10 @@
         <button class="s-item" id="nav-explore" onclick="loadPage('explore')">
           <i class="ti ti-users"></i><span>Explorar</span>
         </button>
+        <button class="s-item" id="nav-groups" onclick="loadPage('groups')">
+          <i class="ti ti-shield-half"></i><span>Grupos</span>
+          <span class="s-badge" id="groups-badge" style="display:none">!</span>
+        </button>
         <button class="s-item" id="nav-friends" onclick="loadPage('friends')">
           <i class="ti ti-users"></i><span>Amigos</span>
         </button>
@@ -203,6 +207,55 @@
           <span class="top-bar-title">AMIGOS</span>
         </div>
         <div class="scrollable" id="friends-list-page"></div>
+      </div>
+
+      <!-- GRUPOS -->
+      <div class="page" id="page-groups">
+        <div class="top-bar">
+          <span class="top-bar-title">GRUPOS</span>
+          <input class="search-inp" id="groups-search" placeholder="Buscar grupos..." onkeyup="if(event.key==='Enter')searchGroups()">
+          <button onclick="searchGroups()" class="pill p-gold on">Buscar</button>
+          <button onclick="openCreateGroupModal()" class="btn-post" style="padding:7px 16px">
+            <i class="ti ti-plus"></i> Criar Grupo
+          </button>
+        </div>
+        <div class="scrollable" id="groups-body">
+          <!-- Meus grupos -->
+          <div style="padding:14px 16px 0">
+            <div class="rp-title" style="margin-bottom:10px">Meus Grupos</div>
+            <div id="my-groups-list" class="groups-grid"></div>
+          </div>
+          <!-- Descobrir grupos -->
+          <div style="padding:14px 16px 0">
+            <div class="rp-title" style="margin-bottom:10px">Descobrir</div>
+            <div id="all-groups-list" class="groups-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DETALHE DO GRUPO -->
+      <div class="page" id="page-group-detail">
+        <div class="top-bar" id="group-detail-topbar">
+          <button onclick="loadPage('groups')" class="s-item" style="width:auto;padding:6px 10px;margin:0">
+            <i class="ti ti-arrow-left"></i>
+          </button>
+          <span class="top-bar-title" id="group-detail-name">Grupo</span>
+          <div style="margin-left:auto;display:flex;gap:8px" id="group-detail-actions"></div>
+        </div>
+        <!-- Banner -->
+        <div id="group-banner-area"></div>
+        <!-- Abas -->
+        <div class="group-tabs" id="group-tabs">
+          <button class="group-tab on" onclick="switchGroupTab('feed',this)"><i class="ti ti-home"></i> Feed</button>
+          <button class="group-tab" onclick="switchGroupTab('chat',this)"><i class="ti ti-message-2"></i> Chat</button>
+          <button class="group-tab" onclick="switchGroupTab('members',this)"><i class="ti ti-users"></i> Membros</button>
+          <button class="group-tab" id="group-requests-tab" style="display:none" onclick="switchGroupTab('requests',this)">
+            <i class="ti ti-user-check"></i> Solicitações
+            <span id="group-req-badge" class="s-badge" style="display:none"></span>
+          </button>
+        </div>
+        <!-- Conteúdo da aba -->
+        <div class="scrollable" id="group-tab-content"></div>
       </div>
 
       <!-- MENSAGENS -->
@@ -457,6 +510,42 @@
   <i class="ti ti-users-group"></i>
   <span class="queue-fab-badge" id="queue-fab-badge" style="display:none">0</span>
 </button>
+
+<!-- Modal criar grupo -->
+<div id="create-group-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--navy-m);border:1px solid var(--border-h);border-radius:16px;padding:28px;width:min(460px,90vw);max-height:85vh;overflow-y:auto">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--gold-l);margin-bottom:20px;letter-spacing:1px">
+      <i class="ti ti-shield-half"></i> Criar Grupo
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome do grupo</label>
+      <input id="cg-name" class="form-input" maxlength="60" placeholder="Ex: Gold BR Noturno">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tag <span style="color:var(--dim)">(máx 8 chars, será em maiúsculo)</span></label>
+      <input id="cg-tag" class="form-input" maxlength="8" placeholder="Ex: GOLDBR" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <textarea id="cg-desc" class="form-input bio-textarea" rows="3" maxlength="300" placeholder="Sobre o grupo..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div style="display:flex;gap:10px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="radio" name="cg-public" value="1" checked> <span>Público (qualquer um entra)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="radio" name="cg-public" value="0"> <span>Privado (aprovação necessária)</span>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn-outline" onclick="closeCreateGroupModal()" style="padding:9px 18px">Cancelar</button>
+      <button class="btn-post" onclick="createGroup()" style="padding:9px 20px">Criar Grupo</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
