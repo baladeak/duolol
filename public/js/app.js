@@ -2497,7 +2497,7 @@ function socialFriendHTML(f) {
 
 
 // ══════════════════════════════════════════════
-//  FILA AO VIVO
+//  FILA AO VIVO  [app.js BUILD v3]
 // ══════════════════════════════════════════════
 let _inQueue       = false;
 let _queueType     = 'SOLO';
@@ -2509,27 +2509,18 @@ let _queueJoinedAt = null;
 let _queueMinimized = false;
 
 // Som de notificação (novo jogador na fila)
-// Som da fila — carrega o MP3 real
-let _queueSound = null;
+// Som da fila — entrouFila.mp3
+const _audioCtx = { sound: null };
 
 function playQueueSound() {
-  try {
-    if (!_queueSound) {
-      _queueSound = new Audio();
-      _queueSound.src = '/sounds/entrouFila.mp3';
-      _queueSound.volume = 0.7;
-      _queueSound.load();
-    }
-    // Clonar para poder tocar várias vezes seguidas
-    const s = _queueSound.cloneNode();
-    s.volume = 0.7;
-    s.play().catch(() => {
-      // Se falhar (autoplay policy), tenta com interação pendente
-      document.addEventListener('click', () => s.play().catch(()=>{}), { once: true });
-    });
-  } catch (e) {
-    console.warn('playQueueSound:', e);
+  if (!_audioCtx.sound) {
+    _audioCtx.sound = new Audio('/sounds/entrouFila.mp3');
+    _audioCtx.sound.volume = 0.7;
   }
+  const a = _audioCtx.sound;
+  a.pause();
+  a.currentTime = 0;
+  a.play().catch(err => console.warn('Som bloqueado:', err));
 }
 
 // Abrir painel
