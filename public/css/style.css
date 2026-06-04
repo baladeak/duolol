@@ -3822,3 +3822,19 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   width:28px;height:28px;border-radius:5px;
   background:var(--navy);border:1px solid var(--border);
 }
+
+/* ── Filtros de fila nas Partidas ─────────────── */
+.matches-filter-bar{
+  display:flex;gap:6px;padding:14px 16px 10px;
+  flex-wrap:wrap;border-bottom:1px solid var(--border);
+}
+.mfilter-btn{
+  padding:5px 14px;border-radius:7px;
+  font-family:'Exo 2',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;transition:.13s;
+  background:var(--navy-c);border:1px solid var(--border);color:var(--muted);
+}
+.mfilter-btn:hover{border-color:var(--border-h);color:var(--text)}
+.mfilter-btn.on{
+  background:var(--gold);color:var(--navy);border-color:var(--gold);
+}

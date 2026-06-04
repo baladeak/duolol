@@ -314,9 +314,19 @@ router.get('/:id/matches', auth, async (req, res) => {
     }
     if (!puuid) return res.json([]);
 
-    // Buscar IDs das últimas 10 partidas
+    // Filtro de fila
+    const filter = req.query.filter || 'all';
+    const queueMap = {
+      'ranked': '420',   // Solo/Duo Ranked
+      'flex':   '440',   // Flex Ranked
+      'aram':   '450',   // ARAM
+      'normal': '400',   // Normal Draft
+    };
+    const queueParam = queueMap[filter] ? `&queue=${queueMap[filter]}` : '';
+
+    // Buscar IDs das últimas 10 partidas (sem filtro de fila busca tudo)
     const { data: matchIds } = await axios.get(
-      `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=10`,
+      `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10${queueParam}`,
       { headers: { 'X-Riot-Token': key } }
     );
 

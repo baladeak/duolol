@@ -1261,15 +1261,7 @@ function renderProfile(user, isMe) {
         </div>
       </div>
 
-      ${user.roles?.length ? `
-      <div class="profile-section">
-        <div class="profile-section-head">
-          <span class="profile-section-title"><i class="ti ti-sword"></i> Lanes</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${user.roles.map(r => `<span class="tag tag-solo on" style="cursor:default">${r.role}</span>`).join('')}
-        </div>
-      </div>` : ''}
+
 
     </div>
 
@@ -1277,6 +1269,9 @@ function renderProfile(user, isMe) {
     <div class="profile-tabs" id="profile-tabs">
       <button class="ptab active" data-tab="playlists" onclick="switchProfileTab('playlists')">
         <i class="ti ti-playlist"></i> Playlists
+      </button>
+      <button class="ptab" data-tab="matches" onclick="switchProfileTab('matches')">
+        <i class="ti ti-sword"></i> Partidas
       </button>
       <button class="ptab" data-tab="gameplays" onclick="switchProfileTab('gameplays')">
         <i class="ti ti-device-gamepad-2"></i> Gameplays
@@ -1298,7 +1293,7 @@ function renderProfile(user, isMe) {
 let _profileContentCache = null;
 let _profileIsMe = false;
 let _profileUserId = null;
-let _profileTabActive = 'matches';
+let _profileTabActive = 'playlists';
 
 function renderProfileContent(userId, content, isMe) {
   _profileContentCache = content;
@@ -2665,19 +2660,37 @@ const QUEUE_LABELS = {
   1900: 'URF', 700: 'Clash'
 };
 
-async function loadProfileMatches(userId) {
+let _matchesFilter = 'all';
+
+async function loadProfileMatches(userId, filter) {
+  if (filter !== undefined) _matchesFilter = filter;
   const box = $('profile-tab-content');
   if (!box) return;
-  box.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando partidas...</div>';
+
+  // Renderizar header com filtros
+  box.innerHTML = `
+    <div class="matches-filter-bar">
+      <button class="mfilter-btn ${_matchesFilter==='all'   ?'on':''}" onclick="loadProfileMatches(${userId},'all')">Tudo</button>
+      <button class="mfilter-btn ${_matchesFilter==='ranked'?'on':''}" onclick="loadProfileMatches(${userId},'ranked')">Ranked Solo</button>
+      <button class="mfilter-btn ${_matchesFilter==='flex'  ?'on':''}" onclick="loadProfileMatches(${userId},'flex')">Flex</button>
+      <button class="mfilter-btn ${_matchesFilter==='aram'  ?'on':''}" onclick="loadProfileMatches(${userId},'aram')">ARAM</button>
+      <button class="mfilter-btn ${_matchesFilter==='normal'?'on':''}" onclick="loadProfileMatches(${userId},'normal')">Normal</button>
+    </div>
+    <div id="matches-content"><div class="loading"><div class="spinner"></div> Buscando partidas...</div></div>`;
+
   try {
-    const matches = await api(`/users/${userId}/matches`);
+    const url = `/users/${userId}/matches?filter=${_matchesFilter}`;
+    const matches = await api(url);
+    const mc = $('matches-content');
+    if (!mc) return;
     if (!matches.length) {
-      box.innerHTML = '<div class="empty"><i class="ti ti-sword-off"></i><p>Nenhuma partida ranqueada encontrada</p><p style="font-size:12px;color:var(--dim)">Sincronize o elo para buscar partidas</p></div>';
+      mc.innerHTML = '<div class="empty"><i class="ti ti-sword-off"></i><p>Nenhuma partida encontrada neste filtro</p><p style="font-size:12px;color:var(--dim)">Sincronize o elo para buscar partidas</p></div>';
       return;
     }
-    box.innerHTML = `<div class="matches-list">${matches.map(m => matchCardHTML(m)).join('')}</div>`;
+    mc.innerHTML = `<div class="matches-list">${matches.map(m => matchCardHTML(m)).join('')}</div>`;
   } catch (err) {
-    box.innerHTML = '<div class="empty"><i class="ti ti-alert-circle"></i><p>Erro ao carregar partidas</p><p style="font-size:12px;color:var(--dim)">Verifique se o elo está sincronizado</p></div>';
+    const mc = $('matches-content');
+    if (mc) mc.innerHTML = '<div class="empty"><i class="ti ti-alert-circle"></i><p>Erro ao carregar partidas</p></div>';
   }
 }
 
