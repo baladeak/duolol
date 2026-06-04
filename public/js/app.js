@@ -664,40 +664,72 @@ async function searchPlayers() {
 function renderPlayerGrid(users) {
   const grid = $('explore-grid');
   if (!users.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="ti ti-users-off"></i><p>Nenhum jogador encontrado</p></div>';
+    grid.innerHTML = '<div class="empty"><i class="ti ti-users-off"></i><p>Nenhum jogador encontrado</p></div>';
     return;
   }
-  grid.innerHTML = users.map(u => {
-    const col = avatarColor(u.username || 'U');
-    const letter = (u.username || 'U')[0].toUpperCase();
-    const status = u.online_status || 'offline';
-    const dotCls = status === 'online' ? 'dot-online' : 'dot-offline';
-    return `
-    <div class="player-card">
-      <div class="pc-banner">
-        <div class="pc-avatar-wrap">
-          <div class="av av-md" style="background:${col};color:#0E0E12;width:44px;height:44px;font-size:16px;box-shadow:0 0 0 2px var(--navy-c),0 0 0 3px ${col}60">
-            ${letter}
-            <div class="status-dot ${dotCls}"></div>
+  grid.innerHTML = users.map(u => explorePlayerHTML(u)).join('');
+}
+
+function explorePlayerHTML(u) {
+  const roles  = (u.roles || '').split(',').filter(Boolean);
+  let champs   = [];
+  try { champs = u.main_champions ? JSON.parse(u.main_champions) : []; } catch {}
+  if (!Array.isArray(champs)) champs = [];
+  const isOnline = u.online_status === 'online';
+
+  return `<div class="explore-player-row" onclick="viewProfile(${u.id})">
+    <!-- Avatar -->
+    <div style="position:relative;flex-shrink:0">
+      ${avatarHTML(u, 'av-lg')}
+      <span class="explore-status-dot ${isOnline ? 'online' : 'offline'}"></span>
+    </div>
+
+    <!-- Info principal -->
+    <div class="explore-player-info">
+      <div class="explore-player-top">
+        <div>
+          <div class="explore-player-name">
+            ${escapeHtml(u.display_name || u.username)}
+            ${u.has_mic ? '<i class="ti ti-microphone" style="color:var(--green);font-size:13px" title="Tem microfone"></i>' : ''}
+            ${isOnline ? '<span class="post-online" style="font-size:11px"><i class="ti ti-circle-filled"></i> Online</span>' : ''}
           </div>
+          <div class="explore-player-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
         </div>
-      </div>
-      <div class="pc-body">
-        <div class="pc-top">
-          <div class="pc-name">${escapeHtml(dName(u))}</div>
-          <div class="pc-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
-        </div>
-        <div class="pc-elos">
+        <div class="explore-player-elos">
           <span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier,u.solo_rank,u.solo_lp)}</span>
           <span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier,u.flex_rank,u.flex_lp)}</span>
         </div>
-        <div class="pc-actions">
-          <div class="btn-invite" onclick="addFriendById(${u.id},'${escapeHtml(u.username)}',this)">+ Adicionar</div>
-          <div class="btn-dm" onclick="openDM(${u.id},'${escapeHtml(u.username)}')">DM</div>
-        </div>
       </div>
-    </div>`;
-  }).join('');
+
+      <!-- Lanes -->
+      ${roles.length ? `<div class="explore-player-lanes">
+        ${roles.map(r => `<span class="tag tag-solo on" style="cursor:default;font-size:10.5px;padding:2px 9px">${r}</span>`).join('')}
+      </div>` : ''}
+
+      <!-- Campeões -->
+      ${champs.length ? `<div class="explore-player-champs">
+        ${champs.slice(0, 5).map(ch => {
+          const k = champKey2(ch);
+          return `<img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${k}.png"
+                       class="explore-champ-icon" title="${escapeHtml(ch)}" loading="lazy"
+                       onerror="this.style.display='none'">`;
+        }).join('')}
+      </div>` : ''}
+
+      <!-- Bio -->
+      ${u.bio ? `<div class="explore-player-bio">${escapeHtml(u.bio)}</div>` : ''}
+    </div>
+
+    <!-- Botões de ação -->
+    <div class="explore-player-actions" onclick="event.stopPropagation()">
+      <button class="duo-action-add" onclick="addFriend(${u.id},this)" title="Adicionar">
+        <i class="ti ti-user-plus"></i>
+      </button>
+      <button class="duo-action-dm" onclick="openDM(${u.id},'${escapeHtml(u.username)}')" title="Mensagem">
+        <i class="ti ti-message-2"></i>
+      </button>
+    </div>
+  </div>`;
 }
 
 async function addFriendById(userId, username, el) {

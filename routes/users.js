@@ -269,8 +269,13 @@ router.get('/', auth, async (req, res) => {
   if (tier) { where += ` AND u.${queue==='FLEX'?'flex_tier':'solo_tier'}=?`; params.push(tier.toUpperCase()); }
   const [users] = await db.execute(
     `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
-            u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status
-     FROM users u WHERE ${where}
+            u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,
+            u.online_status,u.bio,u.has_mic,u.main_champions,
+            GROUP_CONCAT(r.role ORDER BY r.priority SEPARATOR ',') AS roles
+     FROM users u
+     LEFT JOIN user_roles r ON r.user_id = u.id
+     WHERE ${where}
+     GROUP BY u.id
      ORDER BY u.online_status='online' DESC,u.updated_at DESC LIMIT 20 OFFSET ${offset}`,
     params
   );
