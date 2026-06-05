@@ -76,20 +76,6 @@
 <!-- ══════════════════ APP ══════════════════ -->
 <div id="app-screen" style="display:none">
   <div class="layout">
-
-    <!-- Barra de pesquisa global -->
-    <div id="global-search-bar">
-      <div id="global-search-wrap">
-        <i class="ti ti-search" style="color:var(--dim);font-size:16px;flex-shrink:0"></i>
-        <input id="global-search-input" class="global-search-inp" 
-               placeholder="Buscar invocador por nickname ou nome..." 
-               oninput="onGlobalSearch(this.value)"
-               onkeydown="if(event.key==='Escape')closeGlobalSearch()">
-        <button id="global-search-clear" onclick="closeGlobalSearch()" 
-                style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:16px;display:none">
-          <i class="ti ti-x"></i>
-        </button>
-      </div>
       <div id="global-search-results"></div>
     </div>
 

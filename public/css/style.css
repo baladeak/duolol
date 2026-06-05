@@ -346,53 +346,8 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 
 .s-friends{
+  padding:14px 12px;
   border-top:1px solid var(--border);
-  flex-shrink:0;
-  max-height:260px;
-  display:flex;
-  flex-direction:column;
-}
-
-.s-friends-header{
-  display:flex;align-items:center;gap:6px;
-  padding:10px 12px 8px;cursor:pointer;
-  flex-shrink:0;
-}
-.s-friends-header:hover .s-section-title{color:var(--muted)}
-
-.s-friends-count{
-  font-size:10px;font-weight:700;
-  background:var(--green);color:#fff;
-  border-radius:10px;padding:1px 6px;
-  min-width:16px;text-align:center;
-  display:none;
-}
-
-.s-friends-body-collapsed #s-friends-body{display:none}
-.s-friends-body-collapsed #friends-chevron{transform:rotate(180deg)}
-
-#s-friends-body{
-  overflow-y:auto;
-  flex:1;
-  padding:0 8px 10px;
-}
-#s-friends-body::-webkit-scrollbar{width:3px}
-#s-friends-body::-webkit-scrollbar-thumb{background:var(--navy-c)}
-
-.s-friends-section-label{
-  font-size:9px;font-weight:700;letter-spacing:1.5px;
-  color:var(--dim);text-transform:uppercase;
-  display:flex;align-items:center;gap:5px;
-  padding:4px 4px 6px;
-}
-
-.s-online-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--green);flex-shrink:0;
-}
-.s-offline-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--dim);flex-shrink:0;
 }
 
 .s-section-title{
@@ -408,11 +363,10 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   display:flex;
   align-items:center;
   gap:9px;
-  padding:5px 4px;
+  padding:5px 5px;
   cursor:pointer;
   border-radius:7px;
-  transition:.12s;
-  margin-bottom:2px;
+  transition:.15s;
 }
 
 .friend-row:hover{background:var(--navy-c)}
@@ -444,6 +398,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .av-md{width:52px;height:52px;font-size:19px}
 .av-lg{width:150px;height:150px;font-size:52px}
 .av-xl{width:150px;height:150px;font-size:52px}
+.av.av-xl{width:68px;height:68px;font-size:24px;border-radius:50%;flex-shrink:0}
 .av-2xl{width:150px;height:150px;font-size:52px}
 
 /* Anel gold nos avatares grandes */
@@ -901,9 +856,9 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   background:var(--grad-gold);
 }
 
-.post-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:12px}
+.post-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:0}
 
-.post-meta{flex:1;min-width:0;min-height:72px;display:flex;flex-direction:column;justify-content:space-between}
+.post-meta{flex:1;min-width:0;display:flex;flex-direction:column;}
 
 .post-top{
   display:flex;
@@ -1694,7 +1649,6 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border:1px solid var(--border);
   border-radius:13px;
   padding:18px 20px;
-  /* altura igual entre cards da mesma linha */
   display:flex;
   flex-direction:column;
 }
@@ -2356,8 +2310,12 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 
 /* ── Explore ──────────────────────────────────── */
 
-/* explore-grid substituído */
 .explore-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+  gap:14px;
+  padding:18px;
+}
 
 /* Player card — game card style */
 .player-card{
@@ -2917,134 +2875,6 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   .s-logo-text{display:none}
 }
 
-/* ── Busca — modal centralizado ───────────────── */
-.global-search-inp::placeholder{color:var(--dim)}
-#global-search-results{
-  display:flex;flex-direction:column;gap:2px;padding:8px;
-}
-.gs-result{
-  display:flex;align-items:center;gap:12px;padding:10px 12px;
-  border-radius:9px;cursor:pointer;transition:.12s;
-  background:var(--navy-c);border:1px solid var(--border);
-}
-.gs-result:hover{border-color:var(--border-h);background:var(--navy-h)}
-.gs-result-info{flex:1;min-width:0}
-.gs-result-name{font-size:13.5px;font-weight:600;color:var(--text)}
-.gs-result-nick{font-size:11.5px;color:var(--dim)}
-.gs-result-elos{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
-.gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}
-
-
-
-/* ── Tags ARAM e Arena ────────────────────────── */
-.tag-aram{background:rgba(139,92,246,.12);color:#C4B5FD;border-color:rgba(139,92,246,.35)}
-.tag-aram.on,.tag-aram:hover{background:rgba(139,92,246,.8);color:#fff;border-color:rgba(139,92,246,.8)}
-.tag-arena{background:rgba(239,68,68,.12);color:#FCA5A5;border-color:rgba(239,68,68,.35)}
-.tag-arena.on,.tag-arena:hover{background:rgba(239,68,68,.8);color:#fff;border-color:rgba(239,68,68,.8)}
-
-.pill.p-purple{border-color:rgba(139,92,246,.4);color:#C4B5FD;background:rgba(139,92,246,.1)}
-.pill.p-purple.on{background:rgba(139,92,246,.8);color:#fff;border-color:rgba(139,92,246,.8)}
-.pill.p-red{border-color:rgba(239,68,68,.35);color:#FCA5A5;background:rgba(239,68,68,.1)}
-.pill.p-red.on{background:rgba(239,68,68,.8);color:#fff;border-color:rgba(239,68,68,.8)}
-
-/* ── Botão DM no item de amigo ─── */
-.friend-dm-btn{opacity:0;transition:opacity .15s}
-.friend-row:hover .friend-dm-btn{opacity:1}
-.friend-row:hover{background:var(--navy-h)}
-
-/* ── Painel Social de Amigos (aba Mensagens) ── */
-.social-panel{
-  padding:0 0 4px;
-}
-
-.social-panel-title{
-  display:flex;align-items:center;gap:8px;
-  padding:14px 16px 10px;
-  font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-l);
-}
-.social-online-count{
-  margin-left:auto;font-size:11px;font-weight:600;font-family:'Exo 2',sans-serif;
-  color:var(--green);background:rgba(34,197,94,.1);
-  border:1px solid rgba(34,197,94,.25);border-radius:8px;
-  padding:2px 8px;letter-spacing:0;
-}
-
-.social-section-label{
-  display:flex;align-items:center;gap:6px;
-  padding:4px 16px 6px;
-  font-size:9px;font-weight:700;letter-spacing:1.5px;
-  color:var(--dim);text-transform:uppercase;
-}
-
-.social-dot{
-  width:7px;height:7px;border-radius:50%;flex-shrink:0;
-}
-.social-dot.online{background:var(--green)}
-.social-dot.away{background:#FBBF24}
-.social-dot.offline{background:var(--dim)}
-
-.social-dot-sm{
-  width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block;
-}
-.dot-online{background:var(--green)}
-.dot-away{background:#FBBF24}
-.dot-offline{background:var(--dim)}
-
-.social-friends-list{
-  display:flex;flex-direction:column;
-}
-
-.social-friend-item{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 14px;cursor:pointer;
-  transition:background .12s;
-  border-left:2px solid transparent;
-}
-.social-friend-item:hover{
-  background:var(--navy-h);
-  border-left-color:var(--gold-d);
-}
-
-.social-friend-info{
-  flex:1;min-width:0;
-}
-.social-friend-name{
-  font-size:13px;font-weight:600;color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  margin-bottom:2px;
-}
-.social-friend-status{
-  font-size:11px;color:var(--dim);
-  display:flex;align-items:center;gap:4px;
-}
-
-.social-chat-btn{
-  background:none;border:none;cursor:pointer;
-  color:var(--dim);font-size:18px;
-  padding:4px 6px;border-radius:7px;
-  transition:all .15s;flex-shrink:0;
-  opacity:0;
-}
-.social-friend-item:hover .social-chat-btn{
-  opacity:1;color:var(--gold-l);
-}
-
-.social-empty{
-  font-size:12px;color:var(--dim);
-  padding:6px 16px;
-}
-
-.social-divider{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 16px 8px;
-  font-size:9px;font-weight:700;letter-spacing:1.5px;
-  color:var(--dim);text-transform:uppercase;
-  border-top:1px solid var(--border);
-  margin-top:8px;
-}
-.social-divider i{font-size:14px;color:var(--gold-l)}
-
 /* ── Microfone ──────────────────────────────── */
 .mic-toggle-row{
   margin-bottom:14px;
@@ -3127,6 +2957,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-actions .mic-toggle-btn{
   width:auto;
 }
+
 
 /* ══════════════════════════════════════════════
    FILA AO VIVO
@@ -3352,6 +3183,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .queue-leave-btn:hover{background:rgba(239,68,68,.15)}
 
+
 /* ── Fila minimizada ──────────────────────────── */
 .queue-panel.queue-minimized{
   /* Vira uma barra compacta no canto inferior direito */
@@ -3372,6 +3204,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .queue-panel.queue-minimized .queue-header:hover{
   background:rgba(200,150,62,.12);
 }
+
 
 /* ── Abas da fila ─────────────────────────────── */
 .queue-tabs{
@@ -3400,6 +3233,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .queue-tab-panel{
   display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;
 }
+
 
 /* ── Chat da fila ──────────────────────────────── */
 .queue-chat-msgs{
@@ -3465,6 +3299,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .queue-chat-send:hover{background:var(--gold-l)}
 .queue-chat-send:disabled{opacity:.4;cursor:not-allowed}
+
 
 /* ══════════════════════════════════════
    GRUPOS / CLÃS
@@ -3615,6 +3450,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .group-chat-input:focus{border-color:var(--gold-d)}
 
+
 /* ── Botão Grupos destacado na sidebar ─── */
 .s-item-groups{
   color:var(--gold-l) !important;
@@ -3630,6 +3466,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-radius:4px;padding:1px 5px;
   flex-shrink:0;
 }
+
 
 /* ── Badge Online no feed ─────────────────────── */
 .post-online{
@@ -3648,6 +3485,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   50%{opacity:.4}
 }
 
+
 /* ── Avatar XL para o feed ──────────────────── */
 .av-xl{
   width:68px;height:68px;border-radius:50%;
@@ -3657,6 +3495,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   width:68px;height:68px;font-size:24px;
   border-radius:50%;flex-shrink:0;
 }
+
 
 /* ── Separador compositor / feed ─────────────── */
 .feed-divider{
@@ -3675,6 +3514,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   display:flex;align-items:center;gap:6px;
 }
 
+
 /* ── Sentinel de infinite scroll ─────────────── */
 #feed-sentinel{
   height:40px;display:flex;align-items:center;
@@ -3684,6 +3524,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   display:flex;align-items:center;gap:8px;
   font-size:12px;color:var(--dim);
 }
+
 
 /* ── Botão Alterar Capa (perfil e grupo) ─────── */
 .profile-banner-btn{
@@ -3701,6 +3542,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .profile-banner-btn i{font-size:15px}
 
+
 /* ── Tag + data no rodapé do post ─────────────── */
 .post-tag-row{
   display:flex;align-items:center;
@@ -3708,6 +3550,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   flex-wrap:wrap;
   gap:6px;
 }
+
 
 /* ══════════════════════════════════════════
    HISTÓRICO DE PARTIDAS
@@ -3794,6 +3637,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   background:var(--navy);border:1px solid var(--border);
 }
 
+
 /* ── Filtros de fila nas Partidas ─────────────── */
 .matches-filter-bar{
   display:flex;gap:6px;padding:14px 16px 10px;
@@ -3809,6 +3653,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .mfilter-btn.on{
   background:var(--gold);color:var(--navy);border-color:var(--gold);
 }
+
 
 /* ══════════════════════════════════════════════
    MATCH DUO
@@ -3950,6 +3795,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .match-empty h3{font-family:'Rajdhani',sans-serif;font-size:20px;color:var(--text)}
 .match-empty p{font-size:13px;color:var(--dim);max-width:280px}
 
+
 /* ── Modal Preview Duo ───────────────────────── */
 .duo-preview-wrap{
   background:var(--navy-m);border:1px solid var(--border-h);
@@ -4065,6 +3911,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .match-anim-sub{font-size:14px;color:var(--muted)}
 
+
 /* ── Notificação ao vivo de Duo Like/Match ─────── */
 .duo-live-notif{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
@@ -4103,6 +3950,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .duo-live-close:hover{color:var(--text)}
 
+
 /* ── Admin Configurações ──────────────────────── */
 .admin-config-section{
   background:var(--navy-c);border:1px solid var(--border);
@@ -4131,6 +3979,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .admin-config-btn.warning:hover{background:rgba(251,191,36,.22)}
 
+
 /* ── Match Duo — Abas ─────────────────────────── */
 .match-page-wrap{
   display:flex;flex-direction:column;height:100%;
@@ -4154,6 +4003,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-radius:10px;padding:1px 6px;
 }
 .match-tab-panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
 
 /* ── Meus Matches — grid ──────────────────────── */
 .my-matches-grid{
@@ -4227,6 +4077,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-top:1px solid var(--border);margin-top:12px;
 }
 
+
 /* ── Explorar — layout vertical ────────────────── */
 #explore-grid{
   display:flex;flex-direction:column;
@@ -4293,6 +4144,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   padding:7px 10px;font-size:13px;justify-content:center;
 }
 
+
 /* ── Botão ícone de busca no logo ────────────── */
 .s-icon-btn{
   background:none;border:1px solid var(--border);
@@ -4301,6 +4153,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   cursor:pointer;font-size:15px;transition:.15s;flex-shrink:0;
 }
 .s-icon-btn:hover{color:var(--text);border-color:var(--border-h);background:var(--navy-h)}
+
 
 /* ── Resultados da busca ──────────────────────── */
 .gs-result{
@@ -4313,3 +4166,17 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .gs-result-nick{font-size:11.5px;color:var(--dim)}
 .gs-result-elos{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
 .gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}
+
+/* ── Busca modal ───────────────────────────── */
+.global-search-inp{border:none;outline:none;background:transparent;color:var(--text);font-family:'Exo 2',sans-serif;width:100%}
+.global-search-inp::placeholder{color:var(--dim)}
+#global-search-results{display:flex;flex-direction:column;gap:2px;padding:8px}
+.gs-result{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;cursor:pointer;transition:.12s}
+.gs-result:hover{background:var(--navy-h)}
+.gs-result-info{flex:1;min-width:0}
+.gs-result-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.gs-result-nick{font-size:11.5px;color:var(--dim)}
+.gs-result-elos{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}
+.s-icon-btn{background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:.15s;flex-shrink:0}
+.s-icon-btn:hover{color:var(--text);border-color:var(--border-h);background:var(--navy-h)}

@@ -2672,7 +2672,7 @@ async function runGlobalSearch(q){
     results.innerHTML=users.map(u=>`<div class="gs-result" onclick="closeGlobalSearch();viewProfile(${u.id})">${avatarHTML(u,'av-md')}<div class="gs-result-info"><div class="gs-result-name">${escapeHtml(u.display_name||u.username)}</div><div class="gs-result-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div><div class="gs-result-elos"><span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier,u.solo_rank,u.solo_lp)}</span><span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier,u.flex_rank,u.flex_lp)}</span></div></div></div>`).join('');
   } catch { results.innerHTML='<div class="gs-empty">Erro ao buscar</div>'; }
 }
-document.addEventListener('click',e=>{const bar=$('global-search-bar');if(bar?.classList.contains('open')&&!bar.contains(e.target)&&e.target.id!=='btn-open-search')closeGlobalSearch();});
+document.addEventListener('click',e=>{const modal=$('search-modal');if(modal&&modal.style.display!=='none'&&e.target===modal)closeGlobalSearch();});
 
 // ── Fila ao vivo ────────────────────────────────
 let _inQueue=false,_queueType='SOLO',_queueFilter='all',_queuePlayers=[],_allQueuePlayers=[],_queueTimerInt=null,_queueJoinedAt=null,_queueMinimized=false;
