@@ -2367,23 +2367,8 @@ async function adminSetRole(userId, role) {
 }
 
 // ── Init ───────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  if (token && me) {
-    bootApp();
-  }
-});
 
 // ── Inicialização ─────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  if (token && me) {
-    bootApp();
-  } else {
-    const authScreen = document.getElementById('auth-screen');
-    const appScreen  = document.getElementById('app-screen');
-    if (authScreen) authScreen.style.display = 'flex';
-    if (appScreen)  appScreen.style.display  = 'none';
-  }
-});
 const _audioCtx = { sound: null };
 function playQueueSound() {
   if (!_audioCtx.sound) {
@@ -2757,18 +2742,6 @@ async function confirmBannerSelectionGroup() {
     toast('Erro ao salvar capa'); console.error(err);
   }
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-  if (token && me) {
-    bootApp();
-  } else {
-    const authScreen = document.getElementById('auth-screen');
-    const appScreen  = document.getElementById('app-screen');
-    if (authScreen) authScreen.style.display = 'flex';
-    if (appScreen)  appScreen.style.display  = 'none';
-  }
-});
-
 // ══════════════════════════════════════════════
 //  HISTÓRICO DE PARTIDAS
 // ══════════════════════════════════════════════
@@ -3421,3 +3394,17 @@ async function deleteMyMatch(userId) {
     toast('Match removido');
   } catch { toast('Erro ao remover match'); }
 }
+
+// ── Inicialização ─────────────────────────────
+
+// ── Inicialização ─────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (token && me) {
+    bootApp();
+  } else {
+    const authScreen = document.getElementById('auth-screen');
+    const appScreen  = document.getElementById('app-screen');
+    if (authScreen) authScreen.style.display = 'flex';
+    if (appScreen)  appScreen.style.display  = 'none';
+  }
+});
