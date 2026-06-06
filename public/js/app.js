@@ -448,6 +448,7 @@ function postHTML(p) {
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
           ${p.has_mic ? '<span class="post-mic" title="Tem microfone"><i class="ti ti-microphone"></i></span>' : ''}
+          ${p.custom_status ? `<span class="post-status-badge" title="${escapeHtml(p.custom_status)}"><i class="ti ti-message-circle" style="font-size:11px"></i> ${escapeHtml(p.custom_status)}</span>` : ''}
           ${p.online_status === 'online' ? '<span class="post-online"><i class="ti ti-circle-filled"></i> Online</span>' : ''}
           <!-- Menu 3 pontos -->
           <div class="post-menu" style="margin-left:auto;position:relative">
@@ -802,6 +803,9 @@ function openChatWindow(convId, partnerId, partnerName) {
   if (c) { c.unread_count = 0; renderRightPanelChats(rpConvCache); }
   // Mostrar nick#tag - nome da pessoa no header do chat
   $('chat-partner-name').textContent = partnerName;
+  // Mostrar status no chat se disponível
+  const statusEl = $('chat-partner-status');
+  if (statusEl) statusEl.style.display = 'none';
   const av  = $('chat-av-header');
   const col = avatarColor(partnerName);
   av.style.background = col;
@@ -1252,6 +1256,8 @@ function renderProfile(user, isMe) {
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(dName(user))}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
+          ${user.custom_status ? `<div class="profile-custom-status"><i class="ti ti-message-circle" style="font-size:12px"></i> ${escapeHtml(user.custom_status)}</div>` : (isMe ? `<div class="profile-custom-status profile-status-empty" onclick="openStatusEditor()"><i class="ti ti-plus" style="font-size:11px"></i> Definir status</div>` : '')}
+          ${isMe && user.custom_status ? `<div class="profile-custom-status profile-status-edit" onclick="openStatusEditor()"><i class="ti ti-pencil" style="font-size:11px"></i></div>` : ''}
           <div class="profile-elos">
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
             <span class="elo ${eloClass(user.flex_tier)}">Flex ${flexLabel}</span>
@@ -3584,6 +3590,79 @@ function appendQueueChatHTTPMsg(m) {
   div.dataset.msgId = m.id;
   div.innerHTML = `<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe ? `<div class="queue-chat-name">${name}</div>` : ''}<div class="queue-chat-text">${escapeHtml(m.content)}</div></div>`;
   container.appendChild(div);
+}
+
+
+// ── Status personalizado ───────────────────────
+const STATUS_PRESETS = [
+  '🎮 Jogando ranked','😤 Tilted, não chata','🌾 Farmando flex',
+  '📚 Estudando LoL','🔥 Duo ready!','☕ De boa, só farmando',
+  '🎯 Subindo de elo','😴 Só uns jogos antes de dormir',
+  '🏆 Modo sério hoje','🤙 Casual, sem pressão',
+];
+
+function openStatusEditor() {
+  // Criar modal inline se não existir
+  let modal = $('status-edit-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'status-edit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
+    modal.onclick = e => { if(e.target===modal) closeStatusEditor(); };
+    modal.innerHTML = `
+      <div style="background:var(--navy-m);border:1px solid var(--border-h);border-radius:16px;width:min(420px,92vw);padding:22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700">✏️ Definir Status</span>
+          <button onclick="closeStatusEditor()" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px"><i class="ti ti-x"></i></button>
+        </div>
+        <input id="status-input" maxlength="100" placeholder="O que você está fazendo agora?"
+          style="width:100%;padding:10px 14px;background:var(--navy);border:1px solid var(--border-h);border-radius:10px;color:var(--text);font-size:14px;font-family:'Exo 2',sans-serif;outline:none;box-sizing:border-box;margin-bottom:14px"
+          oninput="document.getElementById('status-chars').textContent=100-this.value.length">
+        <div style="text-align:right;font-size:11px;color:var(--dim);margin-top:-10px;margin-bottom:14px"><span id="status-chars">100</span> caracteres restantes</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px">
+          ${STATUS_PRESETS.map(s => `<button onclick="document.getElementById('status-input').value='${s}';document.getElementById('status-chars').textContent=100-'${s}'.length"
+            style="padding:5px 12px;border-radius:20px;border:1px solid var(--border-h);background:var(--navy-c);color:var(--muted);font-size:12px;cursor:pointer;font-family:'Exo 2',sans-serif;white-space:nowrap"
+            onmouseover="this.style.borderColor='var(--gold-d)';this.style.color='var(--text)'"
+            onmouseout="this.style.borderColor='var(--border-h)';this.style.color='var(--muted)'">${s}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="saveStatus()" style="flex:1;padding:10px;border-radius:10px;background:var(--gold);color:var(--navy);border:none;font-weight:700;font-size:14px;cursor:pointer;font-family:'Exo 2',sans-serif">
+            Salvar
+          </button>
+          <button onclick="saveStatus('')" style="padding:10px 16px;border-radius:10px;border:1px solid var(--border-h);background:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Exo 2',sans-serif">
+            Remover
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  // Preencher com status atual
+  const input = $('status-input');
+  if (input) {
+    input.value = me?.custom_status || '';
+    const chars = $('status-chars');
+    if (chars) chars.textContent = 100 - input.value.length;
+  }
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('status-input')?.focus(), 80);
+}
+
+function closeStatusEditor() {
+  const modal = $('status-edit-modal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
+async function saveStatus(val) {
+  const status = val !== undefined ? val : ($('status-input')?.value.trim() || '');
+  try {
+    await api('/users/me', { method: 'PATCH', body: { custom_status: status || null } });
+    me.custom_status = status || null;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    closeStatusEditor();
+    toast(status ? `✅ Status: "${status}"` : '✅ Status removido');
+    loadMyProfile(); // atualizar perfil
+  } catch { toast('Erro ao salvar status'); }
 }
 
 window.addEventListener('DOMContentLoaded', () => {

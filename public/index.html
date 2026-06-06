@@ -390,8 +390,11 @@
   <div class="chat-win-head">
     <div class="av av-sm" style="background:var(--blue);color:#fff;cursor:pointer" id="chat-av-header"
          onclick="currentChatPartner&&viewProfile(currentChatPartner.id)"></div>
-    <span class="chat-win-name" id="chat-partner-name" style="cursor:pointer"
-          onclick="currentChatPartner&&viewProfile(currentChatPartner.id)">...</span>
+    <div style="display:flex;flex-direction:column;min-width:0;flex:1">
+      <span class="chat-win-name" id="chat-partner-name" style="cursor:pointer"
+            onclick="currentChatPartner&&viewProfile(currentChatPartner.id)">...</span>
+      <span id="chat-partner-status" style="display:none;font-size:11px;color:var(--gold-l);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    </div>
     <button class="chat-win-close" onclick="document.getElementById('chat-window').classList.remove('open')"><i class="ti ti-x"></i></button>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
