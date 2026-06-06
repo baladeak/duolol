@@ -1479,6 +1479,7 @@ function switchProfileTab(tab, scroll = true) {
   const isMe = _profileIsMe;
 
   if (tab === 'matches')     loadProfileMatches(_profileUserId);
+  if (tab === 'achievements') loadProfileAchievements(_profileUserId);
   if (tab === 'playlists')   box.innerHTML = renderPlaylists(c?.playlists || [], isMe);
   if (tab === 'gameplays')   box.innerHTML = renderGameplays(c?.gameplays || [], isMe);
   if (tab === 'screenshots') box.innerHTML = renderScreenshots(c?.screenshots || [], isMe);
@@ -2070,6 +2071,7 @@ async function addFriend(userId, btn) {
     btn.innerHTML = '<i class="ti ti-check"></i> <span>Enviado</span>';
     btn.style.color = 'var(--green)';
     toast('✅ Solicitação enviada!');
+    checkMyAchievements();
   } catch (err) { toast(err.error || 'Erro ao adicionar'); }
 }
 
@@ -4381,4 +4383,117 @@ async function loadProfileWeekPage() {
   } catch {
     el.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>';
   }
+}
+
+// ══════════════════════════════════════════════
+//  CONQUISTAS E BADGES
+// ══════════════════════════════════════════════
+let _badgesCache = null;
+
+async function getBadges() {
+  if (!_badgesCache) {
+    try { _badgesCache = await api('/achievements/badges'); } catch { _badgesCache = []; }
+  }
+  return _badgesCache;
+}
+
+// Verificar e conceder novas conquistas
+async function checkMyAchievements() {
+  try {
+    const { new_badges } = await api('/achievements/check', { method: 'POST' });
+    if (new_badges?.length) {
+      // Mostrar notificação para cada nova conquista
+      new_badges.forEach((b, i) => {
+        setTimeout(() => showAchievementNotif(b), i * 1500);
+      });
+    }
+  } catch {}
+}
+
+// Popup de conquista desbloqueada
+function showAchievementNotif(badge) {
+  const existing = document.getElementById('achievement-notif');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'achievement-notif';
+  div.className = 'achievement-notif';
+  div.innerHTML = `
+    <div class="achievement-notif-inner">
+      <div class="achievement-notif-icon" style="background:${badge.color}22;border-color:${badge.color}66">${badge.icon}</div>
+      <div>
+        <div class="achievement-notif-title">Conquista desbloqueada!</div>
+        <div class="achievement-notif-name">${escapeHtml(badge.name)}</div>
+        <div class="achievement-notif-desc">${escapeHtml(badge.desc)}</div>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  setTimeout(() => div.classList.add('show'), 50);
+  setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 400); }, 4000);
+}
+
+// Carregar conquistas no perfil
+async function loadProfileAchievements(userId) {
+  const box = $('profile-tab-content');
+  if (!box) return;
+  box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  // Se for o próprio perfil, verificar novas conquistas primeiro
+  if (userId === me?.id) await checkMyAchievements();
+
+  try {
+    const badges = await api(`/achievements/${userId}`);
+
+    const categories = {
+      posts:   { label:'📝 Posts & Conteúdo', items:[] },
+      social:  { label:'👥 Social & Amigos',   items:[] },
+      engage:  { label:'❤️ Engajamento',        items:[] },
+      stories: { label:'📸 Stories',            items:[] },
+      account: { label:'🎖️ Conta',              items:[] },
+      ranking: { label:'🏆 Ranking',            items:[] },
+    };
+
+    badges.forEach(b => {
+      if (categories[b.category]) categories[b.category].items.push(b);
+    });
+
+    const earned  = badges.filter(b => b.earned).length;
+    const total   = badges.length;
+
+    box.innerHTML = `
+      <div class="achievements-wrap">
+        <!-- Progresso geral -->
+        <div class="achievements-header">
+          <div class="achievements-progress-text">${earned} / ${total} conquistas</div>
+          <div class="achievements-progress-bar">
+            <div class="achievements-progress-fill" style="width:${Math.round(earned/total*100)}%"></div>
+          </div>
+        </div>
+
+        <!-- Grid por categoria -->
+        ${Object.values(categories).map(cat => cat.items.length ? `
+          <div class="achievements-category">
+            <div class="achievements-cat-title">${cat.label}</div>
+            <div class="achievements-grid">
+              ${cat.items.map(b => achievementBadgeHTML(b)).join('')}
+            </div>
+          </div>` : ''
+        ).join('')}
+      </div>`;
+  } catch {
+    box.innerHTML = '<div class="empty"><p>Erro ao carregar conquistas</p></div>';
+  }
+}
+
+function achievementBadgeHTML(b) {
+  return `
+    <div class="achievement-badge ${b.earned ? 'earned' : 'locked'}"
+         title="${b.earned ? '✅ ' : '🔒 '}${b.name}: ${b.desc}${b.earned_at ? '\nConquistado em '+new Date(b.earned_at).toLocaleDateString('pt-BR') : ''}">
+      <div class="achievement-icon" style="${b.earned ? `background:${b.color}22;border-color:${b.color}55;box-shadow:0 0 12px ${b.color}33` : ''}">
+        <span>${b.earned ? b.icon : '🔒'}</span>
+      </div>
+      <div class="achievement-name">${escapeHtml(b.name)}</div>
+      <div class="achievement-desc">${escapeHtml(b.desc)}</div>
+      ${b.earned && b.earned_at ? `<div class="achievement-date">${new Date(b.earned_at).toLocaleDateString('pt-BR')}</div>` : ''}
+    </div>`;
 }
