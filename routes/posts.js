@@ -24,13 +24,18 @@ router.get('/', auth, async (req, res) => {
               (SELECT COUNT(*) FROM post_likes l WHERE l.post_id=p.id) AS total_likes,
               (SELECT COUNT(*) FROM post_comments c WHERE c.post_id=p.id AND c.is_deleted=0) AS total_comments,
               (SELECT COUNT(*) FROM post_likes lm WHERE lm.post_id=p.id AND lm.user_id=?) AS liked_by_me,
-              (SELECT reaction FROM post_reactions pr WHERE pr.post_id=p.id AND pr.user_id=?) AS my_reaction,
-              (SELECT JSON_OBJECTAGG(reaction, cnt) FROM (
-                SELECT reaction, COUNT(*) as cnt FROM post_reactions WHERE post_id=p.id GROUP BY reaction
-              ) rc) AS reactions_json
-       FROM posts p JOIN users u ON u.id=p.user_id
-       WHERE ${where} ORDER BY p.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`,
-      params
+              pr_me.reaction AS my_reaction,
+              react_agg.reactions_json
+       FROM posts p
+       JOIN users u ON u.id=p.user_id
+       LEFT JOIN post_reactions pr_me ON pr_me.post_id=p.id AND pr_me.user_id=?
+       LEFT JOIN (
+         SELECT post_id, JSON_OBJECTAGG(reaction, cnt) AS reactions_json
+         FROM (SELECT post_id, reaction, COUNT(*) AS cnt FROM post_reactions GROUP BY post_id, reaction) sub
+         GROUP BY post_id
+       ) react_agg ON react_agg.post_id=p.id
+       WHERE ${where} ORDER BY p.created_at DESC LIMIT ${lim} OFFSET ${offset}`,
+      [req.user.id, req.user.id, ...params]
     );
     res.json(posts);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro ao buscar posts' }); }
