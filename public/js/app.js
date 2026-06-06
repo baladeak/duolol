@@ -2740,18 +2740,37 @@ function sendQueueChat(){
   const content=input.value.trim();
   input.value='';
   // Enviar via socket quando disponível
+  // Exibir a própria mensagem imediatamente (optimista)
+  const myMsg = {
+    id: Date.now(),
+    sender_id: me?.id,
+    sender_name: me?.display_name || me?.username || 'Você',
+    avatar_url: me?.avatar_url || null,
+    content: content,
+    created_at: new Date()
+  };
+  appendQueueChatMsg(myMsg);
+
+  // Enviar via socket para broadcast aos outros
   if(socket?.connected){
-    socket.emit('queue_chat',{content});
-    console.log('[QueueChat] Mensagem enviada:', content, '| inQueue:', _inQueue);
+    socket.emit('queue_chat', {content});
   } else {
-    console.warn('[QueueChat] Socket não conectado:', socket?.id);
     if(!socket) initSocket();
-    emitWhenReady('queue_chat',{content});
-    toast('⚠️ Socket desconectado, reconectando...');
+    emitWhenReady('queue_chat', {content});
   }
 }
 function appendQueueChatMsg(msg){const container=$('queue-chat-msgs');if(!container)return;const isMe=msg.sender_id==me?.id;const avColor='#C8963E',letter=(msg.sender_name||'U')[0].toUpperCase();const avHTML=msg.avatar_url?`<img src="${msg.avatar_url}" class="av av-sm" style="object-fit:cover">`:`<div class="av av-sm" style="background:${avColor};color:#0A0E1A">${letter}</div>`;const div=document.createElement('div');div.className='queue-chat-bubble'+(isMe?' me':'');div.innerHTML=`<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe?`<div class="queue-chat-name">${escapeHtml(msg.sender_name||'')}</div>`:''}<div class="queue-chat-text">${escapeHtml(msg.content)}</div></div>`;container.appendChild(div);container.scrollTop=container.scrollHeight;}
-function onQueueChatMsg(msg){if(_currentQueueTab!=='chat'||!$('queue-panel')?.classList.contains('open')){_queueChatUnread++;const badge=$('queue-chat-badge');if(badge){badge.textContent=_queueChatUnread;badge.style.display='';}}appendQueueChatMsg(msg);if(msg.sender_id!==me?.id)playQueueSound();}
+function onQueueChatMsg(msg){
+  // Não duplicar mensagem própria (já exibida optimistamente)
+  if(msg.sender_id == me?.id) return;
+  if(_currentQueueTab!=='chat'||!$('queue-panel')?.classList.contains('open')){
+    _queueChatUnread++;
+    const badge=$('queue-chat-badge');
+    if(badge){badge.textContent=_queueChatUnread;badge.style.display='';}
+  }
+  appendQueueChatMsg(msg);
+  playQueueSound();
+}
 function onQueueChatHistory(msgs){const container=$('queue-chat-msgs');if(!container)return;const info=container.querySelector('.queue-chat-info');container.innerHTML='';if(info)container.appendChild(info);msgs.forEach(m=>appendQueueChatMsg(m));}
 function updateQueueChatInput(){const input=$('queue-chat-input'),sendBtn=document.querySelector('.queue-chat-send');if(!input)return;if(_inQueue){input.disabled=false;input.placeholder='Mensagem para a fila...';if(sendBtn)sendBtn.disabled=false;}else{input.disabled=true;input.placeholder='Entre na fila para enviar mensagens';if(sendBtn)sendBtn.disabled=true;}}
 function toggleMicEdit(btn){const isOn=btn.classList.toggle('mic-on'),icon=btn.querySelector('i'),label=btn.querySelector('span');icon.className=isOn?'ti ti-microphone':'ti ti-microphone-off';if(label)label.textContent=isOn?'Tenho microfone':'Sem microfone';}

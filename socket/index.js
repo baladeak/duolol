@@ -86,9 +86,10 @@ module.exports = (io) => {
         if (queueChatMessages.length > QUEUE_CHAT_MAX)
           queueChatMessages.shift();
 
-        // Broadcast para todos
+        // Broadcast para todos os conectados
         io.emit('queue_chat_msg', msg);
-      } catch (err) { console.error('queue_chat:', err); }
+        console.log(`[Server QueueChat] uid=${uid} msg="${msg.content}" broadcast ok`);
+      } catch (err) { console.error('[Server QueueChat] Erro:', err); }
     });
 
     // Retornar histórico do chat da fila ao pedir
