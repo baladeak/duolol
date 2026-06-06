@@ -1975,7 +1975,7 @@ function renderRightPanelChats(convs) {
     return `
     <div class="rp-conv-item ${unread > 0 ? 'rp-conv-unread' : ''} ${isOpen ? 'rp-conv-active' : ''}"
          id="rp-conv-${c.id}"
-         onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.display_name || c.username)}')">
+         onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.lol_game_name ? c.lol_game_name+'#'+(c.lol_tag_line||'') : c.display_name||c.username)}')">
       <div class="rp-conv-av-wrap">
         <div class="av av-sm" style="width:36px;height:36px;font-size:14px;background:${col};color:#0E0E12">${letter}
           <div class="status-dot ${c.online_status === 'online' ? 'dot-online' : 'dot-offline'}"></div>
@@ -2685,27 +2685,15 @@ function openQueuePanel(){$('queue-panel').classList.add('open');$('queue-overla
 function closeQueuePanel(){$('queue-panel').classList.remove('open');$('queue-overlay').classList.remove('open');$('queue-fab').style.display='flex';}
 function toggleQueueMinimize(){
   _queueMinimized=!_queueMinimized;
-  const panel=$('queue-panel'),icon=$('queue-minimize-icon'),body=$('queue-body');
+  const body=$('queue-body');
+  const icon=$('queue-minimize-icon');
+  const actions=$('match-actions'); // não confundir
   if(_queueMinimized){
-    panel.classList.add('queue-minimized');
-    if(body) body.style.display='none';
+    if(body){ body.style.display='none'; }
     if(icon) icon.className='ti ti-chevron-up';
-    // Reposicionar como barra compacta
-    panel.style.top='auto'; panel.style.left='auto';
-    panel.style.transform='none';
-    panel.style.bottom='96px'; panel.style.right='32px';
-    panel.style.width='260px'; panel.style.height='auto';
-    panel.style.borderRadius='12px';
   }else{
-    panel.classList.remove('queue-minimized');
-    if(body) body.style.display='';
+    if(body){ body.style.display=''; }
     if(icon) icon.className='ti ti-minus';
-    // Restaurar posição central
-    panel.style.top='50%'; panel.style.left='50%';
-    panel.style.transform='translate(-50%,-50%) scale(1)';
-    panel.style.bottom=''; panel.style.right='';
-    panel.style.width=''; panel.style.height='';
-    panel.style.borderRadius='';
   }
 }
 function setQueueFilter(q,btn){_queueFilter=q;document.querySelectorAll('.queue-filter-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderQueueList();}
@@ -2716,7 +2704,7 @@ async function joinQueue(){
     _inQueue=true;_queueType=queueType;_queueJoinedAt=new Date();
     const btn=$('queue-join-btn');btn.innerHTML='<i class="ti ti-x"></i> Sair da Fila';btn.classList.add('leaving');
     $('queue-timer-bar').style.display='flex';$('queue-type-select').disabled=true;$('queue-fab').classList.add('in-queue');
-    startQueueTimer();toast('🟢 Você entrou na fila de '+queueTypeLabel(queueType)+'!');
+    startQueueTimer();playQueueSound();toast('🟢 Você entrou na fila de '+queueTypeLabel(queueType)+'!');
     updateQueueChatInput();emitWhenReady('queue_chat_history');loadQueueList();
   }catch(err){toast('Erro ao entrar na fila');}
 }
@@ -2749,11 +2737,12 @@ function sendQueueChat(){
   // Enviar via socket quando disponível
   if(socket?.connected){
     socket.emit('queue_chat',{content});
+    console.log('[QueueChat] Mensagem enviada:', content, '| inQueue:', _inQueue);
   } else {
-    // Reconectar e tentar de novo
+    console.warn('[QueueChat] Socket não conectado:', socket?.id);
     if(!socket) initSocket();
     emitWhenReady('queue_chat',{content});
-    toast('⚠️ Reconectando... mensagem será enviada em breve');
+    toast('⚠️ Socket desconectado, reconectando...');
   }
 }
 function appendQueueChatMsg(msg){const container=$('queue-chat-msgs');if(!container)return;const isMe=msg.sender_id==me?.id;const avColor='#C8963E',letter=(msg.sender_name||'U')[0].toUpperCase();const avHTML=msg.avatar_url?`<img src="${msg.avatar_url}" class="av av-sm" style="object-fit:cover">`:`<div class="av av-sm" style="background:${avColor};color:#0A0E1A">${letter}</div>`;const div=document.createElement('div');div.className='queue-chat-bubble'+(isMe?' me':'');div.innerHTML=`<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe?`<div class="queue-chat-name">${escapeHtml(msg.sender_name||'')}</div>`:''}<div class="queue-chat-text">${escapeHtml(msg.content)}</div></div>`;container.appendChild(div);container.scrollTop=container.scrollHeight;}

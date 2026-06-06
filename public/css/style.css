@@ -4181,3 +4181,33 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .gs-empty{text-align:center;padding:20px;color:var(--dim);font-size:13px}
 .s-icon-btn{background:none;border:1px solid var(--border);color:var(--dim);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:.15s;flex-shrink:0}
 .s-icon-btn:hover{color:var(--text);border-color:var(--border-h);background:var(--navy-h)}
+
+/* ── Explorar compacto ──────────────────────── */
+.explore-player-row{
+  padding:10px 16px !important;
+}
+.explore-player-row .av.av-lg,
+.explore-player-row .av-lg{
+  width:44px !important;
+  height:44px !important;
+  font-size:16px !important;
+  flex-shrink:0;
+}
+.explore-player-row .av-lg img{
+  width:44px !important;
+  height:44px !important;
+}
+.explore-status-dot{
+  width:9px !important;
+  height:9px !important;
+}
+.explore-player-name{
+  font-size:13.5px !important;
+}
+.explore-champ-icon{
+  width:22px !important;
+  height:22px !important;
+}
+.explore-player-bio{
+  -webkit-line-clamp:1 !important;
+}
