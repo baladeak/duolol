@@ -4462,55 +4462,70 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .stories-bar:empty{display:none}
 .stories-bar::-webkit-scrollbar{display:none}
 
-/* Círculo individual */
+/* ── Story circles estilo Instagram ─────────────── */
 .story-circle-wrap{
   display:flex;flex-direction:column;align-items:center;
   gap:6px;cursor:pointer;flex-shrink:0;
 }
+
+/* Anel externo colorido */
 .story-circle{
-  width:64px;height:64px;border-radius:50%;
-  position:relative;padding:3px;
-  background:var(--navy-c);
-  transition:.15s;
+  width:68px;height:68px;border-radius:50%;
+  padding:3px;                          /* espessura do anel */
+  background:var(--border);             /* padrão: sem story */
+  position:relative;transition:.15s;
 }
 .story-circle.has-story{
-  background:linear-gradient(135deg,#F43F5E,#F59E0B,#8B5CF6);
+  background:linear-gradient(45deg,#F9CE34,#EE2A7B,#6228D7);
 }
 .story-circle.viewed{
-  background:var(--border);
+  background:rgba(100,100,120,.4);
 }
 .story-circle.add-story{
-  background:var(--navy-c);
+  background:transparent;
   border:2px dashed var(--border-h);
+  padding:0;
 }
 .story-circle.add-story:hover{
   border-color:var(--gold-d);
   background:rgba(200,150,62,.08);
 }
-.story-circle:not(.add-story):hover{transform:scale(1.05)}
+.story-circle:not(.add-story):hover{ transform:scale(1.06) }
 
-/* Avatar dentro do círculo */
-.story-circle .av,
-.story-circle img.av-story{
+/* Anel interno escuro (gap entre borda e foto) */
+.story-circle-inner{
   width:100%;height:100%;border-radius:50%;
-  object-fit:cover;
-  border:2px solid var(--navy-m);
+  background:var(--navy-m);
+  padding:2px;                          /* gap escuro fino */
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
 }
-.av.av-story{
-  width:58px;height:58px;font-size:20px;
-  border-radius:50%;
+
+/* Avatar PREENCHE o círculo completamente */
+.story-circle-inner .av,
+.story-circle-inner img{
+  width:100%;height:100%;
+  border-radius:50%;object-fit:cover;
+  flex-shrink:0;
 }
+.story-circle-inner .av{
+  font-size:22px;
+}
+
+/* Botão + para criar */
 .story-add-btn{
   position:absolute;bottom:0;right:0;
-  width:20px;height:20px;border-radius:50%;
+  width:22px;height:22px;border-radius:50%;
   background:var(--gold);color:var(--navy);
   display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;
+  font-size:14px;font-weight:700;
   border:2px solid var(--navy-m);
+  z-index:2;
 }
+
 .story-circle-name{
   font-size:11px;color:var(--muted);
-  max-width:64px;text-align:center;
+  max-width:70px;text-align:center;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 

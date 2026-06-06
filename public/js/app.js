@@ -3979,35 +3979,44 @@ function renderStoriesBar() {
 
   const myStory = _storiesData.find(u => u.user_id === me?.id);
 
-  bar.innerHTML = `
-    <!-- Botão do próprio story -->
+  const storyCircle = (user, idx, stateClass, onclick) => `
     <div class="story-circle-wrap">
-      <div class="story-circle ${myStory ? (myStory.all_viewed ? 'viewed' : 'has-story') : 'add-story'}"
-           onclick="${myStory ? `openStoryViewer(0)` : 'openCreateStory()'}">
-        ${avatarHTML(me, 'av-story')}
-        ${!myStory ? `<div class="story-add-btn"><i class="ti ti-plus"></i></div>` : ''}
+      <div class="story-circle ${stateClass}" onclick="${onclick}">
+        <div class="story-circle-inner">
+          ${avatarHTML(user, 'av-story')}
+        </div>
+        ${stateClass === 'add-story' ? '' : ''}
       </div>
-      <span class="story-circle-name">Seu story</span>
-    </div>
-    ${_storiesData
-      .filter(u => u.user_id !== me?.id)
-      .map((u, idx) => {
-        const realIdx = _storiesData.findIndex(x => x.user_id === u.user_id);
-        return `<div class="story-circle-wrap">
-          <div class="story-circle ${u.all_viewed ? 'viewed' : 'has-story'}"
-               onclick="openStoryViewer(${realIdx})">
-            ${avatarHTML(u, 'av-story')}
-          </div>
-          <span class="story-circle-name">${escapeHtml((u.display_name || u.username).split(' ')[0])}</span>
-        </div>`;
-      }).join('')}
-    ${!myStory ? '' : ''}
-    <div class="story-circle-wrap">
-      <div class="story-circle add-story" onclick="openCreateStory()">
-        <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--gold)"><i class="ti ti-plus" style="font-size:22px"></i></div>
-      </div>
-      <span class="story-circle-name">Novo</span>
+      <span class="story-circle-name">${escapeHtml((user.display_name || user.username || '').split(' ')[0] || 'Você')}</span>
     </div>`;
+
+  // Botão criar novo story (sempre presente)
+  const addBtn = `<div class="story-circle-wrap">
+    <div class="story-circle add-story" onclick="openCreateStory()" title="Novo story">
+      <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--gold)">
+        <i class="ti ti-plus" style="font-size:24px"></i>
+      </div>
+    </div>
+    <span class="story-circle-name">Novo</span>
+  </div>`;
+
+  // Story próprio (se existir, aparece primeiro com botão +)
+  const myCircle = myStory
+    ? `<div class="story-circle-wrap">
+        <div class="story-circle ${myStory.all_viewed ? 'viewed' : 'has-story'}" onclick="openStoryViewer(0)" title="Seu story">
+          <div class="story-circle-inner">${avatarHTML(me, 'av-story')}</div>
+          <div class="story-add-btn" onclick="event.stopPropagation();openCreateStory()" title="Adicionar"><i class="ti ti-plus" style="font-size:12px"></i></div>
+        </div>
+        <span class="story-circle-name">Seu story</span>
+       </div>`
+    : '';
+
+  bar.innerHTML = addBtn + myCircle + _storiesData
+    .filter(u => u.user_id !== me?.id)
+    .map(u => {
+      const realIdx = _storiesData.findIndex(x => x.user_id === u.user_id);
+      return storyCircle(u, realIdx, u.all_viewed ? 'viewed' : 'has-story', `openStoryViewer(${realIdx})`);
+    }).join('');
 }
 
 // ── Viewer ──────────────────────────────────────────
