@@ -2777,16 +2777,7 @@ async function sendQueueChat(){
   const content=input.value.trim();
   input.value='';
   // Enviar via socket quando disponível
-  // Exibir imediatamente (optimista)
-  const myMsg = {
-    id: Date.now(), sender_id: me?.id,
-    sender_name: me?.display_name || me?.username || 'Você',
-    avatar_url: me?.avatar_url || null,
-    content: content, created_at: new Date()
-  };
-  appendQueueChatMsg(myMsg);
-
-  // Salvar via HTTP — confiável
+  // Salvar via HTTP — o polling periódico exibirá em até 3s
   try {
     await api('/queue/chat', { method: 'POST', body: { content } });
   } catch(e) {
@@ -3515,7 +3506,10 @@ async function deleteMyMatch(userId) {
 
 // ── Inicialização ─────────────────────────────
 
+let _queueChatPolling = false;
 async function pollQueueChat() {
+  if (_queueChatPolling) return;
+  _queueChatPolling = true;
   try {
     const msgs = await api('/queue/chat');
     const container = $('queue-chat-msgs');
@@ -3535,13 +3529,16 @@ async function pollQueueChat() {
       if (info) container.appendChild(info);
       msgs.forEach(m => appendQueueChatHTTPMsg(m));
     } else {
-      // Só novas
+      // Só novas — tocar som se for de outro usuário
       newMsgs.forEach(m => appendQueueChatHTTPMsg(m));
+      const hasOtherMsgs = newMsgs.some(m => m.user_id != me?.id);
+      if (hasOtherMsgs) playQueueSound();
     }
 
     container.dataset.lastId = msgs[msgs.length - 1].id;
     if (wasAtBottom || !container.dataset.lastId) container.scrollTop = container.scrollHeight;
   } catch {}
+  finally { _queueChatPolling = false; }
 }
 
 function appendQueueChatHTTPMsg(m) {
