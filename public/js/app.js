@@ -767,7 +767,17 @@ async function loadConversations() {
 async function openDM(partnerId, partnerName) {
   try {
     const { conversation_id } = await api('/messages/open', { method:'POST', body:{ partner_id: partnerId } });
-    openChatWindow(conversation_id, partnerId, partnerName);
+    // Buscar dados do parceiro para mostrar nick correto
+    let displayLabel = partnerName || '';
+    try {
+      const partner = await api('/users/' + partnerId);
+      if (partner && partner.lol_game_name) {
+        const nick = partner.lol_game_name + '#' + (partner.lol_tag_line || '');
+        const name = partner.display_name || partner.username || '';
+        displayLabel = name ? nick + '  ' + name : nick;
+      }
+    } catch {}
+    openChatWindow(conversation_id, partnerId, displayLabel);
   } catch { toast('Erro ao abrir conversa'); }
 }
 
@@ -781,6 +791,7 @@ function openChatWindow(convId, partnerId, partnerName) {
   // Zera o unread no cache local e redesenha o painel
   const c = rpConvCache.find(c => c.id == convId);
   if (c) { c.unread_count = 0; renderRightPanelChats(rpConvCache); }
+  // Mostrar nick#tag - nome da pessoa no header do chat
   $('chat-partner-name').textContent = partnerName;
   const av  = $('chat-av-header');
   const col = avatarColor(partnerName);
@@ -2663,7 +2674,31 @@ document.addEventListener('click',e=>{const modal=$('search-modal');if(modal&&mo
 let _inQueue=false,_queueType='SOLO',_queueFilter='all',_queuePlayers=[],_allQueuePlayers=[],_queueTimerInt=null,_queueJoinedAt=null,_queueMinimized=false;
 function openQueuePanel(){$('queue-panel').classList.add('open');$('queue-overlay').classList.add('open');$('queue-fab').style.display='none';loadQueueList();updateQueueChatInput();emitWhenReady('queue_chat_history');}
 function closeQueuePanel(){$('queue-panel').classList.remove('open');$('queue-overlay').classList.remove('open');$('queue-fab').style.display='flex';}
-function toggleQueueMinimize(){_queueMinimized=!_queueMinimized;const panel=$('queue-panel'),icon=$('queue-minimize-icon');if(_queueMinimized){panel.classList.add('queue-minimized');if(icon)icon.className='ti ti-chevron-up';}else{panel.classList.remove('queue-minimized');if(icon)icon.className='ti ti-minus';}}
+function toggleQueueMinimize(){
+  _queueMinimized=!_queueMinimized;
+  const panel=$('queue-panel'),icon=$('queue-minimize-icon'),body=$('queue-body');
+  if(_queueMinimized){
+    panel.classList.add('queue-minimized');
+    if(body) body.style.display='none';
+    if(icon) icon.className='ti ti-chevron-up';
+    // Reposicionar como barra compacta
+    panel.style.top='auto'; panel.style.left='auto';
+    panel.style.transform='none';
+    panel.style.bottom='96px'; panel.style.right='32px';
+    panel.style.width='260px'; panel.style.height='auto';
+    panel.style.borderRadius='12px';
+  }else{
+    panel.classList.remove('queue-minimized');
+    if(body) body.style.display='';
+    if(icon) icon.className='ti ti-minus';
+    // Restaurar posição central
+    panel.style.top='50%'; panel.style.left='50%';
+    panel.style.transform='translate(-50%,-50%) scale(1)';
+    panel.style.bottom=''; panel.style.right='';
+    panel.style.width=''; panel.style.height='';
+    panel.style.borderRadius='';
+  }
+}
 function setQueueFilter(q,btn){_queueFilter=q;document.querySelectorAll('.queue-filter-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderQueueList();}
 async function toggleQueue(){if(_inQueue)await leaveQueue();else await joinQueue();}
 async function joinQueue(){
@@ -2696,7 +2731,22 @@ async function checkQueueStatus(){try{const entry=await api('/queue/me');if(entr
 // ── Chat da Fila ────────────────────────────────
 let _currentQueueTab='players',_queueChatUnread=0;
 function switchQueueTab(tab){_currentQueueTab=tab;document.querySelectorAll('.queue-tab').forEach(t=>t.classList.remove('on'));$('qtab-'+tab)?.classList.add('on');const players=$('queue-tab-players'),chat=$('queue-tab-chat');if(players)players.style.display=tab==='players'?'':'none';if(chat)chat.style.display=tab==='chat'?'flex':'none';if(tab==='chat'){_queueChatUnread=0;const badge=$('queue-chat-badge');if(badge)badge.style.display='none';emitWhenReady('queue_chat_history');setTimeout(()=>$('queue-chat-input')?.focus(),50);}}
-function sendQueueChat(){const input=$('queue-chat-input');if(!input||!input.value.trim())return;if(!_inQueue){toast('⚠️ Entre na fila para enviar mensagens');return;}if(!socket?.connected){toast('⚠️ Sem conexão em tempo real.');return;}const content=input.value.trim();input.value='';socket.emit('queue_chat',{content});}
+function sendQueueChat(){
+  const input=$('queue-chat-input');
+  if(!input||!input.value.trim())return;
+  if(!_inQueue){toast('⚠️ Entre na fila para enviar mensagens');return;}
+  const content=input.value.trim();
+  input.value='';
+  // Enviar via socket quando disponível
+  if(socket?.connected){
+    socket.emit('queue_chat',{content});
+  } else {
+    // Reconectar e tentar de novo
+    if(!socket) initSocket();
+    emitWhenReady('queue_chat',{content});
+    toast('⚠️ Reconectando... mensagem será enviada em breve');
+  }
+}
 function appendQueueChatMsg(msg){const container=$('queue-chat-msgs');if(!container)return;const isMe=msg.sender_id==me?.id;const avColor='#C8963E',letter=(msg.sender_name||'U')[0].toUpperCase();const avHTML=msg.avatar_url?`<img src="${msg.avatar_url}" class="av av-sm" style="object-fit:cover">`:`<div class="av av-sm" style="background:${avColor};color:#0A0E1A">${letter}</div>`;const div=document.createElement('div');div.className='queue-chat-bubble'+(isMe?' me':'');div.innerHTML=`<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe?`<div class="queue-chat-name">${escapeHtml(msg.sender_name||'')}</div>`:''}<div class="queue-chat-text">${escapeHtml(msg.content)}</div></div>`;container.appendChild(div);container.scrollTop=container.scrollHeight;}
 function onQueueChatMsg(msg){if(_currentQueueTab!=='chat'||!$('queue-panel')?.classList.contains('open')){_queueChatUnread++;const badge=$('queue-chat-badge');if(badge){badge.textContent=_queueChatUnread;badge.style.display='';}}appendQueueChatMsg(msg);if(msg.sender_id!==me?.id)playQueueSound();}
 function onQueueChatHistory(msgs){const container=$('queue-chat-msgs');if(!container)return;const info=container.querySelector('.queue-chat-info');container.innerHTML='';if(info)container.appendChild(info);msgs.forEach(m=>appendQueueChatMsg(m));}
