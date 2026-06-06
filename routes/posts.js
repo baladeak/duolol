@@ -6,7 +6,7 @@ router.get('/', auth, async (req, res) => {
   const { queue, page = 1, limit = 25 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   try {
-    let where = 'p.is_deleted=0', params = [req.user.id];
+    let where = 'p.is_deleted=0', whereParams = [];
     if (queue && queue !== 'all') {
       const q = queue.toUpperCase();
       // ARAM e ARENA são exclusivos — não entram no BOTH (Solo+Flex)
@@ -15,7 +15,7 @@ router.get('/', auth, async (req, res) => {
       } else {
         where += ' AND (p.queue_type=? OR p.queue_type="BOTH")';
       }
-      params.push(q);
+      whereParams.push(q);
     }
     const [posts] = await db.execute(
       `SELECT p.id,p.content,p.queue_type,p.created_at,p.solo_tier_snapshot,p.flex_tier_snapshot,
@@ -35,7 +35,7 @@ router.get('/', auth, async (req, res) => {
          GROUP BY post_id
        ) react_agg ON react_agg.post_id=p.id
        WHERE ${where} ORDER BY p.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`,
-      [req.user.id, req.user.id, ...params]
+      [req.user.id, req.user.id, ...whereParams]
     );
     res.json(posts);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro ao buscar posts' }); }
