@@ -171,6 +171,11 @@
               <button class="btn-post" id="btn-publish" onclick="publishPost()">POSTAR</button>
             </div>
           </div>
+          <!-- Stories -->
+          <div class="stories-bar" id="stories-bar">
+            <!-- Injetado pelo JS -->
+          </div>
+
           <!-- Separador compositor / posts -->
           <div class="feed-divider">
             <div class="feed-divider-line"></div>
@@ -632,6 +637,59 @@
       </button>
     </div>
     <div id="global-search-results" style="max-height:380px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Modal Story Viewer -->
+<div id="story-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:3000;align-items:center;justify-content:center">
+  <div class="story-viewer-wrap">
+    <!-- Progresso -->
+    <div class="story-progress-bar" id="story-progress-bar"></div>
+    <!-- Header do usuário -->
+    <div class="story-header">
+      <div class="story-user-info" id="story-user-info"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="story-time" id="story-time"></span>
+        <button id="story-delete-btn" style="display:none;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:16px" onclick="deleteCurrentStory()"><i class="ti ti-trash"></i></button>
+        <button onclick="closeStoryViewer()" style="background:none;border:none;cursor:pointer;color:#fff;font-size:22px;line-height:1"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <!-- Imagem -->
+    <div class="story-img-wrap">
+      <img id="story-img" src="" alt="">
+      <!-- Áreas de navegação -->
+      <div class="story-nav-left"  onclick="storyNavPrev()"></div>
+      <div class="story-nav-right" onclick="storyNavNext()"></div>
+    </div>
+    <!-- Legenda -->
+    <div class="story-caption" id="story-caption"></div>
+  </div>
+  <!-- Setas externas -->
+  <button class="story-arrow story-arrow-left"  onclick="storyUserPrev()" id="story-arrow-left"><i class="ti ti-chevron-left"></i></button>
+  <button class="story-arrow story-arrow-right" onclick="storyUserNext()" id="story-arrow-right"><i class="ti ti-chevron-right"></i></button>
+</div>
+
+<!-- Modal criar story -->
+<div id="create-story-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2500;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeCreateStory()">
+  <div class="create-story-wrap">
+    <div class="create-story-header">
+      <span style="font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700"><i class="ti ti-camera"></i> Novo Story</span>
+      <button onclick="closeCreateStory()" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="create-story-body">
+      <div class="create-story-preview" id="create-story-preview" onclick="$('story-file-input').click()">
+        <i class="ti ti-photo-plus" style="font-size:40px;color:var(--dim)"></i>
+        <p style="color:var(--dim);font-size:13px;margin-top:8px">Clique para selecionar screenshot</p>
+        <p style="color:var(--dim);font-size:11px">PNG, JPG — máx. 3MB</p>
+      </div>
+      <input type="file" id="story-file-input" accept="image/*" style="display:none" onchange="previewStoryFile(this)">
+      <textarea id="story-caption-input" placeholder="Adicionar legenda (opcional)..." maxlength="300"
+        style="width:100%;margin-top:12px;padding:10px 14px;background:var(--navy);border:1px solid var(--border-h);border-radius:10px;color:var(--text);font-size:13.5px;resize:none;font-family:'Exo 2',sans-serif;outline:none;box-sizing:border-box" rows="2"></textarea>
+      <button onclick="publishStory()" id="story-publish-btn" disabled
+        style="width:100%;margin-top:12px;padding:11px;border-radius:10px;background:var(--gold);color:var(--navy);border:none;font-weight:700;font-size:15px;cursor:pointer;font-family:'Exo 2',sans-serif;opacity:.5">
+        <i class="ti ti-upload"></i> Publicar Story
+      </button>
+    </div>
   </div>
 </div>
 

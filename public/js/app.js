@@ -219,6 +219,7 @@ function bootApp() {
   // Carrega dados
   refreshMe();
   loadPage('feed');
+  loadStories();
   loadFriends();
   loadRightPanelChats();
   loadNotifCount();
@@ -985,6 +986,7 @@ async function respondFriendRequest(senderId, action, notifId) {
 
 function goToPost(postId) {
   loadPage('feed');
+  loadStories();
   // Aguarda o feed carregar e tenta rolar até o post
   setTimeout(() => {
     const el = $('post-' + postId);
@@ -3950,5 +3952,246 @@ function checkHashRoute() {
   const match = hash.match(/^#\/post\/(\d+)$/);
   if (match) {
     loadPostDetail(parseInt(match[1]));
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  STORIES
+// ══════════════════════════════════════════════════════
+let _storiesData   = [];   // lista agrupada por usuário
+let _storyUserIdx  = 0;    // índice do usuário atual
+let _storyIdx      = 0;    // índice do story dentro do usuário
+let _storyTimer    = null; // timer de auto-avanço
+
+// ── Carregar e renderizar barra de stories ──────────
+async function loadStories() {
+  const bar = $('stories-bar');
+  if (!bar) return;
+  try {
+    _storiesData = await api('/stories');
+    renderStoriesBar();
+  } catch {}
+}
+
+function renderStoriesBar() {
+  const bar = $('stories-bar');
+  if (!bar) return;
+
+  const myStory = _storiesData.find(u => u.user_id === me?.id);
+
+  bar.innerHTML = `
+    <!-- Botão do próprio story -->
+    <div class="story-circle-wrap">
+      <div class="story-circle ${myStory ? (myStory.all_viewed ? 'viewed' : 'has-story') : 'add-story'}"
+           onclick="${myStory ? `openStoryViewer(0)` : 'openCreateStory()'}">
+        ${avatarHTML(me, 'av-story')}
+        ${!myStory ? `<div class="story-add-btn"><i class="ti ti-plus"></i></div>` : ''}
+      </div>
+      <span class="story-circle-name">Seu story</span>
+    </div>
+    ${_storiesData
+      .filter(u => u.user_id !== me?.id)
+      .map((u, idx) => {
+        const realIdx = _storiesData.findIndex(x => x.user_id === u.user_id);
+        return `<div class="story-circle-wrap">
+          <div class="story-circle ${u.all_viewed ? 'viewed' : 'has-story'}"
+               onclick="openStoryViewer(${realIdx})">
+            ${avatarHTML(u, 'av-story')}
+          </div>
+          <span class="story-circle-name">${escapeHtml((u.display_name || u.username).split(' ')[0])}</span>
+        </div>`;
+      }).join('')}
+    ${!myStory ? '' : ''}
+    <div class="story-circle-wrap">
+      <div class="story-circle add-story" onclick="openCreateStory()">
+        <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--gold)"><i class="ti ti-plus" style="font-size:22px"></i></div>
+      </div>
+      <span class="story-circle-name">Novo</span>
+    </div>`;
+}
+
+// ── Viewer ──────────────────────────────────────────
+function openStoryViewer(userIdx) {
+  _storyUserIdx = userIdx;
+  _storyIdx     = 0;
+  $('story-viewer').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderCurrentStory();
+  // Keyboard
+  document.addEventListener('keydown', storyKeyHandler);
+}
+
+function closeStoryViewer() {
+  $('story-viewer').style.display = 'none';
+  document.body.style.overflow = '';
+  clearTimeout(_storyTimer);
+  document.removeEventListener('keydown', storyKeyHandler);
+}
+
+function storyKeyHandler(e) {
+  if (e.key === 'ArrowRight' || e.key === ' ') storyNavNext();
+  if (e.key === 'ArrowLeft')                   storyNavPrev();
+  if (e.key === 'Escape')                      closeStoryViewer();
+}
+
+function renderCurrentStory() {
+  clearTimeout(_storyTimer);
+  const group   = _storiesData[_storyUserIdx];
+  if (!group) { closeStoryViewer(); return; }
+  const story   = group.stories[_storyIdx];
+  if (!story)  { closeStoryViewer(); return; }
+
+  // Imagem e legenda
+  $('story-img').src        = story.image_data;
+  $('story-caption').textContent = story.caption || '';
+  $('story-caption').style.display = story.caption ? '' : 'none';
+  $('story-time').textContent = timeAgo(story.created_at);
+
+  // Botão deletar (só o dono vê)
+  const deleteBtn = $('story-delete-btn');
+  if (deleteBtn) deleteBtn.style.display = (group.user_id === me?.id) ? '' : 'none';
+
+  // Info do usuário
+  $('story-user-info').innerHTML = `
+    ${avatarHTML(group, 'av-md')}
+    <div>
+      <div style="font-size:13.5px;font-weight:700;color:#fff">${escapeHtml(group.display_name || group.username)}</div>
+      <div style="font-size:11.5px;color:rgba(255,255,255,.6)">${escapeHtml(group.lol_game_name)}#${escapeHtml(group.lol_tag_line)}</div>
+    </div>`;
+
+  // Barras de progresso
+  const progressBar = $('story-progress-bar');
+  progressBar.innerHTML = group.stories.map((s, i) =>
+    `<div class="story-prog-seg"><div class="story-prog-fill ${i < _storyIdx ? 'done' : i === _storyIdx ? 'active' : ''}"></div></div>`
+  ).join('');
+
+  // Setas de usuário
+  $('story-arrow-left').style.display  = _storyUserIdx > 0 ? '' : 'none';
+  $('story-arrow-right').style.display = _storyUserIdx < _storiesData.length - 1 ? '' : 'none';
+
+  // Marcar como visto
+  if (!story.viewed) {
+    api(`/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
+    story.viewed = true;
+    // Verificar se todos os stories do grupo foram vistos
+    if (group.stories.every(s => s.viewed)) group.all_viewed = true;
+  }
+
+  // Auto-avançar após 7s
+  _storyTimer = setTimeout(storyNavNext, 7000);
+}
+
+function storyNavNext() {
+  clearTimeout(_storyTimer);
+  const group = _storiesData[_storyUserIdx];
+  if (_storyIdx < group.stories.length - 1) {
+    _storyIdx++;
+    renderCurrentStory();
+  } else {
+    // Próximo usuário
+    storyUserNext();
+  }
+}
+
+function storyNavPrev() {
+  clearTimeout(_storyTimer);
+  if (_storyIdx > 0) {
+    _storyIdx--;
+    renderCurrentStory();
+  } else {
+    storyUserPrev();
+  }
+}
+
+function storyUserNext() {
+  if (_storyUserIdx < _storiesData.length - 1) {
+    _storyUserIdx++;
+    _storyIdx = 0;
+    renderCurrentStory();
+  } else {
+    closeStoryViewer();
+  }
+}
+
+function storyUserPrev() {
+  if (_storyUserIdx > 0) {
+    _storyUserIdx--;
+    _storyIdx = 0;
+    renderCurrentStory();
+  }
+}
+
+async function deleteCurrentStory() {
+  const group = _storiesData[_storyUserIdx];
+  const story = group?.stories[_storyIdx];
+  if (!story) return;
+  if (!confirm('Deletar este story?')) return;
+  try {
+    await api(`/stories/${story.id}`, { method: 'DELETE' });
+    group.stories.splice(_storyIdx, 1);
+    if (!group.stories.length) {
+      _storiesData.splice(_storyUserIdx, 1);
+      if (!_storiesData.length) { closeStoryViewer(); loadStories(); return; }
+      _storyUserIdx = Math.min(_storyUserIdx, _storiesData.length - 1);
+      _storyIdx = 0;
+    } else {
+      _storyIdx = Math.min(_storyIdx, group.stories.length - 1);
+    }
+    renderCurrentStory();
+    loadStories();
+  } catch { toast('Erro ao deletar story'); }
+}
+
+// ── Criar story ─────────────────────────────────────
+let _storyFileData = null;
+
+function openCreateStory() {
+  $('create-story-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _storyFileData = null;
+  $('story-file-input').value = '';
+  $('story-caption-input').value = '';
+  $('story-publish-btn').disabled = true;
+  $('story-publish-btn').style.opacity = '.5';
+  const preview = $('create-story-preview');
+  preview.innerHTML = `<i class="ti ti-photo-plus" style="font-size:40px;color:var(--dim)"></i>
+    <p style="color:var(--dim);font-size:13px;margin-top:8px">Clique para selecionar screenshot</p>
+    <p style="color:var(--dim);font-size:11px">PNG, JPG — máx. 3MB</p>`;
+}
+
+function closeCreateStory() {
+  $('create-story-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function previewStoryFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { toast('❌ Imagem muito grande (máx 3MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _storyFileData = e.target.result;
+    $('create-story-preview').innerHTML = `<img src="${_storyFileData}" style="width:100%;max-height:300px;object-fit:contain;border-radius:10px">`;
+    $('story-publish-btn').disabled = false;
+    $('story-publish-btn').style.opacity = '1';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function publishStory() {
+  if (!_storyFileData) return;
+  const caption = $('story-caption-input')?.value.trim() || null;
+  const btn = $('story-publish-btn');
+  btn.disabled = true;
+  btn.textContent = 'Publicando...';
+  try {
+    await api('/stories', { method: 'POST', body: { image_data: _storyFileData, caption } });
+    closeCreateStory();
+    toast('✅ Story publicado! Some em 24h');
+    loadStories();
+  } catch(e) {
+    toast('❌ ' + (e.error || 'Erro ao publicar'));
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-upload"></i> Publicar Story';
   }
 }

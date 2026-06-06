@@ -159,6 +159,23 @@ const migrations = [
 ];
 // Garantir colunas novas antes de qualquer rota
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status VARCHAR(100) NULL").catch(()=>{});
+db.execute(`CREATE TABLE IF NOT EXISTS stories (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  image_data MEDIUMTEXT NOT NULL,
+  caption    VARCHAR(300) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 24 HOUR)),
+  INDEX idx_user (user_id),
+  INDEX idx_expires (expires_at)
+)`).catch(()=>{});
+db.execute(`CREATE TABLE IF NOT EXISTS story_views (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  story_id   INT NOT NULL,
+  viewer_id  INT NOT NULL,
+  viewed_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_view (story_id, viewer_id)
+)`).catch(()=>{});
 db.execute(`CREATE TABLE IF NOT EXISTS post_reactions (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   post_id     INT NOT NULL,
@@ -183,6 +200,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/queue',         require('./routes/queue'));
 app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/match',         require('./routes/match'));
+app.use('/api/stories',       require('./routes/stories'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/profile',       require('./routes/profile'));
 
