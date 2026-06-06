@@ -45,6 +45,7 @@ const migrations = [
     INDEX idx_user_date (user_id, created_at)
   )`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS has_mic TINYINT(1) NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status VARCHAR(100) NULL`,
   `CREATE TABLE IF NOT EXISTS \`groups\` (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     name        VARCHAR(60)  NOT NULL,
@@ -156,6 +157,9 @@ const migrations = [
     UNIQUE KEY uq_report (post_id, reporter_id)
   )`,
 ];
+// Garantir colunas novas antes de qualquer rota
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status VARCHAR(100) NULL").catch(()=>{});
+db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
 
 // Health check ANTES de tudo — EasyPanel usa isso para saber se o app está vivo
