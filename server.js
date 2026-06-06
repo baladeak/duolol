@@ -28,6 +28,13 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(120) NULL`,
   `UPDATE friend_requests SET status='PENDING' WHERE status IS NULL OR status=''`,
   `ALTER TABLE posts MODIFY COLUMN queue_type ENUM('SOLO','FLEX','BOTH','ARAM','ARENA') NOT NULL DEFAULT 'SOLO'`,
+  `CREATE TABLE IF NOT EXISTS queue_chat_messages (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    content    TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_created (created_at DESC)
+  )`,
   `CREATE TABLE IF NOT EXISTS duo_swipes (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     user_id    INT NOT NULL,

@@ -88,4 +88,49 @@ router.get('/me', auth, async (req, res) => {
   res.json(rows[0] || null);
 });
 
+
+// ── Chat da fila (HTTP — confiável) ──────────────
+router.get('/chat', auth, async (req, res) => {
+  // Limpa mensagens com mais de 2 horas
+  await db.execute("DELETE FROM queue_chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL 2 HOUR)");
+  const [rows] = await db.execute(
+    `SELECT qcm.id, qcm.content, qcm.created_at, qcm.user_id,
+            u.username, u.display_name, u.avatar_url
+     FROM queue_chat_messages qcm
+     JOIN users u ON u.id = qcm.user_id
+     ORDER BY qcm.created_at ASC
+     LIMIT 60`
+  );
+  res.json(rows);
+});
+
+router.post('/chat', auth, async (req, res) => {
+  const { content } = req.body;
+  if (!content?.trim() || content.length > 300)
+    return res.status(400).json({ error: 'Mensagem inválida' });
+
+  const [r] = await db.execute(
+    'INSERT INTO queue_chat_messages (user_id, content) VALUES (?, ?)',
+    [req.user.id, content.trim()]
+  );
+
+  const [userRows] = await db.execute(
+    'SELECT id, username, display_name, avatar_url FROM users WHERE id=?',
+    [req.user.id]
+  );
+  const u = userRows[0] || {};
+  const msg = {
+    id: r.insertId, user_id: req.user.id, content: content.trim(),
+    created_at: new Date(), username: u.username,
+    display_name: u.display_name, avatar_url: u.avatar_url
+  };
+
+  // Broadcast via socket (bonus real-time)
+  if (global._io) global._io.emit('queue_chat_msg', {
+    ...msg, sender_id: req.user.id,
+    sender_name: u.display_name || u.username
+  });
+
+  res.status(201).json(msg);
+});
 module.exports = router;

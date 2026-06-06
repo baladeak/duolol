@@ -2751,13 +2751,16 @@ function switchQueueTab(tab){
     _queueChatUnread=0;
     const badge=$('queue-chat-badge');
     if(badge)badge.style.display='none';
-    emitWhenReady('queue_chat_history');
+    // Limpar msgs optimistas e carregar do servidor
+    const chatContainer = $('queue-chat-msgs');
+    if(chatContainer){ delete chatContainer.dataset.lastId; }
     setTimeout(()=>$('queue-chat-input')?.focus(),50);
-    // Polling a cada 3s para garantir recebimento de mensagens
+    // Polling HTTP a cada 3s — busca mensagens de todos
     if(_queueChatPollInterval) clearInterval(_queueChatPollInterval);
+    pollQueueChat(); // buscar imediatamente ao abrir
     _queueChatPollInterval = setInterval(()=>{
       if(_currentQueueTab==='chat' && $('queue-panel')?.classList.contains('open')){
-        emitWhenReady('queue_chat_history');
+        pollQueueChat();
       } else {
         clearInterval(_queueChatPollInterval);
         _queueChatPollInterval = null;
@@ -2767,30 +2770,27 @@ function switchQueueTab(tab){
     if(_queueChatPollInterval){ clearInterval(_queueChatPollInterval); _queueChatPollInterval=null; }
   }
 }
-function sendQueueChat(){
+async function sendQueueChat(){
   const input=$('queue-chat-input');
   if(!input||!input.value.trim())return;
   if(!_inQueue){toast('⚠️ Entre na fila para enviar mensagens');return;}
   const content=input.value.trim();
   input.value='';
   // Enviar via socket quando disponível
-  // Exibir a própria mensagem imediatamente (optimista)
+  // Exibir imediatamente (optimista)
   const myMsg = {
-    id: Date.now(),
-    sender_id: me?.id,
+    id: Date.now(), sender_id: me?.id,
     sender_name: me?.display_name || me?.username || 'Você',
     avatar_url: me?.avatar_url || null,
-    content: content,
-    created_at: new Date()
+    content: content, created_at: new Date()
   };
   appendQueueChatMsg(myMsg);
 
-  // Enviar via socket para broadcast aos outros
-  if(socket?.connected){
-    socket.emit('queue_chat', {content});
-  } else {
-    if(!socket) initSocket();
-    emitWhenReady('queue_chat', {content});
+  // Salvar via HTTP — confiável
+  try {
+    await api('/queue/chat', { method: 'POST', body: { content } });
+  } catch(e) {
+    console.warn('Erro ao salvar msg chat:', e);
   }
 }
 function appendQueueChatMsg(msg){const container=$('queue-chat-msgs');if(!container)return;const isMe=msg.sender_id==me?.id;const avColor='#C8963E',letter=(msg.sender_name||'U')[0].toUpperCase();const avHTML=msg.avatar_url?`<img src="${msg.avatar_url}" class="av av-sm" style="object-fit:cover">`:`<div class="av av-sm" style="background:${avColor};color:#0A0E1A">${letter}</div>`;const div=document.createElement('div');div.className='queue-chat-bubble'+(isMe?' me':'');div.innerHTML=`<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe?`<div class="queue-chat-name">${escapeHtml(msg.sender_name||'')}</div>`:''}<div class="queue-chat-text">${escapeHtml(msg.content)}</div></div>`;container.appendChild(div);container.scrollTop=container.scrollHeight;}
@@ -3514,6 +3514,54 @@ async function deleteMyMatch(userId) {
 // ── Inicialização ─────────────────────────────
 
 // ── Inicialização ─────────────────────────────
+
+async function pollQueueChat() {
+  try {
+    const msgs = await api('/queue/chat');
+    const container = $('queue-chat-msgs');
+    if (!container || !msgs?.length) return;
+
+    // Reconstruir apenas se há msgs novas
+    const lastId = parseInt(container.dataset.lastId || '0');
+    const newMsgs = msgs.filter(m => m.id > lastId);
+    if (!newMsgs.length) return;
+
+    const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+    const info = container.querySelector('.queue-chat-info');
+
+    // Primeira carga: mostrar tudo
+    if (!container.dataset.lastId) {
+      container.innerHTML = '';
+      if (info) container.appendChild(info);
+      msgs.forEach(m => appendQueueChatHTTPMsg(m));
+    } else {
+      // Só novas
+      newMsgs.forEach(m => appendQueueChatHTTPMsg(m));
+    }
+
+    container.dataset.lastId = msgs[msgs.length - 1].id;
+    if (wasAtBottom || !container.dataset.lastId) container.scrollTop = container.scrollHeight;
+  } catch {}
+}
+
+function appendQueueChatHTTPMsg(m) {
+  const isMe = m.user_id == me?.id;
+  // Não duplicar mensagens próprias já exibidas optimisticamente
+  // Verificar por conteúdo + tempo próximo
+  const container = $('queue-chat-msgs');
+  if (!container) return;
+  const name = escapeHtml(m.display_name || m.username || '');
+  const letter = (name || 'U')[0].toUpperCase();
+  const avHTML = m.avatar_url
+    ? `<img src="${escapeHtml(m.avatar_url)}" class="av av-sm" style="object-fit:cover">`
+    : `<div class="av av-sm" style="background:var(--gold);color:var(--navy);font-weight:700">${letter}</div>`;
+  const div = document.createElement('div');
+  div.className = 'queue-chat-bubble' + (isMe ? ' me' : '');
+  div.dataset.msgId = m.id;
+  div.innerHTML = `<div class="queue-chat-av">${avHTML}</div><div class="queue-chat-body">${!isMe ? `<div class="queue-chat-name">${name}</div>` : ''}<div class="queue-chat-text">${escapeHtml(m.content)}</div></div>`;
+  container.appendChild(div);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   if (token && me) {
     bootApp();
