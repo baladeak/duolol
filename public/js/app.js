@@ -1975,7 +1975,7 @@ function renderRightPanelChats(convs) {
     return `
     <div class="rp-conv-item ${unread > 0 ? 'rp-conv-unread' : ''} ${isOpen ? 'rp-conv-active' : ''}"
          id="rp-conv-${c.id}"
-         onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.lol_game_name ? c.lol_game_name+'#'+(c.lol_tag_line||'') : c.display_name||c.username)}')">
+         onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.lol_game_name ? c.lol_game_name+'#'+(c.lol_tag_line||'')+'  '+(c.display_name||c.username||'') : c.display_name||c.username)}')">
       <div class="rp-conv-av-wrap">
         <div class="av av-sm" style="width:36px;height:36px;font-size:14px;background:${col};color:#0E0E12">${letter}
           <div class="status-dot ${c.online_status === 'online' ? 'dot-online' : 'dot-offline'}"></div>
@@ -1983,7 +1983,12 @@ function renderRightPanelChats(convs) {
         ${unread > 0 && !isOpen ? `<span class="rp-conv-badge">${unread}</span>` : ''}
       </div>
       <div class="rp-conv-info">
-        <div class="rp-conv-name">${escapeHtml(c.display_name || c.username)}</div>
+        <div class="rp-conv-name" style="font-size:12.5px">
+            ${c.lol_game_name ? escapeHtml(c.lol_game_name+'#'+(c.lol_tag_line||'')) : escapeHtml(c.display_name||c.username)}
+          </div>
+          <div style="font-size:10.5px;color:var(--dim);margin-top:-2px">
+            ${c.display_name||c.username ? escapeHtml(c.display_name||c.username) : ''}
+          </div>
         <div class="rp-conv-last">${escapeHtml(c.last_message || '...')}</div>
       </div>
     </div>`;

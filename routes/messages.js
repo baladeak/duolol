@@ -5,7 +5,7 @@ const auth   = require('../middleware/auth');
 router.get('/', auth, async (req, res) => {
   const [rows] = await db.execute(
     `SELECT c.id,c.last_msg_at,
-            u.id AS partner_id,u.username,u.lol_game_name,u.avatar_url,u.online_status,
+            u.id AS partner_id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,u.online_status,
             (SELECT m.content FROM messages m WHERE m.conversation_id=c.id AND m.is_deleted=0 ORDER BY m.created_at DESC LIMIT 1) AS last_message,
             (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.is_read=0 AND m.sender_id!=?) AS unread_count
      FROM conversations c

@@ -66,12 +66,8 @@ module.exports = (io) => {
     socket.on('queue_chat', async ({ content }) => {
       if (!content?.trim() || content.length > 300) return;
       try {
-        // Verificar se está na fila
-        const [inQueue] = await db.execute(
-          'SELECT id FROM queue_entries WHERE user_id=?', [uid]
-        );
-        if (!inQueue.length) return; // Só quem está na fila pode mandar mensagem
-
+        // Não bloqueia por queue_entries — confiar no estado do cliente
+        // (a verificação de queue causava descarte silencioso)
         const [userRows] = await db.execute(
           'SELECT username, display_name, avatar_url FROM users WHERE id=?', [uid]
         );
