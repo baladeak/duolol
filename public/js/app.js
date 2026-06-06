@@ -753,7 +753,7 @@ async function loadConversations() {
       return;
     }
     list.innerHTML = convs.map(c => `
-      <div class="conv-item ${c.unread_count > 0 ? 'unread' : ''}" onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.username)}')">
+      <div class="conv-item ${c.unread_count > 0 ? 'unread' : ''}" onclick="openConv(${c.id},${c.partner_id},'${escapeHtml(c.display_name||c.username)}')">
         ${avatarHTML(c, 'av-md')}
         <div class="conv-meta">
           <div class="conv-name">${escapeHtml(c.username)}</div>
@@ -781,8 +781,17 @@ async function openDM(partnerId, partnerName) {
   } catch { toast('Erro ao abrir conversa'); }
 }
 
-function openConv(convId, partnerId, partnerName) {
-  openChatWindow(convId, partnerId, partnerName);
+async function openConv(convId, partnerId, partnerName) {
+  let displayLabel = partnerName || '';
+  try {
+    const partner = await api('/users/' + partnerId);
+    if (partner?.lol_game_name) {
+      const nick = partner.lol_game_name + '#' + (partner.lol_tag_line || '');
+      const name = partner.display_name || partner.username || '';
+      displayLabel = name ? nick + '  ' + name : nick;
+    }
+  } catch {}
+  openChatWindow(convId, partnerId, displayLabel);
 }
 
 function openChatWindow(convId, partnerId, partnerName) {
@@ -2726,7 +2735,7 @@ function updateQueueCount(n){const el=$('queue-count');if(el)el.textContent=n;}
 function renderQueueList(){const list=$('queue-list');if(!list)return;const filtered=_queueFilter==='all'?_allQueuePlayers:_allQueuePlayers.filter(p=>p.queue_type===_queueFilter);if(!filtered.length){list.innerHTML='<div class="queue-empty">Nenhum jogador nesta fila agora<br><span style="font-size:11px;margin-top:4px;display:block">Seja o primeiro! 🎮</span></div>';return;}list.innerHTML=filtered.map(p=>queuePlayerCardHTML(p)).join('');}
 function queuePlayerCardHTML(p){const isMe=p.id==me?.id,name=escapeHtml(p.display_name||p.username),nick=escapeHtml(p.lol_game_name)+'#'+escapeHtml(p.lol_tag_line),roles=p.roles?p.roles.split(',').filter(Boolean):[],qtBadge=p.queue_type?.toLowerCase();return `<div class="queue-player-card ${isMe?'is-me':''}" onclick="viewProfile(${p.id})">${avatarHTML(p,'av-md')}<div class="queue-player-info"><div class="queue-player-name">${name}${p.has_mic?'<i class="ti ti-microphone queue-mic-icon" title="Tem microfone"></i>':''}</div><div class="queue-player-nick">${nick}</div><div class="queue-player-elos"><span class="elo ${eloClass(p.solo_tier)}">Solo ${eloLabel(p.solo_tier,p.solo_rank,p.solo_lp)}</span><span class="elo ${eloClass(p.flex_tier)}">Flex ${eloLabel(p.flex_tier,p.flex_rank,p.flex_lp)}</span><span class="queue-type-badge ${qtBadge}">${queueTypeLabel(p.queue_type)}</span></div>${roles.length?`<div class="queue-player-roles">${roles.map(r=>`<span class="queue-role-chip">${r}</span>`).join('')}</div>`:''}</div>${!isMe?`<div class="queue-player-actions" onclick="event.stopPropagation()"><div class="queue-add-btn" onclick="addFriend(${p.id},this)" title="Adicionar amigo"><i class="ti ti-user-plus"></i></div><div class="queue-dm-btn" onclick="openDM(${p.id},'${escapeHtml(p.username)}')" title="Enviar mensagem"><i class="ti ti-message-2"></i></div></div>`:`<div style="font-size:10px;color:var(--gold-l);font-weight:700;text-align:center;padding:2px 4px">VOCÊ</div>`}</div>`;}
 function onQueueUpdate({action,user,user_id}){if(action==='join'){_allQueuePlayers=_allQueuePlayers.filter(p=>p.id!==user.id);_allQueuePlayers.push(user);}else if(action==='leave'){_allQueuePlayers=_allQueuePlayers.filter(p=>p.id!==user_id);}updateQueueCount(_allQueuePlayers.length);renderQueueList();const badge=$('queue-fab-badge');if(badge){badge.textContent=_allQueuePlayers.length;badge.style.display=_allQueuePlayers.length>0?'':'none';}if(action==='join'&&user.id!==me?.id){playQueueSound();const panelOpen=$('queue-panel')?.classList.contains('open')&&!$('queue-panel')?.classList.contains('queue-minimized');if(!panelOpen)toast(`🎮 ${user.display_name||user.username} entrou na fila de ${queueTypeLabel(user.queue_type)}!`);}}
-async function checkQueueStatus(){try{const entry=await api('/queue/me');if(entry){_inQueue=true;_queueType=entry.queue_type;_queueJoinedAt=new Date(entry.joined_at);const btn=$('queue-join-btn');if(btn){btn.innerHTML='<i class="ti ti-x"></i> Sair da Fila';btn.classList.add('leaving');}const timerBar=$('queue-timer-bar');if(timerBar)timerBar.style.display='flex';const sel=$('queue-type-select');if(sel){sel.value=entry.queue_type;sel.disabled=true;}$('queue-fab')?.classList.add('in-queue');startQueueTimer();}}catch{}}
+async function checkQueueStatus(){try{const entry=await api('/queue/me');if(entry){_inQueue=true;_queueType=entry.queue_type;_queueJoinedAt=new Date(entry.joined_at);const btn=$('queue-join-btn');if(btn){btn.innerHTML='<i class="ti ti-x"></i> Sair da Fila';btn.classList.add('leaving');}const timerBar=$('queue-timer-bar');if(timerBar)timerBar.style.display='flex';const sel=$('queue-type-select');if(sel){sel.value=entry.queue_type;sel.disabled=true;}$('queue-fab')?.classList.add('in-queue');startQueueTimer();updateQueueChatInput();}}catch{}}
 
 // ── Chat da Fila ────────────────────────────────
 let _currentQueueTab='players',_queueChatUnread=0;
