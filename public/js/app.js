@@ -2751,9 +2751,10 @@ function switchQueueTab(tab){
     _queueChatUnread=0;
     const badge=$('queue-chat-badge');
     if(badge)badge.style.display='none';
-    // Limpar msgs optimistas e carregar do servidor
+    // Limpar estado e carregar do servidor
     const chatContainer = $('queue-chat-msgs');
     if(chatContainer){ delete chatContainer.dataset.lastId; }
+    _pendingQueueMsgs = [];
     setTimeout(()=>$('queue-chat-input')?.focus(),50);
     // Polling HTTP a cada 3s — busca mensagens de todos
     if(_queueChatPollInterval) clearInterval(_queueChatPollInterval);
@@ -2777,7 +2778,17 @@ async function sendQueueChat(){
   const content=input.value.trim();
   input.value='';
   // Enviar via socket quando disponível
-  // Salvar via HTTP — o polling periódico exibirá em até 3s
+  // Exibir imediatamente (optimista) com ID temporário negativo
+  const tempId = -(Date.now());
+  appendQueueChatHTTPMsg({
+    id: tempId, user_id: me?.id,
+    display_name: me?.display_name, username: me?.username,
+    avatar_url: me?.avatar_url, content: content
+  });
+  // Registrar como pendente para o dedup do poll
+  _pendingQueueMsgs.push({ tempId, content, user_id: me?.id });
+
+  // Salvar no servidor
   try {
     await api('/queue/chat', { method: 'POST', body: { content } });
   } catch(e) {
@@ -3507,6 +3518,7 @@ async function deleteMyMatch(userId) {
 // ── Inicialização ─────────────────────────────
 
 let _queueChatPolling = false;
+let _pendingQueueMsgs = []; // msgs enviadas mas ainda não confirmadas pelo poll
 async function pollQueueChat() {
   if (_queueChatPolling) return;
   _queueChatPolling = true;
@@ -3529,9 +3541,24 @@ async function pollQueueChat() {
       if (info) container.appendChild(info);
       msgs.forEach(m => appendQueueChatHTTPMsg(m));
     } else {
-      // Só novas — tocar som se for de outro usuário
-      newMsgs.forEach(m => appendQueueChatHTTPMsg(m));
-      const hasOtherMsgs = newMsgs.some(m => m.user_id != me?.id);
+      // Filtrar msgs que já foram exibidas optimisticamente (pendentes)
+      const toAdd = newMsgs.filter(m => {
+        if (m.user_id != me?.id) return true; // msg de outro: sempre adicionar
+        // Verificar se é uma das minhas msgs pendentes
+        const pendIdx = _pendingQueueMsgs.findIndex(p =>
+          p.content === m.content && p.user_id == m.user_id
+        );
+        if (pendIdx !== -1) {
+          // Substituir o elemento temp pelo real (trocar ID no DOM)
+          const tempEl = container.querySelector(`[data-msg-id="${_pendingQueueMsgs[pendIdx].tempId}"]`);
+          if (tempEl) tempEl.dataset.msgId = m.id;
+          _pendingQueueMsgs.splice(pendIdx, 1);
+          return false; // já está exibida
+        }
+        return true;
+      });
+      toAdd.forEach(m => appendQueueChatHTTPMsg(m));
+      const hasOtherMsgs = toAdd.some(m => m.user_id != me?.id);
       if (hasOtherMsgs) playQueueSound();
     }
 
