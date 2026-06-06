@@ -97,6 +97,12 @@
         <button class="s-item" id="nav-match" onclick="loadPage('match')">
           <i class="ti ti-hearts"></i><span>Match Duo</span>
         </button>
+        <button class="s-item" id="nav-ranking" onclick="loadPage('ranking')">
+          <i class="ti ti-trophy"></i><span>Ranking</span>
+        </button>
+        <button class="s-item" id="nav-profile-week" onclick="loadPage('profile-week')">
+          <i class="ti ti-star"></i><span>Perfil da Semana</span>
+        </button>
         <button class="s-item" id="nav-friends" onclick="loadPage('friends')">
           <i class="ti ti-users"></i><span>Amigos</span>
         </button>
@@ -214,6 +220,22 @@
         <div id="post-detail-content" class="scrollable" style="padding:0">
           <!-- Injetado pelo JS -->
         </div>
+      </div>
+
+      <!-- RANKING -->
+      <div class="page" id="page-ranking">
+        <div class="top-bar">
+          <span class="top-bar-title"><i class="ti ti-trophy" style="color:var(--gold)"></i> RANKING SEMANAL</span>
+        </div>
+        <div id="ranking-content" class="scrollable"></div>
+      </div>
+
+      <!-- PERFIL DA SEMANA -->
+      <div class="page" id="page-profile-week">
+        <div class="top-bar">
+          <span class="top-bar-title"><i class="ti ti-star" style="color:var(--gold)"></i> PERFIL DA SEMANA</span>
+        </div>
+        <div id="profile-week-content" class="scrollable"></div>
       </div>
 
       <!-- EXPLORAR -->

@@ -184,6 +184,7 @@ db.execute(`CREATE TABLE IF NOT EXISTS post_reactions (
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_reaction (post_id, user_id)
 )`).catch(()=>{});
+db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP").catch(()=>{});
 db.execute("ALTER TABLE users MODIFY COLUMN admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user'").catch(()=>{});
 db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
@@ -201,6 +202,7 @@ app.use('/api/queue',         require('./routes/queue'));
 app.use('/api/groups',        require('./routes/groups'));
 app.use('/api/match',         require('./routes/match'));
 app.use('/api/stories',       require('./routes/stories'));
+app.use('/api/ranking',       require('./routes/ranking'));
 app.use('/api/admin',         require('./routes/admin'));
 app.use('/api/profile',       require('./routes/profile'));
 

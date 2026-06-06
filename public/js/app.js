@@ -391,6 +391,8 @@ function loadPage(name) {
   if (name === 'profile')       loadMyProfile();
   if (name === 'groups')        loadGroupsPage();
   if (name === 'post-detail')   {} // conteúdo injetado por loadPostDetail()
+  if (name === 'ranking')       loadRankingPage();
+  if (name === 'profile-week')  loadProfileWeekPage();
   if (name === 'match')         loadMatchPage();
 }
 
@@ -4202,5 +4204,181 @@ async function publishStory() {
     toast('❌ ' + (e.error || 'Erro ao publicar'));
     btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-upload"></i> Publicar Story';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RANKING SEMANAL + PERFIL DA SEMANA
+// ══════════════════════════════════════════════
+
+// ── Pontuação label ────────────────────────────
+const RANK_POINTS = [
+  { key:'posts_count',      label:'Posts',      pts:5,  icon:'ti-article'         },
+  { key:'stories_count',    label:'Stories',    pts:8,  icon:'ti-camera'          },
+  { key:'comments_count',   label:'Comentários',pts:2,  icon:'ti-message-circle'  },
+  { key:'likes_received',   label:'Curtidas',   pts:3,  icon:'ti-heart'           },
+  { key:'reactions_received',label:'Reações',   pts:2,  icon:'ti-mood-happy'      },
+  { key:'friends_count',    label:'Amigos',     pts:3,  icon:'ti-user-plus'       },
+];
+
+// ── Ranking Semanal ────────────────────────────
+async function loadRankingPage() {
+  const el = $('ranking-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Calculando ranking...</div>';
+  try {
+    const users = await api('/ranking/weekly');
+    if (!users.length) {
+      el.innerHTML = '<div class="empty"><i class="ti ti-trophy-off"></i><p>Nenhuma atividade esta semana ainda</p><p style="font-size:12px;color:var(--dim)">Seja o primeiro a postar, comentar ou reagir!</p></div>';
+      return;
+    }
+    el.innerHTML = `
+      <div class="ranking-wrap">
+        <!-- Pódio Top 3 -->
+        ${users.length >= 1 ? `<div class="ranking-podium">
+          ${users[1] ? podiumCard(users[1], 2) : '<div></div>'}
+          ${podiumCard(users[0], 1)}
+          ${users[2] ? podiumCard(users[2], 3) : '<div></div>'}
+        </div>` : ''}
+
+        <!-- Lista do 4º em diante -->
+        <div class="ranking-list">
+          ${users.slice(3).map((u, i) => rankRowHTML(u, i + 4)).join('')}
+        </div>
+
+        <!-- Tabela de pontos -->
+        <div class="ranking-points-legend">
+          <div class="ranking-legend-title"><i class="ti ti-info-circle"></i> Como são calculados os pontos</div>
+          ${RANK_POINTS.map(r => `
+            <div class="ranking-legend-row">
+              <i class="ti ${r.icon}"></i>
+              <span>${r.label}</span>
+              <span class="ranking-legend-pts">+${r.pts} pts cada</span>
+            </div>`).join('')}
+          <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center">Reinicia toda semana às segunda-feira</div>
+        </div>
+      </div>`;
+  } catch {
+    el.innerHTML = '<div class="empty"><p>Erro ao carregar ranking</p></div>';
+  }
+}
+
+function podiumCard(u, pos) {
+  const medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
+  const heights = { 1:'podium-1', 2:'podium-2', 3:'podium-3' };
+  return `
+    <div class="podium-card ${heights[pos]}" onclick="viewProfile(${u.id})">
+      <div class="podium-medal">${medals[pos]}</div>
+      <div class="podium-avatar">${avatarHTML(u, 'av-lg')}</div>
+      <div class="podium-name">${escapeHtml(u.display_name || u.username)}</div>
+      <div class="podium-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
+      <div class="podium-score">${u.score} pts</div>
+      <div class="podium-base podium-base-${pos}"></div>
+    </div>`;
+}
+
+function rankRowHTML(u, pos) {
+  return `
+    <div class="rank-row" onclick="viewProfile(${u.id})">
+      <span class="rank-pos">#${pos}</span>
+      ${avatarHTML(u, 'av-md')}
+      <div class="rank-info">
+        <div class="rank-name">${escapeHtml(u.display_name || u.username)} ${roleBadgeHTML(u.admin_role)}</div>
+        <div class="rank-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
+      </div>
+      <div class="rank-breakdown">
+        ${RANK_POINTS.filter(r => u[r.key] > 0).map(r =>
+          `<span class="rank-stat" title="${r.label}"><i class="ti ${r.icon}"></i> ${u[r.key]}</span>`
+        ).join('')}
+      </div>
+      <div class="rank-score">${u.score} <span style="font-size:10px;color:var(--dim)">pts</span></div>
+    </div>`;
+}
+
+// ── Perfil da Semana ──────────────────────────
+async function loadProfileWeekPage() {
+  const el = $('profile-week-content');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando...</div>';
+  try {
+    const u = await api('/ranking/profile-of-week');
+    if (!u) {
+      el.innerHTML = `<div class="empty" style="padding:60px 20px">
+        <i class="ti ti-star-off" style="font-size:48px;color:var(--dim)"></i>
+        <h3 style="font-family:'Rajdhani',sans-serif;font-size:20px;margin-top:12px">Nenhum destaque ainda</h3>
+        <p style="color:var(--dim);font-size:13px">Poste, comente e interaja para ser o Perfil da Semana!</p>
+      </div>`;
+      return;
+    }
+
+    let champs = Array.isArray(u.main_champions) ? u.main_champions : [];
+
+    el.innerHTML = `
+      <div class="pow-wrap">
+        <!-- Badge destaque -->
+        <div class="pow-badge">
+          <span class="pow-badge-inner">⭐ PERFIL DA SEMANA</span>
+          <div class="pow-badge-sub">Reinicia na segunda-feira</div>
+        </div>
+
+        <!-- Card do perfil -->
+        <div class="pow-card" onclick="viewProfile(${u.id})">
+          <div class="pow-avatar-wrap">${avatarHTML(u, 'av-2xl')}</div>
+          <div class="pow-info">
+            <div class="pow-name">${escapeHtml(u.display_name || u.username)} ${roleBadgeHTML(u.admin_role)}</div>
+            <div class="pow-nick">${escapeHtml(u.lol_game_name)}#${escapeHtml(u.lol_tag_line)}</div>
+            ${u.custom_status ? `<div class="profile-custom-status" style="margin-top:6px"><i class="ti ti-message-circle" style="font-size:12px"></i> ${escapeHtml(u.custom_status)}</div>` : ''}
+            <div class="pow-elos">
+              <span class="elo ${eloClass(u.solo_tier)}">Solo ${eloLabel(u.solo_tier,u.solo_rank,u.solo_lp)}</span>
+              <span class="elo ${eloClass(u.flex_tier)}">Flex ${eloLabel(u.flex_tier,u.flex_rank,u.flex_lp)}</span>
+            </div>
+            ${u.roles?.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${u.roles.map(r=>`<span class="tag tag-solo on" style="cursor:default">${r}</span>`).join('')}</div>` : ''}
+          </div>
+        </div>
+
+        <!-- Score e breakdown -->
+        <div class="pow-score-section">
+          <div class="pow-score-total">${u.score} <span>pontos esta semana</span></div>
+          <div class="pow-score-grid">
+            ${RANK_POINTS.filter(r => u[r.key] > 0).map(r => `
+              <div class="pow-score-item">
+                <i class="ti ${r.icon}"></i>
+                <span class="pow-score-val">${u[r.key]}</span>
+                <span class="pow-score-label">${r.label}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        ${u.bio ? `<div class="pow-bio">"${escapeHtml(u.bio)}"</div>` : ''}
+
+        ${champs.length ? `<div class="pow-champs">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Campeões principais</div>
+          <div style="display:flex;gap:10px">
+            ${champs.slice(0,3).map(ch => {
+              const k = champKey2(ch);
+              return `<div style="text-align:center">
+                <img src="https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/img/champion/${k}.png"
+                     style="width:52px;height:52px;border-radius:50%;border:2px solid var(--border-h)" title="${escapeHtml(ch)}" onerror="this.style.display='none'">
+                <div style="font-size:10px;color:var(--dim);margin-top:4px">${escapeHtml(ch)}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+
+        <!-- Botões -->
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="duo-action-add" onclick="addFriend(${u.id},this)" style="flex:1;justify-content:center;padding:10px">
+            <i class="ti ti-user-plus"></i> Adicionar
+          </button>
+          <button class="duo-action-dm" onclick="openDM(${u.id},'${escapeHtml(u.username)}')" style="flex:1;justify-content:center;padding:10px">
+            <i class="ti ti-message-2"></i> Mensagem
+          </button>
+          <button class="duo-action-profile" onclick="viewProfile(${u.id})" style="padding:10px 14px">
+            <i class="ti ti-user"></i>
+          </button>
+        </div>
+      </div>`;
+  } catch {
+    el.innerHTML = '<div class="empty"><p>Erro ao carregar</p></div>';
   }
 }
