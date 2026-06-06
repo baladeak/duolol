@@ -4245,3 +4245,24 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   text-overflow:ellipsis;white-space:nowrap;
   vertical-align:middle;
 }
+
+/* ── Status clicável / editável ──────────────── */
+.profile-status-row{
+  display:inline-flex;cursor:pointer;margin-top:4px;
+}
+.profile-status-clickable{
+  display:inline-flex;align-items:center;gap:6px;
+  transition:.15s;
+}
+.profile-status-clickable:hover{
+  border-color:var(--gold-d) !important;
+  background:rgba(200,150,62,.18) !important;
+  color:var(--gold-l) !important;
+}
+.profile-status-pencil{
+  font-size:11px;color:var(--dim);opacity:0;
+  transition:opacity .15s;margin-left:2px;
+}
+.profile-status-clickable:hover .profile-status-pencil{
+  opacity:1;
+}

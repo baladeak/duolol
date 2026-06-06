@@ -1256,8 +1256,21 @@ function renderProfile(user, isMe) {
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(dName(user))}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
-          ${user.custom_status ? `<div class="profile-custom-status"><i class="ti ti-message-circle" style="font-size:12px"></i> ${escapeHtml(user.custom_status)}</div>` : (isMe ? `<div class="profile-custom-status profile-status-empty" onclick="openStatusEditor()"><i class="ti ti-plus" style="font-size:11px"></i> Definir status</div>` : '')}
-          ${isMe && user.custom_status ? `<div class="profile-custom-status profile-status-edit" onclick="openStatusEditor()"><i class="ti ti-pencil" style="font-size:11px"></i></div>` : ''}
+          ${isMe ? `
+            <div class="profile-status-row" onclick="openStatusEditor()" title="${user.custom_status ? 'Clique para editar seu status' : 'Definir status'}">
+              ${user.custom_status
+                ? `<div class="profile-custom-status profile-status-clickable">
+                    <i class="ti ti-message-circle" style="font-size:12px"></i>
+                    <span>${escapeHtml(user.custom_status)}</span>
+                    <i class="ti ti-pencil profile-status-pencil"></i>
+                  </div>`
+                : `<div class="profile-custom-status profile-status-empty">
+                    <i class="ti ti-plus" style="font-size:11px"></i> Definir status
+                  </div>`
+              }
+            </div>` : (user.custom_status ? `<div class="profile-custom-status">
+              <i class="ti ti-message-circle" style="font-size:12px"></i> ${escapeHtml(user.custom_status)}
+            </div>` : '')}
           <div class="profile-elos">
             <span class="elo ${eloClass(user.solo_tier)}">Solo ${soloLabel}</span>
             <span class="elo ${eloClass(user.flex_tier)}">Flex ${flexLabel}</span>
