@@ -4317,3 +4317,82 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   outline:2px solid currentColor;
   outline-offset:1px;
 }
+
+/* ══════════════════════════════════════════════
+   REAÇÕES NOS POSTS
+══════════════════════════════════════════════ */
+.post-actions-wrap{
+  border-top:1px solid var(--border);
+  margin-top:auto;
+}
+.post-reactions-bar{
+  display:flex;flex-wrap:wrap;gap:5px;
+  padding:8px 14px 0;
+  min-height:0;
+}
+.post-reactions-bar:empty{
+  display:none;
+  padding:0;
+}
+.reaction-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:20px;
+  background:var(--navy-h);border:1px solid var(--border);
+  font-size:13px;cursor:pointer;transition:.13s;
+  font-family:'Exo 2',sans-serif;color:var(--muted);
+}
+.reaction-pill span{font-size:12px}
+.reaction-pill:hover{border-color:var(--border-h);color:var(--text)}
+.reaction-pill.my-reaction{
+  background:rgba(200,150,62,.15);
+  border-color:rgba(200,150,62,.4);
+  color:var(--gold-l);
+}
+
+/* Ações do post */
+.post-actions{
+  display:flex;gap:4px;padding:8px 8px 4px;
+  align-items:center;
+}
+
+/* Botão Reagir */
+.react-btn-wrap{position:relative}
+.react-trigger{
+  display:flex;align-items:center;gap:5px;
+  font-size:12.5px;
+}
+.react-trigger.reacted{
+  color:var(--gold-l) !important;
+}
+
+/* Picker de reações */
+.react-picker{
+  position:absolute;bottom:calc(100% + 6px);left:0;
+  display:flex;flex-wrap:wrap;gap:4px;
+  background:var(--navy-m);border:1px solid var(--border-h);
+  border-radius:14px;padding:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  z-index:200;min-width:280px;
+}
+.react-option{
+  display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:8px 10px;border-radius:10px;
+  border:1px solid transparent;
+  background:none;cursor:pointer;transition:.13s;
+  min-width:58px;
+}
+.react-option:hover{
+  background:var(--navy-h);border-color:var(--border);
+}
+.react-option.active{
+  background:rgba(200,150,62,.15);
+  border-color:rgba(200,150,62,.4);
+}
+.react-emoji{font-size:22px;line-height:1}
+.react-opt-label{
+  font-size:9.5px;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--muted);
+  font-family:'Exo 2',sans-serif;
+}
+.react-option:hover .react-opt-label,
+.react-option.active .react-opt-label{color:var(--text)}

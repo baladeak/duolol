@@ -159,6 +159,14 @@ const migrations = [
 ];
 // Garantir colunas novas antes de qualquer rota
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status VARCHAR(100) NULL").catch(()=>{});
+db.execute(`CREATE TABLE IF NOT EXISTS post_reactions (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  post_id     INT NOT NULL,
+  user_id     INT NOT NULL,
+  reaction    VARCHAR(20) NOT NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_reaction (post_id, user_id)
+)`).catch(()=>{});
 db.execute("ALTER TABLE users MODIFY COLUMN admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user'").catch(()=>{});
 db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));

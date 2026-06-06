@@ -23,7 +23,11 @@ router.get('/', auth, async (req, res) => {
               u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,u.online_status,u.has_mic,u.custom_status,u.admin_role,
               (SELECT COUNT(*) FROM post_likes l WHERE l.post_id=p.id) AS total_likes,
               (SELECT COUNT(*) FROM post_comments c WHERE c.post_id=p.id AND c.is_deleted=0) AS total_comments,
-              (SELECT COUNT(*) FROM post_likes lm WHERE lm.post_id=p.id AND lm.user_id=?) AS liked_by_me
+              (SELECT COUNT(*) FROM post_likes lm WHERE lm.post_id=p.id AND lm.user_id=?) AS liked_by_me,
+              (SELECT reaction FROM post_reactions pr WHERE pr.post_id=p.id AND pr.user_id=?) AS my_reaction,
+              (SELECT JSON_OBJECTAGG(reaction, cnt) FROM (
+                SELECT reaction, COUNT(*) as cnt FROM post_reactions WHERE post_id=p.id GROUP BY reaction
+              ) rc) AS reactions_json
        FROM posts p JOIN users u ON u.id=p.user_id
        WHERE ${where} ORDER BY p.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`,
       params
@@ -121,6 +125,62 @@ router.post('/:id/report', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao denunciar' });
+  }
+});
+
+
+const VALID_REACTIONS = ['penta','int','gap','gg','carry','tilted','diff','ff'];
+
+router.post('/:id/react', auth, async (req, res) => {
+  const { reaction } = req.body;
+  const postId = req.params.id;
+
+  if (!VALID_REACTIONS.includes(reaction))
+    return res.status(400).json({ error: 'Reação inválida' });
+
+  try {
+    const [existing] = await db.execute(
+      'SELECT reaction FROM post_reactions WHERE post_id=? AND user_id=?',
+      [postId, req.user.id]
+    );
+
+    if (existing.length && existing[0].reaction === reaction) {
+      // Remover reação (toggle off)
+      await db.execute('DELETE FROM post_reactions WHERE post_id=? AND user_id=?', [postId, req.user.id]);
+      return res.json({ reaction: null, removed: true });
+    }
+
+    // Inserir ou atualizar
+    await db.execute(
+      'INSERT INTO post_reactions (post_id, user_id, reaction) VALUES (?,?,?) ON DUPLICATE KEY UPDATE reaction=?',
+      [postId, req.user.id, reaction, reaction]
+    );
+
+    res.json({ reaction, removed: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+
+// GET /posts/:id — post individual (para atualizar reações)
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT p.id, p.content, p.queue_type, p.created_at,
+              u.id AS user_id, u.lol_game_name, u.lol_tag_line, u.avatar_url,
+              (SELECT reaction FROM post_reactions pr WHERE pr.post_id=p.id AND pr.user_id=?) AS my_reaction,
+              (SELECT JSON_OBJECTAGG(reaction, cnt) FROM (
+                SELECT reaction, COUNT(*) as cnt FROM post_reactions WHERE post_id=p.id GROUP BY reaction
+              ) rc) AS reactions_json
+       FROM posts p JOIN users u ON u.id=p.user_id
+       WHERE p.id=? AND p.is_deleted=0`,
+      [req.user.id, req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 

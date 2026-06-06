@@ -486,23 +486,40 @@ function postHTML(p) {
         </div>
       </div>
     </div>
-    <div class="post-actions">
-      <button class="act-btn ${p.liked_by_me ? 'liked' : ''}" onclick="toggleLike(${p.id}, this)">
-        <i class="ti ti-heart"></i> <span class="lk">${p.total_likes}</span>
-      </button>
-      <button class="act-btn" onclick="toggleComments(${p.id}, this)">
-        <i class="ti ti-message-2"></i> <span>${p.total_comments}</span>
-      </button>
-      ${!isMe ? `
-      <button class="act-btn" onclick="addFriend(${p.user_id}, this)">
-        <i class="ti ti-user-plus"></i> <span>Adicionar</span>
-      </button>
-      <button class="act-btn" style="margin-left:auto" onclick="openDM(${p.user_id},'${escapeHtml(p.username)}')">
-        <i class="ti ti-send"></i> DM
-      </button>` : `
-      <button class="act-btn" onclick="deletePost(${p.id})" style="margin-left:auto">
-        <i class="ti ti-trash"></i> Deletar
-      </button>`}
+    <div class="post-actions-wrap">
+      <div class="post-reactions-bar" id="reactions-${p.id}">${buildReactionsBar(p)}</div>
+      <div class="post-actions">
+        <div class="react-btn-wrap">
+          <button class="act-btn react-trigger ${p.my_reaction ? 'reacted' : ''}"
+                  onclick="toggleReactPicker(${p.id})"
+                  title="${p.my_reaction ? LOL_REACTIONS[p.my_reaction]?.label : 'Reagir'}">
+            ${p.my_reaction
+              ? `<span>${LOL_REACTIONS[p.my_reaction]?.emoji}</span><span style="font-size:11px;margin-left:3px">${LOL_REACTIONS[p.my_reaction]?.label}</span>`
+              : `<i class="ti ti-mood-happy"></i><span>Reagir</span>`}
+          </button>
+          <div class="react-picker" id="picker-${p.id}" style="display:none">
+            ${Object.entries(LOL_REACTIONS).map(([key,r]) =>
+              `<button class="react-option${p.my_reaction===key?' active':''}" onclick="doReact(${p.id},'${key}',event)" title="${r.label}">
+                <span class="react-emoji">${r.emoji}</span>
+                <span class="react-opt-label">${r.label}</span>
+              </button>`
+            ).join('')}
+          </div>
+        </div>
+        <button class="act-btn" onclick="toggleComments(${p.id}, this)">
+          <i class="ti ti-message-2"></i> <span>${p.total_comments}</span>
+        </button>
+        ${!isMe ? `
+        <button class="act-btn" onclick="addFriend(${p.user_id}, this)">
+          <i class="ti ti-user-plus"></i> <span>Adicionar</span>
+        </button>
+        <button class="act-btn" style="margin-left:auto" onclick="openDM(${p.user_id},'${escapeHtml(p.username)}')">
+          <i class="ti ti-send"></i> DM
+        </button>` : `
+        <button class="act-btn" onclick="deletePost(${p.id})" style="margin-left:auto">
+          <i class="ti ti-trash"></i> Deletar
+        </button>`}
+      </div>
     </div>
     <div class="comments-section" id="comments-${p.id}" style="display:none">
       <div id="clist-${p.id}"></div>
@@ -3701,6 +3718,19 @@ function roleBadgeHTML(adminRole) {
   return '';
 }
 
+
+// ── Reações temáticas LoL ──────────────────────
+const LOL_REACTIONS = {
+  penta:   { emoji: '🏆', label: 'Penta!',   },
+  carry:   { emoji: '🔥', label: 'Carry',     },
+  gg:      { emoji: '✅', label: 'GG',        },
+  gap:     { emoji: '📊', label: 'GAP',       },
+  int:     { emoji: '🤡', label: 'INT',       },
+  tilted:  { emoji: '😤', label: 'Tilted',    },
+  diff:    { emoji: '⚔️',  label: 'DIFF',      },
+  ff:      { emoji: '🏳️',  label: 'FF15',      },
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   if (token && me) {
     bootApp();
@@ -3711,3 +3741,91 @@ window.addEventListener('DOMContentLoaded', () => {
     if (appScreen)  appScreen.style.display  = 'none';
   }
 });
+
+// ── Reações nos Posts ──────────────────────────
+function buildReactionsBar(p) {
+  let reactions = {};
+  try { reactions = p.reactions_json ? JSON.parse(p.reactions_json) : {}; } catch {}
+  if (!Object.keys(reactions).length) return '';
+
+  return Object.entries(reactions)
+    .filter(([, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([key, count]) => {
+      const r = LOL_REACTIONS[key];
+      if (!r) return '';
+      return `<button class="reaction-pill ${p.my_reaction === key ? 'my-reaction' : ''}"
+                      onclick="doReact(${p.id},'${key}',event)"
+                      title="${r.label}">
+                ${r.emoji} <span>${count}</span>
+              </button>`;
+    }).join('');
+}
+
+function toggleReactPicker(postId) {
+  // Fechar todos os outros pickers abertos
+  document.querySelectorAll('.react-picker').forEach(el => {
+    if (el.id !== `picker-${postId}`) el.style.display = 'none';
+  });
+  const picker = $(`picker-${postId}`);
+  if (!picker) return;
+  const isOpen = picker.style.display !== 'none';
+  picker.style.display = isOpen ? 'none' : 'flex';
+}
+
+// Fechar picker ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('.react-btn-wrap')) {
+    document.querySelectorAll('.react-picker').forEach(el => el.style.display = 'none');
+  }
+});
+
+async function doReact(postId, reaction, e) {
+  e?.stopPropagation?.();
+  // Fechar picker
+  $(`picker-${postId}`)?.style && ($(`picker-${postId}`).style.display = 'none');
+
+  try {
+    const { reaction: newReaction, removed } = await api(`/posts/${postId}/react`, {
+      method: 'POST', body: { reaction }
+    });
+    // Atualizar UI localmente sem recarregar o feed
+    updatePostReactionUI(postId, reaction, removed ? null : newReaction);
+  } catch {}
+}
+
+function updatePostReactionUI(postId, clickedReaction, newMyReaction) {
+  const card = $(`post-${postId}`);
+  if (!card) return;
+
+  // Atualizar o botão "Reagir"
+  const trigger = card.querySelector('.react-trigger');
+  if (trigger) {
+    if (newMyReaction) {
+      const r = LOL_REACTIONS[newMyReaction];
+      trigger.classList.add('reacted');
+      trigger.innerHTML = `<span>${r?.emoji}</span><span style="font-size:11px;margin-left:3px">${r?.label}</span>`;
+    } else {
+      trigger.classList.remove('reacted');
+      trigger.innerHTML = `<i class="ti ti-mood-happy"></i><span>Reagir</span>`;
+    }
+  }
+
+  // Atualizar opções no picker
+  card.querySelectorAll('.react-option').forEach(btn => {
+    const key = btn.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+    btn.classList.toggle('active', key === newMyReaction);
+  });
+
+  // Atualizar a barra de reações (recarregar do servidor)
+  refreshPostReactions(postId);
+}
+
+async function refreshPostReactions(postId) {
+  try {
+    const [post] = await api(`/posts/${postId}`);
+    if (!post) return;
+    const bar = $(`reactions-${postId}`);
+    if (bar) bar.innerHTML = buildReactionsBar(post);
+  } catch {}
+}
