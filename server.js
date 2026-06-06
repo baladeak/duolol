@@ -21,7 +21,7 @@ const db = require('./db/connection');
 const migrations = [
   `ALTER TABLE users MODIFY COLUMN avatar_url MEDIUMTEXT NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(60) NULL AFTER username`,
-  `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user' AFTER display_name`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_restricted_until DATETIME NULL`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_muted TINYINT(1) NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS main_champions JSON NULL`,
@@ -159,6 +159,7 @@ const migrations = [
 ];
 // Garantir colunas novas antes de qualquer rota
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_status VARCHAR(100) NULL").catch(()=>{});
+db.execute("ALTER TABLE users MODIFY COLUMN admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user'").catch(()=>{});
 db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
 

@@ -447,6 +447,7 @@ function postHTML(p) {
         <div class="post-top">
           <span class="post-name" onclick="viewProfile(${p.user_id})">${escapeHtml(p.lol_game_name)}<span class="post-tag">#${escapeHtml(p.lol_tag_line)}</span></span>
           <span class="post-nick">${escapeHtml(dName(p))}</span>
+          ${roleBadgeHTML(p.admin_role)}
           ${p.has_mic ? '<span class="post-mic" title="Tem microfone"><i class="ti ti-microphone"></i></span>' : ''}
           ${p.custom_status ? `<span class="post-status-badge" title="${escapeHtml(p.custom_status)}"><i class="ti ti-message-circle" style="font-size:11px"></i> ${escapeHtml(p.custom_status)}</span>` : ''}
           ${p.online_status === 'online' ? '<span class="post-online"><i class="ti ti-circle-filled"></i> Online</span>' : ''}
@@ -1256,6 +1257,7 @@ function renderProfile(user, isMe) {
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(dName(user))}</div>
           <div class="profile-nick">${escapeHtml(user.lol_game_name)}#${escapeHtml(user.lol_tag_line)}</div>
+          ${roleBadgeHTML(user.admin_role)}
           ${isMe ? `
             <div class="profile-status-row" onclick="openStatusEditor()" title="${user.custom_status ? 'Clique para editar seu status' : 'Definir status'}">
               ${user.custom_status
@@ -2232,6 +2234,7 @@ function adminUserCard(u) {
       <div class="admin-card-info">
         <div class="admin-card-name">${escapeHtml(u.display_name || u.username)}
           ${u.admin_role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : ''}
+          ${u.admin_role === 'vip'   ? '<span class="vip-badge">VIP</span>' : ''}
           ${u.is_banned ? '<span class="banned-badge">BANIDO</span>' : ''}
           ${restricted ? `<span class="restrict-badge">RESTRITO até ${restrictedUntil}</span>` : ''}
         </div>
@@ -2273,14 +2276,26 @@ function adminUserCard(u) {
       </div>
 
       <div class="admin-action-group">
-        <div class="admin-group-label">Ações de conta</div>
+        <div class="admin-group-label">Role do usuário</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="admin-btn ${u.admin_role==='user'?'admin-btn-active':''}" onclick="adminSetRole(${u.id},'user')" title="Usuário normal">
+            <i class="ti ti-user"></i> Usuário
+          </button>
+          <button class="admin-btn admin-btn-vip ${u.admin_role==='vip'?'admin-btn-active':''}" onclick="adminSetRole(${u.id},'vip')" title="Conceder VIP">
+            <i class="ti ti-star"></i> VIP
+          </button>
+          <button class="admin-btn admin-btn-blue ${u.admin_role==='admin'?'admin-btn-active':''}" onclick="adminSetRole(${u.id},'admin')" title="Tornar administrador">
+            <i class="ti ti-shield"></i> Admin
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-action-group">
+        <div class="admin-group-label">Conta</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${u.is_banned
             ? `<button class="admin-btn admin-btn-green" onclick="adminBan(${u.id},false)"><i class="ti ti-user-check"></i> Desbanir</button>`
             : `<button class="admin-btn admin-btn-red" onclick="adminBan(${u.id},true)"><i class="ti ti-ban"></i> Banir</button>`}
-          ${u.admin_role === 'admin'
-            ? `<button class="admin-btn admin-btn-warn" onclick="adminSetRole(${u.id},'user')"><i class="ti ti-arrow-down"></i> Remover admin</button>`
-            : `<button class="admin-btn admin-btn-blue" onclick="adminSetRole(${u.id},'admin')"><i class="ti ti-shield"></i> Tornar admin</button>`}
         </div>
       </div>
 
@@ -3676,6 +3691,14 @@ async function saveStatus(val) {
     toast(status ? `✅ Status: "${status}"` : '✅ Status removido');
     loadMyProfile(); // atualizar perfil
   } catch { toast('Erro ao salvar status'); }
+}
+
+
+// ── Badges de role (Admin / VIP) ──────────────
+function roleBadgeHTML(adminRole) {
+  if (adminRole === 'admin') return '<span class="role-badge role-admin"><i class="ti ti-shield-filled"></i> Administrador</span>';
+  if (adminRole === 'vip')   return '<span class="role-badge role-vip"><i class="ti ti-star-filled"></i> VIP</span>';
+  return '';
 }
 
 window.addEventListener('DOMContentLoaded', () => {

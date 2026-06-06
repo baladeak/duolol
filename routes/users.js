@@ -32,7 +32,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,has_mic,custom_status,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,has_mic,custom_status,admin_role,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -274,7 +274,7 @@ router.get('/', auth, async (req, res) => {
   const [users] = await db.execute(
     `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
             u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,
-            u.online_status,u.bio,u.has_mic,u.main_champions,
+            u.online_status,u.bio,u.has_mic,u.main_champions,u.custom_status,u.admin_role,
             GROUP_CONCAT(r.role ORDER BY r.priority SEPARATOR ',') AS roles
      FROM users u
      LEFT JOIN user_roles r ON r.user_id = u.id

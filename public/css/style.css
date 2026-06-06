@@ -4266,3 +4266,54 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .profile-status-clickable:hover .profile-status-pencil{
   opacity:1;
 }
+
+/* ══════════════════════════════════════════════
+   BADGES DE ROLE (Admin / VIP)
+══════════════════════════════════════════════ */
+.role-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:'Exo 2',sans-serif;font-size:10.5px;font-weight:800;
+  letter-spacing:.8px;text-transform:uppercase;
+  border-radius:6px;padding:2px 8px;
+  vertical-align:middle;flex-shrink:0;
+}
+
+/* Admin — glow vermelho */
+.role-badge.role-admin{
+  color:#FCA5A5;
+  background:rgba(239,68,68,.15);
+  border:1px solid rgba(239,68,68,.4);
+  box-shadow:0 0 8px rgba(239,68,68,.35), 0 0 20px rgba(239,68,68,.1);
+  text-shadow:0 0 8px rgba(239,68,68,.6);
+}
+
+/* VIP — glow amarelo/dourado */
+.role-badge.role-vip{
+  color:#FDE68A;
+  background:rgba(251,191,36,.15);
+  border:1px solid rgba(251,191,36,.4);
+  box-shadow:0 0 8px rgba(251,191,36,.4), 0 0 20px rgba(251,191,36,.1);
+  text-shadow:0 0 8px rgba(251,191,36,.7);
+}
+
+/* Badge no painel admin */
+.vip-badge{
+  display:inline-block;padding:1px 7px;border-radius:4px;
+  font-size:10px;font-weight:800;letter-spacing:.5px;
+  color:#FDE68A;background:rgba(251,191,36,.15);
+  border:1px solid rgba(251,191,36,.35);
+  box-shadow:0 0 6px rgba(251,191,36,.3);margin-left:4px;
+}
+
+/* Botão VIP no admin */
+.admin-btn-vip{
+  background:rgba(251,191,36,.12) !important;
+  border:1px solid rgba(251,191,36,.4) !important;
+  color:#FDE68A !important;
+}
+.admin-btn-vip:hover{background:rgba(251,191,36,.25) !important}
+.admin-btn-active{
+  opacity:1 !important;
+  outline:2px solid currentColor;
+  outline-offset:1px;
+}

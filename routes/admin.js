@@ -98,7 +98,7 @@ router.patch('/reports/:id/dismiss', async (req, res) => {
 // Promover / rebaixar admin
 router.patch('/users/:id/role', async (req, res) => {
   const { role } = req.body;
-  if (!['user', 'admin'].includes(role))
+  if (!['user', 'vip', 'admin'].includes(role))
     return res.status(400).json({ error: 'Role inválida' });
   await db.execute('UPDATE users SET admin_role=? WHERE id=?', [role, req.params.id]);
   res.json({ ok: true });
