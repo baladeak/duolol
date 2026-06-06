@@ -124,7 +124,7 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles, display_name, chat_muted, main_champions, profile_banner, has_mic } = req.body;
+  const { bio, roles, display_name, chat_muted, main_champions, profile_banner, has_mic, custom_status } = req.body;
   if (display_name !== undefined) {
     const dn = display_name.trim().slice(0, 60) || null;
     await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
@@ -133,6 +133,10 @@ router.patch('/me', auth, async (req, res) => {
   if (chat_muted !== undefined) await db.execute('UPDATE users SET chat_muted=? WHERE id=?', [chat_muted ? 1 : 0, req.user.id]);
   if (has_mic !== undefined) {
     await db.execute('UPDATE users SET has_mic=? WHERE id=?', [has_mic ? 1 : 0, req.user.id]);
+  }
+  if (custom_status !== undefined) {
+    const safeStatus = custom_status ? String(custom_status).trim().slice(0, 100) : null;
+    await db.execute('UPDATE users SET custom_status=? WHERE id=?', [safeStatus, req.user.id]);
   }
   if (profile_banner !== undefined) {
     // Formato esperado: "ChampionKey_SkinNum" ex: "Xerath_1"
