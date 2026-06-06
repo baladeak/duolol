@@ -232,6 +232,8 @@ function bootApp() {
 
   // Socket
   initSocket();
+  // Hash routing — verificar se URL tem #/post/:id
+  checkHashRoute();
 }
 
 function updateMyAvatar() {
@@ -387,6 +389,7 @@ function loadPage(name) {
   if (name === 'notifications') loadNotifications();
   if (name === 'profile')       loadMyProfile();
   if (name === 'groups')        loadGroupsPage();
+  if (name === 'post-detail')   {} // conteúdo injetado por loadPostDetail()
   if (name === 'match')         loadMatchPage();
 }
 
@@ -3828,4 +3831,124 @@ async function refreshPostReactions(postId) {
     const bar = $(`reactions-${postId}`);
     if (bar) bar.innerHTML = buildReactionsBar(post);
   } catch {}
+}
+
+// ══════════════════════════════════════════════
+//  PÁGINA DE POST DEDICADA
+// ══════════════════════════════════════════════
+
+// Navegar para um post específico (hash routing)
+function goToPost(postId) {
+  window.location.hash = `/post/${postId}`;
+  loadPostDetail(postId);
+}
+
+async function loadPostDetail(postId) {
+  // Ativar página
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.s-item').forEach(i => i.classList.remove('active'));
+  $('page-post-detail')?.classList.add('active');
+
+  // Ocultar right panel
+  const rp = document.querySelector('.right-panel');
+  if (rp) rp.style.display = 'none';
+
+  const container = $('post-detail-content');
+  if (!container) return;
+  container.innerHTML = '<div class="loading" style="padding:40px"><div class="spinner"></div> Carregando post...</div>';
+
+  try {
+    const { post: p, comments } = await api(`/posts/${postId}`);
+
+    // Renderizar o post + comentários
+    container.innerHTML = `
+      <div style="padding:16px;max-width:700px;margin:0 auto">
+        <!-- Post -->
+        <div class="post-card" style="margin:0 0 16px">
+          ${postHTML(p)}
+        </div>
+
+        <!-- Seção de comentários -->
+        <div class="post-detail-comments">
+          <div class="post-detail-comments-title">
+            <i class="ti ti-message-circle"></i> ${comments.length} comentário${comments.length !== 1 ? 's' : ''}
+          </div>
+
+          <!-- Input de novo comentário -->
+          <div class="comment-input-row" style="margin-bottom:16px;padding:0">
+            ${avatarHTML(me, 'av-md')}
+            <input class="comment-inp" id="detail-comment-inp-${p.id}"
+                   placeholder="Adicionar comentário..."
+                   onkeydown="if(event.key==='Enter') submitDetailComment(${p.id})">
+            <button class="btn-send" onclick="submitDetailComment(${p.id})">
+              <i class="ti ti-send"></i>
+            </button>
+          </div>
+
+          <!-- Lista de comentários -->
+          <div id="detail-comments-${p.id}">
+            ${comments.length ? comments.map(c => detailCommentHTML(c, p.id)).join('') : `
+              <div class="empty" style="padding:32px">
+                <i class="ti ti-message-off"></i><p>Nenhum comentário ainda. Seja o primeiro!</p>
+              </div>`
+            }
+          </div>
+        </div>
+      </div>`;
+
+  } catch (err) {
+    container.innerHTML = '<div class="empty" style="padding:40px"><i class="ti ti-alert-circle"></i><p>Post não encontrado ou removido</p></div>';
+  }
+}
+
+function detailCommentHTML(c, postId) {
+  const canDelete = c.user_id === me?.id || me?.admin_role === 'admin';
+  return `<div class="detail-comment" id="dcomment-${c.id}">
+    <div onclick="viewProfile(${c.user_id})" style="cursor:pointer;flex-shrink:0">
+      ${avatarHTML(c, 'av-md')}
+    </div>
+    <div class="detail-comment-body">
+      <div class="detail-comment-header">
+        <span class="detail-comment-name" onclick="viewProfile(${c.user_id})" style="cursor:pointer">
+          ${escapeHtml(c.display_name || c.username)}
+          ${roleBadgeHTML(c.admin_role)}
+        </span>
+        <span class="detail-comment-nick">${escapeHtml(c.lol_game_name)}#${escapeHtml(c.lol_tag_line)}</span>
+        <span class="detail-comment-time">${timeAgo(c.created_at)}</span>
+      </div>
+      <div class="detail-comment-text">${escapeHtml(c.content)}</div>
+    </div>
+    ${canDelete ? `<button class="detail-comment-delete" onclick="deleteDetailComment(${c.id},'${postId}')" title="Deletar"><i class="ti ti-trash"></i></button>` : ''}
+  </div>`;
+}
+
+async function submitDetailComment(postId) {
+  const inp = $(`detail-comment-inp-${postId}`);
+  if (!inp?.value.trim()) return;
+  const content = inp.value.trim();
+  inp.value = '';
+  try {
+    await api(`/posts/${postId}/comments`, { method: 'POST', body: { content } });
+    // Recarregar comentários
+    const { comments } = await api(`/posts/${postId}`);
+    const list = $(`detail-comments-${postId}`);
+    if (list) list.innerHTML = comments.map(c => detailCommentHTML(c, postId)).join('');
+  } catch { toast('Erro ao comentar'); }
+}
+
+async function deleteDetailComment(commentId, postId) {
+  if (!confirm('Deletar comentário?')) return;
+  try {
+    await api(`/posts/${postId}/comments/${commentId}`, { method: 'DELETE' });
+    $(`dcomment-${commentId}`)?.remove();
+  } catch { toast('Erro ao deletar'); }
+}
+
+// Hash routing — ao carregar a página, verificar se tem #/post/:id na URL
+function checkHashRoute() {
+  const hash = window.location.hash;
+  const match = hash.match(/^#\/post\/(\d+)$/);
+  if (match) {
+    loadPostDetail(parseInt(match[1]));
+  }
 }

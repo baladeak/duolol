@@ -4397,3 +4397,52 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 }
 .react-option:hover .react-opt-label,
 .react-option.active .react-opt-label{color:var(--text)}
+
+/* ── Página de Post Dedicada ─────────────────── */
+.post-detail-comments{
+  background:var(--navy-c);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.post-detail-comments-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:.5px;
+  color:var(--muted);padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:7px;
+}
+.detail-comment{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  position:relative;transition:.12s;
+}
+.detail-comment:last-child{border-bottom:none}
+.detail-comment:hover{background:var(--navy-h)}
+.detail-comment-body{flex:1;min-width:0}
+.detail-comment-header{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-bottom:4px;
+}
+.detail-comment-name{
+  font-size:13px;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:5px;
+}
+.detail-comment-nick{font-size:11px;color:var(--dim)}
+.detail-comment-time{font-size:11px;color:var(--dim);margin-left:auto}
+.detail-comment-text{font-size:13.5px;color:var(--text);line-height:1.5;word-break:break-word}
+.detail-comment-delete{
+  position:absolute;top:10px;right:12px;
+  background:none;border:none;cursor:pointer;
+  color:var(--dim);font-size:13px;opacity:0;
+  transition:opacity .13s;padding:4px;
+}
+.detail-comment:hover .detail-comment-delete{opacity:1}
+.detail-comment-delete:hover{color:#FCA5A5}
+
+/* Barra de comentário no post-detail */
+.post-detail-comments .comment-input-row{
+  padding:12px 16px;
+  background:var(--navy-m);
+  border-bottom:1px solid var(--border);
+}

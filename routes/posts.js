@@ -172,19 +172,42 @@ router.post('/:id/react', auth, async (req, res) => {
 // GET /posts/:id — post individual (para atualizar reações)
 router.get('/:id', auth, async (req, res) => {
   try {
+    // Post completo
     const [rows] = await db.execute(
-      `SELECT p.id, p.content, p.queue_type, p.created_at,
-              u.id AS user_id, u.lol_game_name, u.lol_tag_line, u.avatar_url,
-              (SELECT reaction FROM post_reactions pr WHERE pr.post_id=p.id AND pr.user_id=?) AS my_reaction,
-              (SELECT JSON_OBJECTAGG(reaction, cnt) FROM (
-                SELECT reaction, COUNT(*) as cnt FROM post_reactions WHERE post_id=p.id GROUP BY reaction
-              ) rc) AS reactions_json
-       FROM posts p JOIN users u ON u.id=p.user_id
+      `SELECT p.id,p.content,p.queue_type,p.created_at,
+              u.id AS user_id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,
+              u.avatar_url,u.solo_tier,u.solo_rank,u.solo_lp,u.flex_tier,u.flex_rank,u.flex_lp,
+              u.online_status,u.has_mic,u.custom_status,u.admin_role,
+              (SELECT COUNT(*) FROM post_likes l WHERE l.post_id=p.id) AS total_likes,
+              (SELECT COUNT(*) FROM post_comments c WHERE c.post_id=p.id AND c.is_deleted=0) AS total_comments,
+              (SELECT COUNT(*) FROM post_likes lm WHERE lm.post_id=p.id AND lm.user_id=?) AS liked_by_me,
+              pr_me.reaction AS my_reaction,
+              react_agg.reactions_json
+       FROM posts p
+       JOIN users u ON u.id=p.user_id
+       LEFT JOIN post_reactions pr_me ON pr_me.post_id=p.id AND pr_me.user_id=?
+       LEFT JOIN (
+         SELECT post_id, JSON_OBJECTAGG(reaction, cnt) AS reactions_json
+         FROM (SELECT post_id, reaction, COUNT(*) AS cnt FROM post_reactions GROUP BY post_id, reaction) sub
+         GROUP BY post_id
+       ) react_agg ON react_agg.post_id=p.id
        WHERE p.id=? AND p.is_deleted=0`,
-      [req.user.id, req.params.id]
+      [req.user.id, req.user.id, req.params.id]
     );
-    res.json(rows);
+    if (!rows.length) return res.status(404).json({ error: 'Post não encontrado' });
+
+    // Comentários do post
+    const [comments] = await db.execute(
+      `SELECT c.id,c.content,c.created_at,
+              u.id AS user_id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,u.admin_role
+       FROM post_comments c JOIN users u ON u.id=c.user_id
+       WHERE c.post_id=? AND c.is_deleted=0 ORDER BY c.created_at ASC`,
+      [req.params.id]
+    );
+
+    res.json({ post: rows[0], comments });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
