@@ -2687,7 +2687,12 @@ document.addEventListener('click',e=>{const modal=$('search-modal');if(modal&&mo
 // ── Fila ao vivo ────────────────────────────────
 let _inQueue=false,_queueType='SOLO',_queueFilter='all',_queuePlayers=[],_allQueuePlayers=[],_queueTimerInt=null,_queueJoinedAt=null,_queueMinimized=false;
 function openQueuePanel(){$('queue-panel').classList.add('open');$('queue-overlay').classList.add('open');$('queue-fab').style.display='none';loadQueueList();updateQueueChatInput();emitWhenReady('queue_chat_history');}
-function closeQueuePanel(){$('queue-panel').classList.remove('open');$('queue-overlay').classList.remove('open');$('queue-fab').style.display='flex';}
+function closeQueuePanel(){
+  $('queue-panel').classList.remove('open');
+  $('queue-overlay').classList.remove('open');
+  $('queue-fab').style.display='flex';
+  if(_queueChatPollInterval){ clearInterval(_queueChatPollInterval); _queueChatPollInterval=null; }
+}
 function toggleQueueMinimize(){
   _queueMinimized=!_queueMinimized;
   const body=$('queue-body');
@@ -2732,7 +2737,36 @@ async function checkQueueStatus(){try{const entry=await api('/queue/me');if(entr
 
 // ── Chat da Fila ────────────────────────────────
 let _currentQueueTab='players',_queueChatUnread=0;
-function switchQueueTab(tab){_currentQueueTab=tab;document.querySelectorAll('.queue-tab').forEach(t=>t.classList.remove('on'));$('qtab-'+tab)?.classList.add('on');const players=$('queue-tab-players'),chat=$('queue-tab-chat');if(players)players.style.display=tab==='players'?'':'none';if(chat)chat.style.display=tab==='chat'?'flex':'none';if(tab==='chat'){_queueChatUnread=0;const badge=$('queue-chat-badge');if(badge)badge.style.display='none';emitWhenReady('queue_chat_history');setTimeout(()=>$('queue-chat-input')?.focus(),50);}}
+let _queueChatPollInterval = null;
+
+function switchQueueTab(tab){
+  _currentQueueTab=tab;
+  document.querySelectorAll('.queue-tab').forEach(t=>t.classList.remove('on'));
+  $('qtab-'+tab)?.classList.add('on');
+  const players=$('queue-tab-players'),chat=$('queue-tab-chat');
+  if(players)players.style.display=tab==='players'?'':'none';
+  if(chat)chat.style.display=tab==='chat'?'flex':'none';
+
+  if(tab==='chat'){
+    _queueChatUnread=0;
+    const badge=$('queue-chat-badge');
+    if(badge)badge.style.display='none';
+    emitWhenReady('queue_chat_history');
+    setTimeout(()=>$('queue-chat-input')?.focus(),50);
+    // Polling a cada 3s para garantir recebimento de mensagens
+    if(_queueChatPollInterval) clearInterval(_queueChatPollInterval);
+    _queueChatPollInterval = setInterval(()=>{
+      if(_currentQueueTab==='chat' && $('queue-panel')?.classList.contains('open')){
+        emitWhenReady('queue_chat_history');
+      } else {
+        clearInterval(_queueChatPollInterval);
+        _queueChatPollInterval = null;
+      }
+    }, 3000);
+  } else {
+    if(_queueChatPollInterval){ clearInterval(_queueChatPollInterval); _queueChatPollInterval=null; }
+  }
+}
 function sendQueueChat(){
   const input=$('queue-chat-input');
   if(!input||!input.value.trim())return;
@@ -2771,7 +2805,17 @@ function onQueueChatMsg(msg){
   appendQueueChatMsg(msg);
   playQueueSound();
 }
-function onQueueChatHistory(msgs){const container=$('queue-chat-msgs');if(!container)return;const info=container.querySelector('.queue-chat-info');container.innerHTML='';if(info)container.appendChild(info);msgs.forEach(m=>appendQueueChatMsg(m));}
+function onQueueChatHistory(msgs){
+  const container=$('queue-chat-msgs');
+  if(!container)return;
+  // Reconstruir com todas as mensagens do servidor (fonte da verdade)
+  const info=container.querySelector('.queue-chat-info');
+  const wasAtBottom=container.scrollHeight-container.scrollTop-container.clientHeight < 60;
+  container.innerHTML='';
+  if(info)container.appendChild(info);
+  msgs.forEach(m=>appendQueueChatMsg(m));
+  if(wasAtBottom) container.scrollTop=container.scrollHeight;
+}
 function updateQueueChatInput(){const input=$('queue-chat-input'),sendBtn=document.querySelector('.queue-chat-send');if(!input)return;if(_inQueue){input.disabled=false;input.placeholder='Mensagem para a fila...';if(sendBtn)sendBtn.disabled=false;}else{input.disabled=true;input.placeholder='Entre na fila para enviar mensagens';if(sendBtn)sendBtn.disabled=true;}}
 function toggleMicEdit(btn){const isOn=btn.classList.toggle('mic-on'),icon=btn.querySelector('i'),label=btn.querySelector('span');icon.className=isOn?'ti ti-microphone':'ti ti-microphone-off';if(label)label.textContent=isOn?'Tenho microfone':'Sem microfone';}
 async function toggleMicSave(btn){const isOn=btn.classList.toggle('mic-on'),icon=btn.querySelector('i');icon.className=isOn?'ti ti-microphone':'ti ti-microphone-off';btn.title=isOn?'Microfone ativo — clique para desativar':'Sem microfone — clique para ativar';try{await api('/users/me',{method:'PATCH',body:{has_mic:isOn?1:0}});me.has_mic=isOn?1:0;localStorage.setItem('duoq_me',JSON.stringify(me));toast(isOn?'🎙️ Microfone ativado!':'🔇 Microfone desativado');}catch{toast('Erro ao salvar');}}
