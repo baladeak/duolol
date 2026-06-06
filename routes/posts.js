@@ -34,7 +34,7 @@ router.get('/', auth, async (req, res) => {
          FROM (SELECT post_id, reaction, COUNT(*) AS cnt FROM post_reactions GROUP BY post_id, reaction) sub
          GROUP BY post_id
        ) react_agg ON react_agg.post_id=p.id
-       WHERE ${where} ORDER BY p.created_at DESC LIMIT ${lim} OFFSET ${offset}`,
+       WHERE ${where} ORDER BY p.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`,
       [req.user.id, req.user.id, ...params]
     );
     res.json(posts);
