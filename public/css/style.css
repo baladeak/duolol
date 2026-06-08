@@ -4925,3 +4925,24 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border-color:rgba(200,150,62,.4) !important;
   background:rgba(200,150,62,.1) !important;
 }
+
+/* ── Botão Duo Principal na página Amigos ─────── */
+.fc-btn-duo{
+  background:var(--navy-c);
+  border:1px solid var(--border-h);
+  color:var(--muted);
+}
+.fc-btn-duo:hover{
+  border-color:rgba(200,150,62,.5);
+  color:var(--gold-l);
+  background:rgba(200,150,62,.08);
+}
+.fc-btn-duo-active{
+  background:rgba(200,150,62,.15);
+  border:1px solid rgba(200,150,62,.5);
+  color:var(--gold-l);
+  box-shadow:0 0 8px rgba(200,150,62,.2);
+}
+.fc-btn-duo-active:hover{
+  background:rgba(200,150,62,.25);
+}

@@ -1933,6 +1933,12 @@ function friendCardHTML(f) {
       </div>
     </div>
     <div class="friend-card-actions">
+      <button class="fc-btn ${f.is_favorite_duo ? 'fc-btn-duo-active' : 'fc-btn-duo'}"
+              onclick="toggleFavoriteDuo(${f.id},this)"
+              title="${f.is_favorite_duo ? '⚔️ Duo Principal ativo — clique para remover' : '⚔️ Marcar como Duo Principal — você será notificado quando ele entrar online'}">
+        <i class="ti ti-sword${f.is_favorite_duo ? '-filled' : ''}"></i>
+        ${f.is_favorite_duo ? 'Duo Principal ✓' : 'Duo Principal'}
+      </button>
       <button class="fc-btn fc-btn-blue" onclick="openDM(${f.id},'${escapeHtml(f.display_name||f.username)}')">
         <i class="ti ti-message-2"></i> Mensagem
       </button>
