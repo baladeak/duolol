@@ -2,7 +2,10 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-const express = require('express');
+const express  = require('express');
+const passport = require('passport');
+// Carregar estratégias OAuth
+require('./routes/oauth');
 const http    = require('http');
 const { Server } = require('socket.io');
 const cors    = require('cors');
@@ -195,6 +198,9 @@ db.execute(`CREATE TABLE IF NOT EXISTS user_achievements (
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP").catch(()=>{});
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_a TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_b TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(120) NULL").catch(()=>{});
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_id VARCHAR(120) NULL").catch(()=>{});
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL").catch(()=>{});
 db.execute("ALTER TABLE users MODIFY COLUMN admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user'").catch(()=>{});
 db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
@@ -204,6 +210,8 @@ app.get('/health', (_, res) => res.json({ status: 'ok', ts: new Date() }));
 
 // API
 app.use('/api/auth',          require('./routes/auth'));
+app.use(passport.initialize());
+app.use('/auth',              require('./routes/oauth'));  // OAuth social login
 app.use('/api/posts',         require('./routes/posts'));
 app.use('/api/users',         require('./routes/users'));
 app.use('/api/messages',      require('./routes/messages'));

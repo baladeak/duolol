@@ -4946,3 +4946,32 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .fc-btn-duo-active:hover{
   background:rgba(200,150,62,.25);
 }
+
+/* ── OAuth Buttons ───────────────────────────── */
+.oauth-section{margin-top:16px}
+.oauth-divider{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:14px;
+}
+.oauth-divider::before,.oauth-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.oauth-divider span{
+  font-size:12px;color:var(--dim);white-space:nowrap;
+}
+.oauth-buttons{display:flex;flex-direction:column;gap:10px}
+.oauth-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:11px 16px;border-radius:10px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Exo 2',sans-serif;transition:.15s;border:none;
+}
+.oauth-google{
+  background:#fff;color:#3c4043;
+  border:1px solid #dadce0;
+}
+.oauth-google:hover{background:#f8f9fa;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.oauth-facebook{
+  background:#1877F2;color:#fff;
+}
+.oauth-facebook:hover{background:#166fe5;box-shadow:0 2px 8px rgba(24,119,242,.4)}

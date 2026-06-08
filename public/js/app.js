@@ -3767,7 +3767,61 @@ const LOL_REACTIONS = {
   ff:      { emoji: '🏳️',  label: 'FF15',      },
 };
 
+
+// ── OAuth Social Login ─────────────────────────
+function loginWithGoogle()   { window.location.href = '/auth/google';   }
+function loginWithFacebook() { window.location.href = '/auth/facebook'; }
+
+function handleOAuthCallback() {
+  const hash = window.location.hash;
+  if (!hash) return false;
+
+  // Verificar erro
+  const errMatch = hash.match(/oauth_error=([^&]+)/);
+  if (errMatch) {
+    const errors = {
+      google_not_configured:   'Login com Google não está configurado ainda.',
+      facebook_not_configured: 'Login com Facebook não está configurado ainda.',
+      google_failed:           'Falha no login com Google. Tente novamente.',
+      facebook_failed:         'Falha no login com Facebook. Tente novamente.',
+    };
+    const msg = errors[decodeURIComponent(errMatch[1])] || 'Erro no login social.';
+    const errEl = document.getElementById('auth-error');
+    if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+    window.location.hash = '';
+    return true;
+  }
+
+  // Verificar token bem-sucedido
+  const tokenMatch = hash.match(/oauth_token=([^&]+)/);
+  const userMatch  = hash.match(/oauth_user=([^&]+)/);
+  if (tokenMatch && userMatch) {
+    try {
+      token = decodeURIComponent(tokenMatch[1]);
+      me    = JSON.parse(decodeURIComponent(userMatch[1]));
+      localStorage.setItem('duoq_token', token);
+      localStorage.setItem('duoq_me', JSON.stringify(me));
+      window.location.hash = '';  // limpar hash da URL
+      bootApp();
+      // Se LoL não está configurado, ir direto ao perfil
+      if (!me.lol_game_name) {
+        setTimeout(() => {
+          toast('✅ Login realizado! Configure seu nick do LoL no perfil.');
+          loadPage('profile');
+        }, 500);
+      }
+      return true;
+    } catch(e) {
+      console.error('OAuth token parse error:', e);
+    }
+  }
+  return false;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  // Verificar se voltou de OAuth
+  if (handleOAuthCallback()) return;
+
   if (token && me) {
     bootApp();
   } else {
