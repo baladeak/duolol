@@ -4222,7 +4222,7 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .profile-status-empty{
-  color:var(--dim);background:transparent;
+  color:var(--text);background:transparent;
   border-color:var(--border);cursor:pointer;
   font-style:italic;
 }

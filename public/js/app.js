@@ -235,6 +235,10 @@ function bootApp() {
   initSocket();
   // Hash routing — verificar se URL tem #/post/:id
   checkHashRoute();
+  // Se usuário logado via OAuth ainda não tem nick do LoL, mostrar modal
+  if (me && !me.lol_game_name) {
+    setTimeout(showCompleteProfileModal, 600);
+  }
 }
 
 function updateMyAvatar() {
@@ -3801,11 +3805,9 @@ function handleOAuthCallback() {
       window.location.hash = '';  // limpar hash da URL
       bootApp();
       // Se LoL não está configurado, ir direto ao perfil
+      // Verificar se precisa completar o cadastro com nick do LoL
       if (!me.lol_game_name) {
-        setTimeout(() => {
-          toast('✅ Login realizado! Configure seu nick do LoL no perfil.');
-          loadPage('profile');
-        }, 500);
+        showCompleteProfileModal();
       }
       return true;
     } catch(e) {
@@ -3815,7 +3817,73 @@ function handleOAuthCallback() {
   return false;
 }
 
+
+// ── Completar cadastro OAuth ───────────────────
+function showCompleteProfileModal() {
+  const modal = $('complete-profile-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => $('complete-lol-nick')?.focus(), 100);
+  }
+}
+
+async function completeOAuthProfile() {
+  const nick   = $('complete-lol-nick')?.value.trim();
+  const tag    = $('complete-lol-tag')?.value.trim() || 'BR1';
+  const errEl  = $('complete-profile-error');
+  const btn    = $('complete-profile-btn');
+
+  // Validação
+  if (!nick || nick.length < 2) {
+    errEl.textContent = 'O nick precisa ter pelo menos 2 caracteres.';
+    errEl.style.display = '';
+    return;
+  }
+  if (tag.length < 2) {
+    errEl.textContent = 'A tag precisa ter pelo menos 2 caracteres (ex: BR1).';
+    errEl.style.display = '';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    await api('/users/me', {
+      method: 'PATCH',
+      body: { lol_game_name: nick, lol_tag_line: tag }
+    });
+
+    // Atualizar me local
+    me.lol_game_name = nick;
+    me.lol_tag_line  = tag;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+
+    // Fechar modal
+    $('complete-profile-modal').style.display = 'none';
+    document.body.style.overflow = '';
+
+    toast(`✅ Bem-vindo ao DUOQ.GG, ${nick}#${tag}!`);
+
+    // Recarregar perfil para mostrar dados atualizados
+    loadPage('profile');
+  } catch(e) {
+    errEl.textContent = e?.error || 'Erro ao salvar. Tente novamente.';
+    errEl.style.display = '';
+    btn.disabled = false;
+    btn.textContent = 'ENTRAR NO DUOQ.GG ⚔️';
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  // Enter nos campos do modal de completar perfil
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && $('complete-profile-modal')?.style.display !== 'none') {
+      completeOAuthProfile();
+    }
+  });
   // Verificar se voltou de OAuth
   if (handleOAuthCallback()) return;
 

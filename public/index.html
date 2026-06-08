@@ -732,6 +732,45 @@
   </div>
 </div>
 
+<!-- Modal Completar Cadastro OAuth -->
+<div id="complete-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:var(--navy-m);border:1px solid var(--border-h);border-radius:18px;width:min(440px,92vw);padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.8)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px;margin-bottom:8px">⚔️</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:800;color:var(--text)">Quase lá, Invocador!</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">Para usar o DUOQ.GG, precisamos do seu nick no League of Legends</div>
+    </div>
+
+    <div id="complete-profile-error" style="display:none;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#FCA5A5;margin-bottom:14px"></div>
+
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <div style="flex:1">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px">Nick do LoL</label>
+        <input id="complete-lol-nick" class="form-input" placeholder="SeuNick" maxlength="16"
+               style="width:100%;box-sizing:border-box"
+               oninput="this.value=this.value.replace(/[#]/g,'')">
+      </div>
+      <div style="width:100px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:6px">Tag</label>
+        <input id="complete-lol-tag" class="form-input" placeholder="BR1" maxlength="5"
+               style="width:100%;box-sizing:border-box"
+               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--dim);margin-bottom:20px">
+      Ex: <strong style="color:var(--text)">VemKmeShupa</strong> com tag <strong style="color:var(--text)">BR1</strong> — aparece no seu perfil como VemKmeShupa#BR1
+    </div>
+
+    <button onclick="completeOAuthProfile()" id="complete-profile-btn"
+      style="width:100%;padding:13px;border-radius:11px;background:var(--gold);color:var(--navy);border:none;font-weight:800;font-size:15px;cursor:pointer;font-family:'Exo 2',sans-serif;letter-spacing:.5px">
+      ENTRAR NO DUOQ.GG ⚔️
+    </button>
+    <div style="text-align:center;margin-top:12px;font-size:11.5px;color:var(--dim)">
+      Você pode sincronizar seu elo depois no perfil
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="/js/app.js?v=3"></script>
