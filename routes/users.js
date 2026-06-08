@@ -59,7 +59,7 @@ router.get('/me/friends', auth, async (req, res) => {
      JOIN users u ON u.id=IF(f.user_a_id=?,f.user_b_id,f.user_a_id)
      WHERE (f.user_a_id=? OR f.user_b_id=?)
      ORDER BY u.online_status='online' DESC,u.username ASC`,
-    [req.user.id, req.user.id, req.user.id]
+    [req.user.id, req.user.id, req.user.id, req.user.id]
   );
   res.json(rows);
 });

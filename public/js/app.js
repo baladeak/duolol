@@ -1072,17 +1072,34 @@ async function fetchDDragonVersion() {
 }
 
 async function fetchChampSkins(key) {
+  let skins = [];
   try {
     const r = await fetch(`https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/data/pt_BR/champion/${key}.json`);
     const d = await r.json();
-    return d.data[Object.keys(d.data)[0]].skins;
+    skins = d.data[Object.keys(d.data)[0]].skins;
   } catch {
     try {
       const r = await fetch(`https://ddragon.leagueoflegends.com/cdn/${_ddragonVersion}/data/en_US/champion/${key}.json`);
       const d = await r.json();
-      return d.data[Object.keys(d.data)[0]].skins;
+      skins = d.data[Object.keys(d.data)[0]].skins;
     } catch { return []; }
   }
+
+  // Filtrar skins sem splash (chromas, prestige sem splash, etc.)
+  // Verificar em paralelo com HEAD request (máx 5 simultâneas)
+  const BATCH = 5;
+  const valid = [];
+  for (let i = 0; i < skins.length; i += BATCH) {
+    const batch = skins.slice(i, i + BATCH);
+    const checks = batch.map(s =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${key}_${s.num}.jpg`, { method: 'HEAD' })
+        .then(r => r.ok ? s : null)
+        .catch(() => null)
+    );
+    const results = await Promise.all(checks);
+    valid.push(...results.filter(Boolean));
+  }
+  return valid;
 }
 
 // Abre o seletor de capa
@@ -1263,7 +1280,7 @@ function renderProfile(user, isMe) {
   api('/profile/' + user.id).then(content => renderProfileContent(user.id, content, isMe)).catch(() => {});
 
   // Monta URL da capa
-  const bannerVal = user.profile_banner || me?.profile_banner;
+  const bannerVal = user.profile_banner || null;
   const bannerUrl = bannerVal
     ? `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${bannerVal}.jpg`
     : '';
