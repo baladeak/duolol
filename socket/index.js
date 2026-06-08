@@ -19,6 +19,28 @@ module.exports = (io) => {
     const uid = socket.user.id;
     online.set(uid, socket.id);
     socket.join(`user_${uid}`);
+
+    // Notificar amigos que marcaram este usuário como Duo Principal
+    try {
+      const [duoFriends] = await db.execute(
+        `SELECT CASE WHEN f.user_a_id=? THEN f.user_b_id ELSE f.user_a_id END AS friend_id,
+                u.display_name, u.lol_game_name, u.lol_tag_line, u.avatar_url
+         FROM friendships f
+         JOIN users u ON u.id=?
+         WHERE (f.user_a_id=? AND f.is_favorite_b=1)
+            OR (f.user_b_id=? AND f.is_favorite_a=1)`,
+        [uid, uid, uid, uid]
+      );
+      for (const friend of duoFriends) {
+        io.to(`user_${friend.friend_id}`).emit('duo_online', {
+          user_id:     uid,
+          display_name: friend.display_name,
+          lol_game_name: friend.lol_game_name,
+          lol_tag_line: friend.lol_tag_line,
+          avatar_url:   friend.avatar_url
+        });
+      }
+    } catch(e) { console.error('duo_online:', e); }
     await db.execute('UPDATE users SET online_status=?,last_seen_at=NOW() WHERE id=?', ['online', uid]);
 
     const [friends] = await db.execute(

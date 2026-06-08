@@ -2886,7 +2886,11 @@ function emitWhenReady(event,data,retries=10){if(socket?.connected){data!==undef
 
 // ── Amigos na aba Mensagens ─────────────────────
 async function loadFriendsInMessages(){const panel=$('friends-in-messages');if(!panel)return;try{const friends=await api('/users/me/friends');panel.style.display='';const online=friends.filter(f=>f.online_status==='online'||f.online_status==='away'),offline=friends.filter(f=>f.online_status!=='online'&&f.online_status!=='away');panel.innerHTML=`<div class="social-panel"><div class="social-panel-title"><i class="ti ti-users"></i> Amigos<span class="social-online-count">${online.length} online</span></div>${online.length?`<div class="social-section-label"><span class="social-dot online"></span> Online</div><div class="social-friends-list">${online.map(f=>socialFriendHTML(f)).join('')}</div>`:''}<div class="social-section-label" style="margin-top:${online.length?12:0}px"><span class="social-dot offline"></span> Offline</div><div class="social-friends-list">${offline.length?offline.map(f=>socialFriendHTML(f)).join(''):'<div class="social-empty">Nenhum amigo offline</div>'}</div>${!friends.length?'<div class="social-empty" style="margin-top:16px">Você ainda não tem amigos.</div>':''}</div><div class="social-divider"><i class="ti ti-message-2"></i> Conversas</div>`;}catch{const panel=$('friends-in-messages');if(panel)panel.innerHTML='';}}
-function socialFriendHTML(f){const name=escapeHtml(f.display_name||f.username),nick=escapeHtml(f.lol_game_name)+'#'+escapeHtml(f.lol_tag_line),isOnline=f.online_status==='online',dotCls=isOnline?'dot-online':f.online_status==='away'?'dot-away':'dot-offline',statusText=isOnline?'Online':f.online_status==='away'?'Ausente':'Offline';return `<div class="social-friend-item" onclick="viewProfile(${f.id})" title="Ver perfil de ${name}">${avatarHTML(f,'av-md')}<div class="social-friend-info"><div class="social-friend-name">${name}</div><div class="social-friend-status"><span class="social-dot-sm ${dotCls}"></span>${statusText}</div></div><button class="social-chat-btn" onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')" title="Abrir conversa"><i class="ti ti-message-circle"></i></button></div>`;}
+function socialFriendHTML(f){const name=escapeHtml(f.display_name||f.username),nick=escapeHtml(f.lol_game_name)+'#'+escapeHtml(f.lol_tag_line),isOnline=f.online_status==='online',dotCls=isOnline?'dot-online':f.online_status==='away'?'dot-away':'dot-offline',statusText=isOnline?'Online':f.online_status==='away'?'Ausente':'Offline';return `<div class="social-friend-item" onclick="viewProfile(${f.id})" title="Ver perfil de ${name}">${avatarHTML(f,'av-md')}<div class="social-friend-info"><div class="social-friend-name">${name}</div><div class="social-friend-status"><span class="social-dot-sm ${dotCls}"></span>${statusText}</div></div><button class="social-chat-btn ${f.is_favorite_duo ? 'duo-fav-active' : ''}"
+          onclick="event.stopPropagation();toggleFavoriteDuo(${f.id},this)"
+          title="${f.is_favorite_duo ? 'Duo Principal ativo — clique para remover' : 'Marcar como Duo Principal'}">
+          <i class="ti ti-${f.is_favorite_duo ? 'sword-filled' : 'sword'}"></i></button>
+        <button class="social-chat-btn" onclick="event.stopPropagation();openDM(${f.id},'${escapeHtml(f.username)}')" title="Abrir conversa"><i class="ti ti-message-circle"></i></button></div>`;}
 
 // ── Inicialização ─────────────────────────────
 
@@ -4496,4 +4500,59 @@ function achievementBadgeHTML(b) {
       <div class="achievement-desc">${escapeHtml(b.desc)}</div>
       ${b.earned && b.earned_at ? `<div class="achievement-date">${new Date(b.earned_at).toLocaleDateString('pt-BR')}</div>` : ''}
     </div>`;
+}
+
+// ── Duo Principal online ───────────────────────
+function onDuoOnline(data) {
+  // Som de notificação
+  playQueueSound();
+
+  // Popup de notificação
+  const existing = document.getElementById('duo-online-notif');
+  if (existing) existing.remove();
+
+  const name   = escapeHtml(data.display_name || '');
+  const nick   = escapeHtml(data.lol_game_name + '#' + (data.lol_tag_line || ''));
+  const letter = (data.display_name || '?')[0].toUpperCase();
+  const avHTML = data.avatar_url
+    ? `<img src="${escapeHtml(data.avatar_url)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0">`
+    : `<div style="width:44px;height:44px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;flex-shrink:0">${letter}</div>`;
+
+  const div = document.createElement('div');
+  div.id = 'duo-online-notif';
+  div.className = 'duo-online-notif';
+  div.innerHTML = `
+    <div class="duo-online-notif-inner">
+      ${avHTML}
+      <div style="flex:1;min-width:0">
+        <div class="duo-online-title"><i class="ti ti-sword" style="font-size:13px"></i> Duo Principal online!</div>
+        <div class="duo-online-name">${name}</div>
+        <div class="duo-online-nick">${nick}</div>
+      </div>
+      <button onclick="openDM(${data.user_id},'${escapeHtml(data.lol_game_name || '')}')" 
+              style="padding:7px 12px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Exo 2',sans-serif;flex-shrink:0">
+        DM
+      </button>
+      <button onclick="document.getElementById('duo-online-notif').remove()"
+              style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:16px;padding:4px;flex-shrink:0">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>`;
+  document.body.appendChild(div);
+  setTimeout(() => div.classList.add('show'), 50);
+  setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 400); }, 8000);
+}
+
+async function toggleFavoriteDuo(friendId, btn) {
+  try {
+    const { is_favorite_duo } = await api(`/users/me/friends/${friendId}/favorite`, { method: 'PATCH' });
+    const icon = btn.querySelector('i');
+    if (icon) icon.className = `ti ti-${is_favorite_duo ? 'sword-filled' : 'sword'}`;
+    btn.classList.toggle('duo-fav-active', is_favorite_duo);
+    btn.title = is_favorite_duo ? 'Duo Principal ativo — clique para remover' : 'Marcar como Duo Principal';
+    toast(is_favorite_duo ? '⚔️ Duo Principal marcado! Você será notificado quando ele entrar online.' : '⚔️ Duo Principal removido');
+    // Atualizar na lista de amigos
+    loadFriends();
+    loadFriendsInMessages();
+  } catch { toast('Erro ao atualizar'); }
 }

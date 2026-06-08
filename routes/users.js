@@ -53,7 +53,8 @@ router.get('/me', auth, async (req, res) => {
 router.get('/me/friends', auth, async (req, res) => {
   const [rows] = await db.execute(
     `SELECT u.id,u.username,u.display_name,u.lol_game_name,u.lol_tag_line,u.avatar_url,
-            u.solo_tier,u.solo_rank,u.flex_tier,u.flex_rank,u.online_status,u.last_seen_at
+            u.solo_tier,u.solo_rank,u.flex_tier,u.flex_rank,u.online_status,u.last_seen_at,
+            CASE WHEN f.user_a_id=? THEN f.is_favorite_a ELSE f.is_favorite_b END AS is_favorite_duo
      FROM friendships f
      JOIN users u ON u.id=IF(f.user_a_id=?,f.user_b_id,f.user_a_id)
      WHERE (f.user_a_id=? OR f.user_b_id=?)
@@ -304,6 +305,32 @@ router.get('/:id', auth, async (req, res) => {
     [req.user.id, req.params.id]
   );
   res.json({ ...rows[0], roles, is_friend: fs.length > 0, is_blocked: bl.length > 0 });
+});
+
+
+// PATCH /users/me/friends/:id/favorite — marcar/desmarcar como duo principal
+router.patch('/me/friends/:id/favorite', auth, async (req, res) => {
+  const friendId = parseInt(req.params.id);
+  try {
+    // Encontrar a amizade e determinar a coluna correta
+    const [rows] = await db.execute(
+      'SELECT id, user_a_id, user_b_id, is_favorite_a, is_favorite_b FROM friendships WHERE (user_a_id=? AND user_b_id=?) OR (user_a_id=? AND user_b_id=?)',
+      [req.user.id, friendId, friendId, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Amizade não encontrada' });
+
+    const f = rows[0];
+    const isA = f.user_a_id === req.user.id;
+    const col = isA ? 'is_favorite_a' : 'is_favorite_b';
+    const current = isA ? f.is_favorite_a : f.is_favorite_b;
+    const newVal = current ? 0 : 1;
+
+    await db.execute(`UPDATE friendships SET ${col}=? WHERE id=?`, [newVal, f.id]);
+    res.json({ is_favorite_duo: !!newVal });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
 });
 
 module.exports = router;

@@ -4891,3 +4891,37 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
 .achievement-notif-desc{
   font-size:11.5px;color:var(--muted);margin-top:2px;
 }
+
+/* ── Duo Principal online — notificação ──────── */
+.duo-online-notif{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  z-index:4000;opacity:0;
+  transition:opacity .3s, transform .3s;
+  pointer-events:none;min-width:320px;max-width:90vw;
+}
+.duo-online-notif.show{
+  opacity:1;transform:translateX(-50%) translateY(0);
+  pointer-events:all;
+}
+.duo-online-notif-inner{
+  display:flex;align-items:center;gap:12px;
+  background:var(--navy-m);
+  border:1px solid rgba(200,150,62,.5);
+  border-radius:14px;padding:14px 16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(200,150,62,.1);
+}
+.duo-online-title{
+  font-size:10.5px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--gold-l);
+  display:flex;align-items:center;gap:5px;margin-bottom:2px;
+}
+.duo-online-name{font-size:14px;font-weight:700;color:var(--text)}
+.duo-online-nick{font-size:11.5px;color:var(--dim)}
+
+/* Botão Duo Ativo na lista */
+.social-chat-btn.duo-fav-active{
+  color:var(--gold-l) !important;
+  border-color:rgba(200,150,62,.4) !important;
+  background:rgba(200,150,62,.1) !important;
+}

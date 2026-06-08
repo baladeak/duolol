@@ -193,6 +193,8 @@ db.execute(`CREATE TABLE IF NOT EXISTS user_achievements (
   INDEX idx_user (user_id)
 )`).catch(()=>{});
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP").catch(()=>{});
+db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_a TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
+db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_b TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
 db.execute("ALTER TABLE users MODIFY COLUMN admin_role ENUM('user','vip','admin') NOT NULL DEFAULT 'user'").catch(()=>{});
 db.execute("CREATE TABLE IF NOT EXISTS queue_chat_messages (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, content TEXT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_created (created_at DESC))").catch(()=>{});
 migrations.forEach(sql => db.execute(sql).catch(() => {}));
