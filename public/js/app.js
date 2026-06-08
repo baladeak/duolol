@@ -3770,7 +3770,6 @@ const LOL_REACTIONS = {
 
 // ── OAuth Social Login ─────────────────────────
 function loginWithGoogle()   { window.location.href = '/auth/google';   }
-function loginWithFacebook() { window.location.href = '/auth/facebook'; }
 
 function handleOAuthCallback() {
   const hash = window.location.hash;
@@ -3781,9 +3780,7 @@ function handleOAuthCallback() {
   if (errMatch) {
     const errors = {
       google_not_configured:   'Login com Google não está configurado ainda.',
-      facebook_not_configured: 'Login com Facebook não está configurado ainda.',
       google_failed:           'Falha no login com Google. Tente novamente.',
-      facebook_failed:         'Falha no login com Facebook. Tente novamente.',
     };
     const msg = errors[decodeURIComponent(errMatch[1])] || 'Erro no login social.';
     const errEl = document.getElementById('auth-error');

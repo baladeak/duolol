@@ -4971,7 +4971,3 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border:1px solid #dadce0;
 }
 .oauth-google:hover{background:#f8f9fa;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.oauth-facebook{
-  background:#1877F2;color:#fff;
-}
-.oauth-facebook:hover{background:#166fe5;box-shadow:0 2px 8px rgba(24,119,242,.4)}

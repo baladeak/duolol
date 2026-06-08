@@ -1,7 +1,6 @@
 const router   = require('express').Router();
 const passport = require('passport');
 const GoogleStrategy   = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
 const db  = require('../db/connection');
 const jwt = require('jsonwebtoken');
 
@@ -77,26 +76,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   console.warn('[OAuth] GOOGLE_CLIENT_ID/SECRET não configurados — login com Google desabilitado');
 }
 
-// ── Facebook Strategy ──────────────────────────
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  passport.use(new FacebookStrategy({
-    clientID:     process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL:  `${APP_URL}/auth/facebook/callback`,
-    profileFields: ['id', 'displayName', 'photos', 'email']
-  },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      const user = await findOrCreateOAuthUser(profile, 'facebook');
-      done(null, user);
-    } catch(err) {
-      done(err);
-    }
-  }));
-} else {
-  console.warn('[OAuth] FACEBOOK_APP_ID/SECRET não configurados — login com Facebook desabilitado');
-}
-
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
@@ -126,31 +105,6 @@ router.get('/google/callback',
         lol_game_name: user.lol_game_name, lol_tag_line: user.lol_tag_line
       });
       // Redirecionar de volta ao SPA com token na hash
-      res.redirect(`${APP_URL}/#oauth_token=${encodeURIComponent(token)}&oauth_user=${encodeURIComponent(userData)}`);
-    })(req, res, next);
-  }
-);
-
-// ── Rotas Facebook ─────────────────────────────
-router.get('/facebook',
-  (req, res, next) => {
-    if (!process.env.FACEBOOK_APP_ID)
-      return res.redirect(`${APP_URL}/#oauth_error=facebook_not_configured`);
-    next();
-  },
-  passport.authenticate('facebook', { session: false, scope: ['email'] })
-);
-
-router.get('/facebook/callback',
-  (req, res, next) => {
-    passport.authenticate('facebook', { session: false }, (err, user) => {
-      if (err || !user) return res.redirect(`${APP_URL}/#oauth_error=facebook_failed`);
-      const token    = issueToken(user);
-      const userData = JSON.stringify({
-        id: user.id, username: user.username, display_name: user.display_name,
-        avatar_url: user.avatar_url, admin_role: user.admin_role,
-        lol_game_name: user.lol_game_name, lol_tag_line: user.lol_tag_line
-      });
       res.redirect(`${APP_URL}/#oauth_token=${encodeURIComponent(token)}&oauth_user=${encodeURIComponent(userData)}`);
     })(req, res, next);
   }
