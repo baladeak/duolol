@@ -102,6 +102,9 @@
         <button onclick="openGlobalSearch()" class="s-icon-btn" title="Buscar invocador">
           <i class="ti ti-search"></i>
         </button>
+        <button onclick="openThemeSelector()" class="s-icon-btn" title="Mudar tema" id="theme-btn">
+          <i class="ti ti-palette"></i>
+        </button>
       </div>
       <nav class="s-nav">
 
@@ -659,6 +662,19 @@
   <div class="duo-preview-wrap">
     <button onclick="closeDuoPreview()" class="duo-preview-close"><i class="ti ti-x"></i></button>
     <div id="duo-preview-body"></div>
+  </div>
+</div>
+
+<!-- Modal Seletor de Tema -->
+<div id="theme-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2500;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeThemeSelector()">
+  <div class="theme-modal-wrap">
+    <div class="theme-modal-header">
+      <span><i class="ti ti-palette"></i> Escolha sua região</span>
+      <button onclick="closeThemeSelector()" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="theme-grid" id="theme-grid">
+      <!-- Injetado pelo JS -->
+    </div>
   </div>
 </div>
 

@@ -4698,3 +4698,70 @@ async function toggleFavoriteDuo(friendId, btn) {
     loadFriendsInMessages();
   } catch { toast('Erro ao atualizar'); }
 }
+
+// ══════════════════════════════════════════════
+//  TEMAS POR REGIÃO DO LOL
+// ══════════════════════════════════════════════
+const LOL_THEMES = [
+  { id:'default',      name:'Void',         region:'O Vazio',       emoji:'⚫', desc:'Tema padrão escuro',              accent:'#f0ae07' },
+  { id:'noxus',        name:'Noxus',        region:'Noxus',         emoji:'🔴', desc:'Vermelho imperial e brutal',       accent:'#C8182A' },
+  { id:'freljord',     name:'Freljord',     region:'Freljord',      emoji:'🔵', desc:'Cristal de gelo e neblina ártica', accent:'#5BC4F0' },
+  { id:'ionia',        name:'Ionia',        region:'Ionia',         emoji:'🌸', desc:'Flor de cerejeira e equilíbrio',   accent:'#C060C0' },
+  { id:'shurima',      name:'Shurima',      region:'Shurima',       emoji:'☀️', desc:'Areia dourada e calor do deserto', accent:'#E8A020' },
+  { id:'demacia',      name:'Demacia',      region:'Demacia',       emoji:'⚔️', desc:'Prata e azul real da justiça',     accent:'#8AAEE8' },
+  { id:'piltover',     name:'Piltover',     region:'Piltover',      emoji:'⚙️', desc:'Tecnologia e progresso dourado',   accent:'#F0C040' },
+  { id:'zaun',         name:'Zaun',         region:'Zaun',          emoji:'☣️', desc:'Verde tóxico das entranhas',       accent:'#40C840' },
+  { id:'shadow-isles', name:'Ilhas Sombras',region:'Ilhas Sombrias',emoji:'💀', desc:'Névoa verde da morte e magia negra',accent:'#20E8A0' },
+  { id:'bilgewater',   name:'Bilgewater',   region:'Bilgewater',    emoji:'⚓', desc:'Mar e cobre dos piratas',          accent:'#20B8C0' },
+  { id:'targon',       name:'Targon',       region:'Monte Targon',  emoji:'✨', desc:'Luz celestial do pico sagrado',    accent:'#C0A0FF' },
+];
+
+let _currentTheme = localStorage.getItem('duoq_theme') || 'default';
+
+// Aplicar tema ao carregar
+function applyTheme(themeId) {
+  _currentTheme = themeId;
+  if (themeId === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', themeId);
+  }
+  localStorage.setItem('duoq_theme', themeId);
+}
+
+// Aplicar tema salvo imediatamente
+applyTheme(_currentTheme);
+
+function openThemeSelector() {
+  const modal = $('theme-modal');
+  const grid  = $('theme-grid');
+  if (!modal || !grid) return;
+
+  grid.innerHTML = LOL_THEMES.map(t => `
+    <div class="theme-card ${_currentTheme === t.id ? 'active' : ''}"
+         onclick="selectTheme('${t.id}')"
+         style="--t-accent:${t.accent}">
+      <div class="theme-card-preview" style="background:linear-gradient(135deg,rgba(0,0,0,.9),${t.accent}22);border:1px solid ${t.accent}33">
+        <div class="theme-card-emoji">${t.emoji}</div>
+        <div class="theme-card-accent" style="background:${t.accent};box-shadow:0 0 12px ${t.accent}88"></div>
+      </div>
+      <div class="theme-card-name">${t.name}</div>
+      <div class="theme-card-region">${t.region}</div>
+      ${_currentTheme === t.id ? '<div class="theme-card-active-badge">✓ Ativo</div>' : ''}
+    </div>`).join('');
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeThemeSelector() {
+  const modal = $('theme-modal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
+function selectTheme(themeId) {
+  applyTheme(themeId);
+  const theme = LOL_THEMES.find(t => t.id === themeId);
+  closeThemeSelector();
+  toast(`${theme?.emoji || '🎨'} Tema ${theme?.name || themeId} ativado!`);
+}

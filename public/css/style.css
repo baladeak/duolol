@@ -4971,3 +4971,271 @@ input,textarea,button{font-family:'Exo 2',sans-serif}
   border:1px solid #dadce0;
 }
 .oauth-google:hover{background:#f8f9fa;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+
+
+/* ══════════════════════════════════════════════
+   TEMAS POR REGIÃO DE LOL
+   Aplicados via [data-theme="nome"] no <html>
+══════════════════════════════════════════════ */
+
+/* ── Noxus — Vermelho imperial ─────────────── */
+[data-theme="noxus"]{
+  --navy:#0D0507;
+  --navy-m:#130709;
+  --navy-c:#1C080B;
+  --navy-h:#250C0F;
+  --gold:#C8182A;
+  --gold-l:#E8303F;
+  --gold-b:#F04450;
+  --gold-d:#8A1020;
+  --gold-dim:rgba(200,24,42,.14);
+  --gold-glow:rgba(200,24,42,.35);
+  --grad-gold:linear-gradient(135deg,#8A1020 0%,#C8182A 50%,#E8303F 100%);
+  --border:rgba(200,24,42,.18);
+  --border-h:rgba(200,24,42,.5);
+  --text:#F0D8D8;
+  --muted:#9A7070;
+  --dim:#524040;
+}
+
+/* ── Freljord — Cristal de gelo ─────────────── */
+[data-theme="freljord"]{
+  --navy:#040C14;
+  --navy-m:#071220;
+  --navy-c:#0A1828;
+  --navy-h:#0E2035;
+  --gold:#5BC4F0;
+  --gold-l:#80D8FF;
+  --gold-b:#A0E4FF;
+  --gold-d:#2A90C0;
+  --gold-dim:rgba(91,196,240,.14);
+  --gold-glow:rgba(91,196,240,.3);
+  --grad-gold:linear-gradient(135deg,#2A90C0 0%,#5BC4F0 50%,#A0E4FF 100%);
+  --border:rgba(91,196,240,.18);
+  --border-h:rgba(91,196,240,.5);
+  --text:#D8F0FF;
+  --muted:#6A9AB0;
+  --dim:#3A5870;
+}
+
+/* ── Ionia — Flor de cerejeira ──────────────── */
+[data-theme="ionia"]{
+  --navy:#0A060F;
+  --navy-m:#110A18;
+  --navy-c:#180F24;
+  --navy-h:#20142E;
+  --gold:#C060C0;
+  --gold-l:#E080E0;
+  --gold-b:#F0A0F0;
+  --gold-d:#803080;
+  --gold-dim:rgba(192,96,192,.14);
+  --gold-glow:rgba(192,96,192,.3);
+  --grad-gold:linear-gradient(135deg,#803080 0%,#C060C0 50%,#F0A0F0 100%);
+  --border:rgba(192,96,192,.18);
+  --border-h:rgba(192,96,192,.5);
+  --text:#F0D8F8;
+  --muted:#907898;
+  --dim:#504060;
+}
+
+/* ── Shurima — Areia e ouro do deserto ──────── */
+[data-theme="shurima"]{
+  --navy:#0E0900;
+  --navy-m:#160E00;
+  --navy-c:#1E1400;
+  --navy-h:#281C00;
+  --gold:#E8A020;
+  --gold-l:#F0B840;
+  --gold-b:#F8CC60;
+  --gold-d:#A06010;
+  --gold-dim:rgba(232,160,32,.14);
+  --gold-glow:rgba(232,160,32,.35);
+  --grad-gold:linear-gradient(135deg,#A06010 0%,#E8A020 50%,#F8CC60 100%);
+  --border:rgba(232,160,32,.18);
+  --border-h:rgba(232,160,32,.5);
+  --text:#FFF0D0;
+  --muted:#A08050;
+  --dim:#604830;
+}
+
+/* ── Demacia — Prata e azul real ─────────────── */
+[data-theme="demacia"]{
+  --navy:#060810;
+  --navy-m:#0A0E1A;
+  --navy-c:#101525;
+  --navy-h:#161C30;
+  --gold:#8AAEE8;
+  --gold-l:#A8C8FF;
+  --gold-b:#C0D8FF;
+  --gold-d:#4870C0;
+  --gold-dim:rgba(138,174,232,.14);
+  --gold-glow:rgba(138,174,232,.3);
+  --grad-gold:linear-gradient(135deg,#4870C0 0%,#8AAEE8 50%,#C0D8FF 100%);
+  --border:rgba(138,174,232,.18);
+  --border-h:rgba(138,174,232,.5);
+  --text:#D8E8FF;
+  --muted:#6880A0;
+  --dim:#384860;
+}
+
+/* ── Piltover — Tecnologia dourada ──────────── */
+[data-theme="piltover"]{
+  --navy:#060810;
+  --navy-m:#0C1018;
+  --navy-c:#121820;
+  --navy-h:#182028;
+  --gold:#F0C040;
+  --gold-l:#F8D860;
+  --gold-b:#FFE880;
+  --gold-d:#B08020;
+  --gold-dim:rgba(240,192,64,.14);
+  --gold-glow:rgba(240,192,64,.3);
+  --grad-gold:linear-gradient(135deg,#4A80C0 0%,#F0C040 100%);
+  --border:rgba(240,192,64,.18);
+  --border-h:rgba(240,192,64,.5);
+  --text:#F0F0E0;
+  --muted:#9090A0;
+  --dim:#505060;
+}
+
+/* ── Zaun — Verde tóxico ─────────────────────── */
+[data-theme="zaun"]{
+  --navy:#020A04;
+  --navy-m:#040F06;
+  --navy-c:#071508;
+  --navy-h:#0A1C0C;
+  --gold:#40C840;
+  --gold-l:#60E060;
+  --gold-b:#80F080;
+  --gold-d:#208A20;
+  --gold-dim:rgba(64,200,64,.14);
+  --gold-glow:rgba(64,200,64,.35);
+  --grad-gold:linear-gradient(135deg,#208A20 0%,#40C840 50%,#80F080 100%);
+  --border:rgba(64,200,64,.18);
+  --border-h:rgba(64,200,64,.5);
+  --text:#D0F0D0;
+  --muted:#508050;
+  --dim:#305030;
+}
+
+/* ── Shadow Isles — Névoa sombria ───────────── */
+[data-theme="shadow-isles"]{
+  --navy:#020704;
+  --navy-m:#040C07;
+  --navy-c:#06120A;
+  --navy-h:#08180D;
+  --gold:#20E8A0;
+  --gold-l:#40F8B8;
+  --gold-b:#60FFD0;
+  --gold-d:#00A060;
+  --gold-dim:rgba(32,232,160,.14);
+  --gold-glow:rgba(32,232,160,.3);
+  --grad-gold:linear-gradient(135deg,#004030 0%,#20E8A0 100%);
+  --border:rgba(32,232,160,.15);
+  --border-h:rgba(32,232,160,.45);
+  --text:#C0F0E0;
+  --muted:#408060;
+  --dim:#205040;
+}
+
+/* ── Bilgewater — Mar e cobre ───────────────── */
+[data-theme="bilgewater"]{
+  --navy:#040A0C;
+  --navy-m:#060E12;
+  --navy-c:#081418;
+  --navy-h:#0C1C22;
+  --gold:#20B8C0;
+  --gold-l:#40D0D8;
+  --gold-b:#60E8F0;
+  --gold-d:#108090;
+  --gold-dim:rgba(32,184,192,.14);
+  --gold-glow:rgba(32,184,192,.3);
+  --grad-gold:linear-gradient(135deg,#C06020 0%,#20B8C0 100%);
+  --border:rgba(32,184,192,.18);
+  --border-h:rgba(32,184,192,.5);
+  --text:#D0F0F0;
+  --muted:#508890;
+  --dim:#305860;
+}
+
+/* ── Targon — Celestial roxo/branco ─────────── */
+[data-theme="targon"]{
+  --navy:#060408;
+  --navy-m:#0C080F;
+  --navy-c:#120C18;
+  --navy-h:#181020;
+  --gold:#C0A0FF;
+  --gold-l:#D8C0FF;
+  --gold-b:#EDD8FF;
+  --gold-d:#8060C0;
+  --gold-dim:rgba(192,160,255,.14);
+  --gold-glow:rgba(192,160,255,.3);
+  --grad-gold:linear-gradient(135deg,#4020A0 0%,#C0A0FF 50%,#FFE0FF 100%);
+  --border:rgba(192,160,255,.18);
+  --border-h:rgba(192,160,255,.5);
+  --text:#F0E8FF;
+  --muted:#907898;
+  --dim:#504060;
+}
+
+/* ══════════════════════════════════════════════
+   SELETOR DE TEMAS
+══════════════════════════════════════════════ */
+.theme-modal-wrap{
+  background:var(--navy-m);border:1px solid var(--border-h);
+  border-radius:18px;width:min(640px,92vw);
+  box-shadow:0 24px 80px rgba(0,0,0,.8);
+  overflow:hidden;
+}
+.theme-modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;
+  color:var(--text);display:flex;align-items:center;gap:8px;
+}
+.theme-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
+  gap:10px;padding:18px;
+  max-height:70vh;overflow-y:auto;
+}
+.theme-card{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;border-radius:12px;padding:10px 8px;
+  border:1px solid var(--border);background:var(--navy-c);
+  transition:.15s;position:relative;
+}
+.theme-card:hover{
+  border-color:var(--t-accent, var(--border-h));
+  background:var(--navy-h);
+  transform:translateY(-2px);
+}
+.theme-card.active{
+  border-color:var(--t-accent, var(--gold));
+  background:rgba(255,255,255,.04);
+  box-shadow:0 0 0 1px var(--t-accent, var(--gold));
+}
+.theme-card-preview{
+  width:72px;height:48px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.theme-card-emoji{font-size:22px;z-index:1}
+.theme-card-accent{
+  position:absolute;bottom:4px;right:4px;
+  width:14px;height:14px;border-radius:50%;
+}
+.theme-card-name{
+  font-size:12px;font-weight:700;color:var(--text);
+  text-align:center;line-height:1.2;
+}
+.theme-card-region{
+  font-size:10px;color:var(--dim);text-align:center;
+}
+.theme-card-active-badge{
+  font-size:9.5px;font-weight:700;
+  color:var(--t-accent, var(--gold));
+  background:rgba(255,255,255,.08);
+  border-radius:10px;padding:1px 7px;
+  margin-top:2px;
+}
