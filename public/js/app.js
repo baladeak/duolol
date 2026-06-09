@@ -234,6 +234,8 @@ function bootApp() {
   // Socket
   initSocket();
   // Hash routing — verificar se URL tem #/post/:id
+  // Aplicar tema do perfil
+  if (me?.theme) applyTheme(me.theme);
   checkHashRoute();
   // Se usuário logado via OAuth ainda não tem nick do LoL, mostrar modal
   if (me && !me.lol_game_name) {
@@ -1245,6 +1247,7 @@ async function loadMyProfile() {
     const user = await api('/users/me');
     me = { ...me, ...user };
     localStorage.setItem('duoq_me', JSON.stringify(me));
+    if (user.theme && user.theme !== _currentTheme) applyTheme(user.theme);
     renderProfile(user, true);
   } catch {}
 }
@@ -4719,18 +4722,26 @@ const LOL_THEMES = [
 let _currentTheme = localStorage.getItem('duoq_theme') || 'default';
 
 // Aplicar tema ao carregar
-function applyTheme(themeId) {
-  _currentTheme = themeId;
-  if (themeId === 'default') {
+function applyTheme(themeId, save = false) {
+  _currentTheme = themeId || 'default';
+  if (_currentTheme === 'default') {
     document.documentElement.removeAttribute('data-theme');
   } else {
-    document.documentElement.setAttribute('data-theme', themeId);
+    document.documentElement.setAttribute('data-theme', _currentTheme);
   }
-  localStorage.setItem('duoq_theme', themeId);
+  // Salvar no servidor se logado
+  if (save && token && me) {
+    me.theme = _currentTheme;
+    localStorage.setItem('duoq_me', JSON.stringify(me));
+    api('/users/me', { method: 'PATCH', body: { theme: _currentTheme } }).catch(() => {});
+  }
 }
 
-// Aplicar tema salvo imediatamente
-applyTheme(_currentTheme);
+// Aplicar tema do perfil salvo no me (localStorage) imediatamente
+const _savedTheme = (() => {
+  try { return JSON.parse(localStorage.getItem('duoq_me') || '{}').theme || 'default'; } catch { return 'default'; }
+})();
+applyTheme(_savedTheme);
 
 function openThemeSelector() {
   const modal = $('theme-modal');
@@ -4760,7 +4771,7 @@ function closeThemeSelector() {
 }
 
 function selectTheme(themeId) {
-  applyTheme(themeId);
+  applyTheme(themeId, true);
   const theme = LOL_THEMES.find(t => t.id === themeId);
   closeThemeSelector();
   toast(`${theme?.emoji || '🎨'} Tema ${theme?.name || themeId} ativado!`);

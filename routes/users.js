@@ -32,7 +32,7 @@ router.get('/stats/online', auth, async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   const [rows] = await db.execute(
-    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,has_mic,custom_status,admin_role,
+    `SELECT id,username,display_name,email,lol_game_name,lol_tag_line,avatar_url,bio,chat_muted,main_champions,profile_banner,has_mic,custom_status,admin_role,theme,
             solo_tier,solo_rank,solo_lp,solo_wins,solo_losses,
             flex_tier,flex_rank,flex_lp,flex_wins,flex_losses,
             online_status,elo_last_updated_at,created_at
@@ -125,7 +125,7 @@ router.patch('/me/friend-request/:id', auth, async (req, res) => {
 });
 
 router.patch('/me', auth, async (req, res) => {
-  const { bio, roles, display_name, chat_muted, main_champions, profile_banner, has_mic, custom_status, lol_game_name, lol_tag_line } = req.body;
+  const { bio, roles, display_name, chat_muted, main_champions, profile_banner, has_mic, custom_status, lol_game_name, lol_tag_line, theme } = req.body;
   if (display_name !== undefined) {
     const dn = display_name.trim().slice(0, 60) || null;
     await db.execute('UPDATE users SET display_name=? WHERE id=?', [dn, req.user.id]);
@@ -138,6 +138,11 @@ router.patch('/me', auth, async (req, res) => {
   if (lol_tag_line !== undefined) {
     const safeTag = (lol_tag_line || '').trim().toUpperCase().slice(0, 5) || null;
     await db.execute('UPDATE users SET lol_tag_line=? WHERE id=?', [safeTag, req.user.id]);
+  }
+  if (theme !== undefined) {
+    const validThemes = ['default','noxus','freljord','ionia','shurima','demacia','piltover','zaun','shadow-isles','bilgewater','targon'];
+    const safeTheme = validThemes.includes(theme) ? theme : 'default';
+    await db.execute('UPDATE users SET theme=? WHERE id=?', [safeTheme, req.user.id]);
   }
   if (chat_muted !== undefined) await db.execute('UPDATE users SET chat_muted=? WHERE id=?', [chat_muted ? 1 : 0, req.user.id]);
   if (has_mic !== undefined) {
