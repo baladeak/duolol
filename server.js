@@ -199,6 +199,8 @@ db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS created_at DATETIME
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_a TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
 db.execute("ALTER TABLE friendships ADD COLUMN IF NOT EXISTS is_favorite_b TINYINT(1) NOT NULL DEFAULT 0").catch(()=>{});
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme VARCHAR(30) NOT NULL DEFAULT 'default'").catch(()=>{});
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64) NULL").catch(()=>{});
+db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires DATETIME NULL").catch(()=>{});
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(120) NULL").catch(()=>{});
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_id VARCHAR(120) NULL").catch(()=>{});
 db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL").catch(()=>{});

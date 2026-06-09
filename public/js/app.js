@@ -3896,6 +3896,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   // Verificar se voltou de OAuth
   if (handleOAuthCallback()) return;
+  checkResetPasswordHash();
 
   if (token && me) {
     bootApp();
@@ -4782,4 +4783,106 @@ function selectTheme(themeId) {
   const theme = LOL_THEMES.find(t => t.id === themeId);
   closeThemeSelector();
   toast(`${theme?.emoji || '🎨'} Tema ${theme?.name || themeId} ativado!`);
+}
+
+// ── Mostrar/ocultar senha ─────────────────────
+function togglePasswordVisibility(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  const icon = btn.querySelector('i');
+  if (icon) icon.className = isHidden ? 'ti ti-eye-off' : 'ti ti-eye';
+}
+
+// ── Esqueci a senha ───────────────────────────
+function openForgotPassword() {
+  const modal = $('forgot-password-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    $('forgot-email').value = $('login-email')?.value || '';
+    $('forgot-error').style.display = 'none';
+    $('forgot-success').style.display = 'none';
+    setTimeout(() => $('forgot-email')?.focus(), 80);
+  }
+}
+function closeForgotPassword() {
+  const modal = $('forgot-password-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function sendForgotPassword() {
+  const email  = $('forgot-email')?.value.trim();
+  const errEl  = $('forgot-error');
+  const okEl   = $('forgot-success');
+  const btn    = $('forgot-btn');
+  if (!email) { errEl.textContent = 'Digite seu e-mail.'; errEl.style.display = ''; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Enviando...';
+  errEl.style.display = 'none';
+
+  try {
+    await api('/auth/forgot-password', { method: 'POST', body: { email } });
+    okEl.textContent = '✅ Se este e-mail estiver cadastrado, você receberá o link em instantes. Verifique também o spam.';
+    okEl.style.display = '';
+    btn.style.display = 'none';
+  } catch(e) {
+    errEl.textContent = e?.error || 'Erro ao enviar. Tente novamente.';
+    errEl.style.display = '';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-send"></i> Enviar link de recuperação';
+  }
+}
+
+// ── Reset de senha por link (#reset-password/token) ──
+async function checkResetPasswordHash() {
+  const hash = window.location.hash;
+  const match = hash.match(/^#reset-password\/([a-f0-9]{64})$/);
+  if (!match) return false;
+
+  const resetToken = match[1];
+  window.location.hash = '';
+
+  // Mostrar modal de nova senha
+  const div = document.createElement('div');
+  div.id = 'reset-modal';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  div.innerHTML = `
+    <div style="background:var(--navy-m);border:1px solid var(--border-h);border-radius:16px;width:min(380px,92vw);padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px">🔑 Nova senha</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Escolha uma senha forte com pelo menos 6 caracteres</div>
+      <div id="reset-error" style="display:none;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#FCA5A5;margin-bottom:12px"></div>
+      <div class="form-group">
+        <label class="form-label">Nova senha</label>
+        <div class="password-field-wrap">
+          <input id="reset-new-password" class="form-input" type="password" placeholder="Mínimo 6 caracteres" style="padding-right:44px">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reset-new-password',this)"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button onclick="submitResetPassword('${resetToken}')" class="btn-primary" style="width:100%;margin-top:8px">
+        <i class="ti ti-lock-check"></i> Salvar nova senha
+      </button>
+    </div>`;
+  document.body.appendChild(div);
+  setTimeout(() => document.getElementById('reset-new-password')?.focus(), 100);
+  return true;
+}
+
+async function submitResetPassword(token) {
+  const password = document.getElementById('reset-new-password')?.value.trim();
+  const errEl = document.getElementById('reset-error');
+  if (!password || password.length < 6) {
+    errEl.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+    errEl.style.display = '';
+    return;
+  }
+  try {
+    await api('/auth/reset-password', { method: 'POST', body: { token, password } });
+    document.getElementById('reset-modal')?.remove();
+    toast('✅ Senha redefinida! Faça login com sua nova senha.');
+  } catch(e) {
+    errEl.textContent = e?.error || 'Link inválido ou expirado.';
+    errEl.style.display = '';
+  }
 }
