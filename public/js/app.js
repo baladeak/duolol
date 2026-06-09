@@ -199,6 +199,8 @@ async function logout() {
   try { await api('/auth/logout', { method: 'POST' }); } catch {}
   localStorage.clear();
   token = null; me = null;
+  // Resetar tema para o padrão ao deslogar
+  applyTheme('default');
   if (socket) { socket.disconnect(); socket = null; }
   $('app-screen').style.display  = 'none';
   $('auth-screen').style.display = 'flex';
