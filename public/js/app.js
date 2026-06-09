@@ -236,8 +236,11 @@ function bootApp() {
   // Socket
   initSocket();
   // Hash routing — verificar se URL tem #/post/:id
-  // Aplicar tema do perfil
-  if (me?.theme) applyTheme(me.theme);
+  // Aplicar tema do perfil — lê do me (login) com fallback para localStorage
+  const _themeToApply = me?.theme
+    || (() => { try { return JSON.parse(localStorage.getItem('duoq_me')||'{}').theme; } catch{} })()
+    || 'default';
+  applyTheme(_themeToApply);
   checkHashRoute();
   // Se usuário logado via OAuth ainda não tem nick do LoL, mostrar modal
   if (me && !me.lol_game_name) {
@@ -265,6 +268,8 @@ async function refreshMe() {
     const user = await api('/users/me');
     me = { ...me, ...user };
     localStorage.setItem('duoq_me', JSON.stringify(me));
+    // Aplicar tema do perfil assim que chegar do servidor
+    if (user.theme) applyTheme(user.theme);
     updateMyAvatar();
     renderSidebarRanks();
     bootAdmin();
@@ -1249,7 +1254,7 @@ async function loadMyProfile() {
     const user = await api('/users/me');
     me = { ...me, ...user };
     localStorage.setItem('duoq_me', JSON.stringify(me));
-    if (user.theme && user.theme !== _currentTheme) applyTheme(user.theme);
+    if (user.theme) applyTheme(user.theme);
     renderProfile(user, true);
   } catch {}
 }
